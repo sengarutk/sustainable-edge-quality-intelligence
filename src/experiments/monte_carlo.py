@@ -21,7 +21,6 @@ def run_monte_carlo_simulation(
     np.random.seed(seed)
     evaluator = ScenarioPipelineEvaluator.from_yaml(scenario_path)
 
-    # Base parameters with +-20% or scenario bounds
     def draw_triangular(nominal: float, low_scale: float = 0.8, high_scale: float = 1.2, size: int = n_draws):
         low = nominal * low_scale
         high = nominal * high_scale
@@ -35,7 +34,8 @@ def run_monte_carlo_simulation(
     e_rws = draw_triangular(evaluator.e_rw, 0.8, 1.2)
     c_escs = draw_triangular(evaluator.c_esc, 0.8, 1.2)
     betas = draw_triangular(evaluator.beta, 0.8, 1.2)
-    recalls = np.clip(draw_triangular(0.99, 0.95, 1.01), 0.85, 1.0)
+    recalls_b0 = np.clip(draw_triangular(0.88, 0.95, 1.05), 0.80, 0.92)
+    recalls_b4 = np.clip(draw_triangular(0.99, 0.98, 1.01), 0.95, 1.00)
     delays = np.clip(draw_triangular(3.0, 0.6, 1.4), 1.0, 6.0)
 
     delta_ms = np.zeros(n_draws)
@@ -44,7 +44,6 @@ def run_monte_carlo_simulation(
     delta_hs = np.zeros(n_draws)
     sqis_balanced = np.zeros(n_draws)
 
-    # Pre-construct base cfg dict
     cfg_base = dict(evaluator.cfg)
 
     for i in range(n_draws):
@@ -58,8 +57,8 @@ def run_monte_carlo_simulation(
         cfg["reworkability_decay_per_sec"] = betas[i]
 
         ev = ScenarioPipelineEvaluator(cfg)
-        b0 = ev.evaluate_policy("B0_Raw", 1.00, 180.0, 0.0)
-        b4 = ev.evaluate_policy(policy_tier, recalls[i], 12.0, delays[i], baseline_result=b0)
+        b0 = ev.evaluate_policy("B0_Raw", recalls_b0[i], 180.0, 0.0, edge_active=False)
+        b4 = ev.evaluate_policy(policy_tier, recalls_b4[i], 12.0, delays[i], baseline_result=b0, edge_active=True)
 
         delta_ms[i] = b4.material.net_savings_kg
         delta_es[i] = b4.energy.net_energy_diff_kwh
