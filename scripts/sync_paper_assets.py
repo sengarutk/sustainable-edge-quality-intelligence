@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import hashlib, shutil, os
+import hashlib, shutil
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -12,7 +12,11 @@ def sha256_file(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 def get_desktop_dir() -> Path:
-    # Dynamically find Windows Desktop via WSL /mnt/c/Users/* or fallback to winenv / WSL home desktop
+    # Explicit Windows user profile resolution or fallback to WSL user home desktop
+    win_d = Path("/mnt/c/Users/senga/Desktop")
+    if win_d.parent.exists():
+        win_d.mkdir(parents=True, exist_ok=True)
+        return win_d
     c_users = Path("/mnt/c/Users")
     if c_users.exists():
         for user_dir in c_users.iterdir():
@@ -20,16 +24,12 @@ def get_desktop_dir() -> Path:
                 desk = user_dir / "Desktop"
                 if desk.exists():
                     return desk
-        # fallback inside /mnt/c/Users/senga if direct match failed
-        win_d = Path("/mnt/c/Users/senga/Desktop")
-        win_d.mkdir(parents=True, exist_ok=True)
-        return win_d
     hb = Path.home() / "Desktop"
     hb.mkdir(parents=True, exist_ok=True)
     return hb
 
 def main():
-    print("=== [Sync] Fully Portable Paper Asset Synchronizer ===")
+    print("=== [Sync] Clean Portable Paper Asset Synchronizer ===")
     assert RESULTS_METRICS.exists(), f"Source metrics missing: {RESULTS_METRICS}"
     
     PAPER_METRICS.parent.mkdir(parents=True, exist_ok=True)
@@ -42,8 +42,6 @@ def main():
 
     if MAIN_TEX.exists():
         tex = MAIN_TEX.read_text(encoding="utf-8")
-        # FIXED: single-backslash LaTeX command matching
-        tex = tex.replace(r"\\input{../results/paper_b_generated_metrics.tex}", r"\\input{paper_b_generated_metrics.tex}")
         tex = tex.replace(r"\input{../results/paper_b_generated_metrics.tex}", r"\input{paper_b_generated_metrics.tex}")
         tex = tex.replace(r"\input{results/paper_b_generated_metrics.tex}", r"\input{paper_b_generated_metrics.tex}")
         tex = tex.replace(r"C_{\mathcal{e}scape}", r"C_{\text{esc}}")
