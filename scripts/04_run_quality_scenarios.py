@@ -2,6 +2,7 @@
 """
 Step 4: Evaluate 5-Tier Policy Hierarchy (B0 to B4) across Scenarios A, B, and C.
 Calibrated with physical edge energy (0.171 kWh/1k) and late baseline discovery delay.
+Includes detailed waterfall carbon decomposition terms.
 """
 
 from pathlib import Path
@@ -57,6 +58,7 @@ def main():
                     edge_active=spec["edge_active"],
                 )
 
+            wf = res.waterfall
             record = {
                 "scenario": sc_name,
                 "policy": spec["policy"],
@@ -81,9 +83,14 @@ def main():
                 "delta_e_kwh": round(res.energy.net_energy_diff_kwh, 4),
                 "mat_carbon_kgco2e": round(res.carbon.material_embodied_carbon_kgco2e, 3),
                 "elec_carbon_kgco2e": round(res.carbon.electricity_carbon_kgco2e, 3),
-                "escape_carbon_kgco2e": round(res.carbon.escape_penalty_carbon_kgco2e, 3),
+                "escape_carbon_penalty_kgco2e": round(res.carbon.escape_penalty_carbon_kgco2e, 3),
                 "total_carbon_kgco2e": round(res.carbon.total_carbon_kgco2e, 3),
                 "delta_c_kgco2e": round(res.carbon.net_carbon_benefit_kgco2e, 3),
+                "delta_c_mat": round(wf.get("delta_c_mat", 0.0), 3),
+                "delta_c_rw": round(wf.get("delta_c_rw", 0.0), 3),
+                "delta_c_rev": round(wf.get("delta_c_rev", 0.0), 3),
+                "c_edge_carbon": round(wf.get("c_edge", 0.0), 3),
+                "delta_c_esc": round(wf.get("delta_c_esc", 0.0), 3),
                 "sqi_balanced": round(res.sqi.profile_scores.get("balanced", 0.0), 3),
                 "sqi_material_priority": round(res.sqi.profile_scores.get("material_priority", 0.0), 3),
                 "sqi_carbon_priority": round(res.sqi.profile_scores.get("carbon_priority", 0.0), 3),

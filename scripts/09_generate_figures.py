@@ -314,6 +314,125 @@ def plot_fig6_sqi_radar():
     save_fig(fig, "fig6_sqi_radar_profile_comparison")
 
 
+
+def plot_fig7_waterfall():
+    """Fig 7: Net carbon waterfall decomposition across Scenarios A, B, and C."""
+    csv_file = PROCESSED_DIR / "scenario_evaluations.csv"
+    if not csv_file.exists():
+        return
+    df = pd.read_csv(csv_file)
+    b4_df = df[df["policy"] == "B4_Full_Cascade"]
+
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4.8), sharey=False)
+    scenarios = ["precision_component", "machined_metal", "high_value_component"]
+    sc_titles = ["Scenario A: Precision", "Scenario B: Machined Metal", "Scenario C: High-Value"]
+
+    terms = ["delta_c_mat", "delta_c_rw", "delta_c_rev", "c_edge_carbon", "delta_c_esc", "delta_c_kgco2e"]
+    term_labels = [r"$\Delta C_{\mathrm{mat}}$", r"$\Delta C_{\mathrm{rw}}$", r"$\Delta C_{\mathrm{rev}}$", r"$-C_{\mathrm{edge}}$", r"$\Delta C_{\mathrm{esc}}$", r"Net $\Delta C$"]
+
+    for i, sc in enumerate(scenarios):
+        ax = axes[i]
+        row = b4_df[b4_df["scenario"] == sc]
+        if row.empty or "delta_c_mat" not in row.columns:
+            continue
+        vals = [float(row[t].values[0]) for t in terms]
+        bar_colors = ["#2ca02c" if v >= 0 else "#d62728" for v in vals[:-1]] + ["#1f77b4"]
+
+        x = np.arange(len(terms))
+        bars = ax.bar(x, vals, color=bar_colors, alpha=0.85, edgecolor="black", width=0.6)
+        ax.set_xticks(x)
+        ax.set_xticklabels(term_labels, rotation=35, ha="right", fontsize=8.5)
+        ax.set_title(sc_titles[i], fontweight="bold")
+        ax.axhline(0.0, color="black", linestyle="-", linewidth=0.8)
+        ax.grid(axis="y", linestyle="--", alpha=0.4)
+        ax.set_ylabel(r"Carbon Delta [$\mathrm{kgCO}_2\mathrm{e}$ / 1k parts]" if i == 0 else "")
+
+        # Add text labels on top of bars
+        for bar, val in zip(bars, vals):
+            y_pos = bar.get_height()
+            va = "bottom" if y_pos >= 0 else "top"
+            ax.annotate(f"{val:+.1f}",
+                        xy=(bar.get_x() + bar.get_width() / 2, y_pos),
+                        xytext=(0, 3 if y_pos >= 0 else -8),
+                        textcoords="offset points",
+                        ha="center", va=va, fontsize=7.5, fontweight="bold")
+
+    plt.suptitle("Carbon Savings Waterfall Decomposition Across 5 Operational Drivers (Policy B4)", fontsize=12, y=1.02)
+    plt.tight_layout()
+    save_fig(fig, "fig7_waterfall_carbon_decomposition")
+
+
+def plot_fig8_adverse_sensitivity():
+    """Fig 8: Adverse sensitivity boundary checks (Prevalence pi -> 0, and Multi-View n_f in [1, 10])."""
+    from src.models.pipeline_evaluator import ScenarioPipelineEvaluator
+    CONFIG_DIR = Path("/home/sengar/sustainable-edge-quality-intelligence/configs/scenarios")
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.5))
+
+    # Subplot 1: Delta C vs prevalence pi (approaching zero)
+    ev_a = ScenarioPipelineEvaluator.from_yaml(CONFIG_DIR / "precision_component.yaml")
+    ev_b = ScenarioPipelineEvaluator.from_yaml(CONFIG_DIR / "machined_metal.yaml")
+
+    pis = np.linspace(0.0, 0.002, 60)
+    dc_a_pis = []
+    dc_b_pis = []
+
+    for pi_v in pis:
+        c_a = dict(ev_a.cfg)
+        c_a["defect_prevalence"] = float(pi_v)
+        e_a = ScenarioPipelineEvaluator(c_a)
+        b0_a = e_a.evaluate_policy("B0_Raw", 0.88, 180.0, 150.0, edge_active=False)
+        b4_a = e_a.evaluate_policy("B4_Full_Cascade", 0.99, 12.0, 3.0, baseline_result=b0_a, edge_active=True)
+        dc_a_pis.append(b4_a.carbon.net_carbon_benefit_kgco2e)
+
+        c_b = dict(ev_b.cfg)
+        c_b["defect_prevalence"] = float(pi_v)
+        e_b = ScenarioPipelineEvaluator(c_b)
+        b0_b = e_b.evaluate_policy("B0_Raw", 0.88, 180.0, 150.0, edge_active=False)
+        b4_b = e_b.evaluate_policy("B4_Full_Cascade", 0.99, 12.0, 3.0, baseline_result=b0_b, edge_active=True)
+        dc_b_pis.append(b4_b.carbon.net_carbon_benefit_kgco2e)
+
+    ax1.plot(pis * 100, dc_a_pis, label="Scenario A: Precision", color="#1f77b4", linewidth=2.0)
+    ax1.plot(pis * 100, dc_b_pis, label="Scenario B: Machined Metal", color="#2ca02c", linewidth=2.0)
+    ax1.axhline(0.0, color="red", linestyle="--", linewidth=1.0, label="Break-Even ($\Delta C = 0$)")
+    ax1.axvspan(0.0, 0.0053, color="gray", alpha=0.15, label="Net-Negative Carbon Regime (A)")
+    ax1.set_xlabel("Defect Prevalence $\pi$ [%]")
+    ax1.set_ylabel(r"Net Carbon Benefit $\Delta C$ [$\mathrm{kgCO}_2\mathrm{e}$]")
+    ax1.set_title("Adverse Boundary: $\pi \to 0$ (Net-Negative Compute Regime)", fontsize=10.5)
+    ax1.grid(True, linestyle="--", alpha=0.5)
+    ax1.legend(fontsize=8)
+
+    # Subplot 2: Multi-view inspection frames per part (n_f in [1, 10])
+    n_fs = np.linspace(1.0, 10.0, 19)
+    dc_a_nfs = []
+    dc_b_nfs = []
+
+    for nf_v in n_fs:
+        c_a = dict(ev_a.cfg)
+        c_a["frames_per_part"] = float(nf_v)
+        e_a = ScenarioPipelineEvaluator(c_a)
+        b0_a = e_a.evaluate_policy("B0_Raw", 0.88, 180.0, 150.0, edge_active=False)
+        b4_a = e_a.evaluate_policy("B4_Full_Cascade", 0.99, 12.0, 3.0, baseline_result=b0_a, edge_active=True)
+        dc_a_nfs.append(b4_a.carbon.net_carbon_benefit_kgco2e)
+
+        c_b = dict(ev_b.cfg)
+        c_b["frames_per_part"] = float(nf_v)
+        e_b = ScenarioPipelineEvaluator(c_b)
+        b0_b = e_b.evaluate_policy("B0_Raw", 0.88, 180.0, 150.0, edge_active=False)
+        b4_b = e_b.evaluate_policy("B4_Full_Cascade", 0.99, 12.0, 3.0, baseline_result=b0_b, edge_active=True)
+        dc_b_nfs.append(b4_b.carbon.net_carbon_benefit_kgco2e)
+
+    ax2.plot(n_fs, dc_a_nfs, label="Scenario A: Precision", color="#1f77b4", linewidth=2.0)
+    ax2.plot(n_fs, dc_b_nfs, label="Scenario B: Machined Metal", color="#2ca02c", linewidth=2.0)
+    ax2.set_xlabel("Frames per Part $n_f$ [multi-angle inspection]")
+    ax2.set_ylabel(r"Net Carbon Benefit $\Delta C$ [$\mathrm{kgCO}_2\mathrm{e}$]")
+    ax2.set_title("Adverse Boundary: Multi-View Inspection Overhead ($n_f$)", fontsize=10.5)
+    ax2.grid(True, linestyle="--", alpha=0.5)
+    ax2.legend(fontsize=8)
+
+    plt.tight_layout()
+    save_fig(fig, "fig8_adverse_sensitivity_sweeps")
+
 def main():
     print("=== Step 09: Generating Publication Vector Figures ===")
     plot_fig1_sankey_flow()
@@ -322,7 +441,9 @@ def main():
     plot_fig4_break_even()
     plot_fig5_tornado()
     plot_fig6_sqi_radar()
-    print("Step 09 completed successfully. 6 publication figures generated.\n")
+    plot_fig7_waterfall()
+    plot_fig8_adverse_sensitivity()
+    print("Step 09 completed successfully. 8 publication figures generated.\n")
 
 
 if __name__ == "__main__":

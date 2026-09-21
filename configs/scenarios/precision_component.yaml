@@ -1,17 +1,19 @@
-name: "precision_component"
-description: "High-volume lightweight sensor housing where operator review and compute energy dominate"
+name: precision_component
+description: High-volume lightweight sensor housing where operator review and compute
+  energy dominate
 functional_unit_units: 1000
-defect_prevalence: 0.040
+defect_prevalence: 0.04
 defect_distribution:
-  class_a_reworkable: 0.70
+  class_a_reworkable: 0.7
   class_b_scrap_prone: 0.25
   class_c_escape_sensitive: 0.05
 part_mass_kg: 0.015
-material_carbon_factor_kgco2e_per_kg: 3.50
-material_recovery_fraction: 0.40
+material_carbon_factor_kgco2e_per_kg: 3.5
+material_recovery_fraction: 0.4
 rework_energy_kwh_per_unit: 0.05
 escape_carbon_penalty_kgco2e: 12.0
-base_reworkability: 0.90
+base_reworkability: 0.9
 reworkability_decay_per_sec: 0.15
 sampling_rate_fps: 30.0
 edge_energy_kwh_per_1k: 0.171
+frames_per_part: 1.0

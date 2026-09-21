@@ -3,7 +3,7 @@ Unified pipeline evaluator for edge quality inspection and sustainability accoun
 Coordinates intervention, material, energy, workload, carbon, and SQI engines.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Any
 from pathlib import Path
 import yaml
@@ -26,6 +26,7 @@ class PolicyEvaluationResult:
     energy: EnergyOutcomes
     carbon: CarbonOutcomes
     sqi: SQIEvaluation
+    waterfall: Dict[str, float] = field(default_factory=dict)
 
 
 class ScenarioPipelineEvaluator:
@@ -33,6 +34,7 @@ class ScenarioPipelineEvaluator:
         self.cfg = scenario_config
         self.name = scenario_config["name"]
         self.n_units = int(scenario_config.get("functional_unit_units", 1000))
+        self.n_f = float(scenario_config.get("frames_per_part", 1.0))
         self.pi = float(scenario_config["defect_prevalence"])
         self.total_defects = self.n_units * self.pi
 
@@ -51,12 +53,18 @@ class ScenarioPipelineEvaluator:
         self.p_station = float(scenario_config.get("workstation_power_w", 85.0))
         self.mu = float(scenario_config.get("service_rate_mu", 60.0))
         self.t_review = float(scenario_config.get("review_duration_seconds", 30.0))
+        self.defect_dist = scenario_config.get("defect_distribution", {
+            "class_a_reworkable": 0.70,
+            "class_b_scrap_prone": 0.25,
+            "class_c_escape_sensitive": 0.05,
+        })
 
         # Initialize engines
         self.interv_engine = QualityInterventionModel(
             base_reworkability=self.q0,
             reworkability_decay_per_sec=self.beta,
             sampling_rate_fps=self.fps,
+            defect_distribution=self.defect_dist,
         )
         self.mat_engine = MaterialAccountingEngine(
             part_mass_kg=self.m_kg, recovery_fraction=self.eta
@@ -72,6 +80,7 @@ class ScenarioPipelineEvaluator:
             review_workstation_power_w=self.p_station,
             rework_energy_kwh_per_unit=self.e_rw,
             functional_unit_units=self.n_units,
+            frames_per_part=self.n_f,
         )
         self.carbon_engine = CarbonAccountingEngine(
             material_carbon_factor_kgco2e_per_kg=self.ef_mat,
@@ -94,11 +103,14 @@ class ScenarioPipelineEvaluator:
         delay_frames: float,
         baseline_result: PolicyEvaluationResult = None,
         edge_active: bool = True,
+        class_specific: bool = False,
     ) -> PolicyEvaluationResult:
         interv = self.interv_engine.evaluate(
             total_defects=self.total_defects,
             recall=recall,
             delay_frames=delay_frames,
+            defect_distribution=self.defect_dist,
+            class_specific=class_specific,
         )
 
         base_mat_loss = baseline_result.material.net_loss_kg if baseline_result else None
@@ -113,14 +125,26 @@ class ScenarioPipelineEvaluator:
             n_rework=interv.n_rework,
             baseline_total_kwh=base_energy_tot,
             edge_active=edge_active,
+            frames_per_part=self.n_f,
         )
 
         base_carbon_tot = baseline_result.carbon.total_carbon_kgco2e if baseline_result else None
+        base_rw_kwh = baseline_result.energy.rework_kwh if baseline_result else None
+        base_rev_kwh = baseline_result.energy.human_review_kwh if baseline_result else None
+        base_n_esc = baseline_result.intervention.n_escape if baseline_result else None
+
         carbon = self.carbon_engine.evaluate(
             net_material_loss_kg=mat.net_loss_kg,
             total_energy_kwh=energy.total_energy_kwh,
             n_escape=interv.n_escape,
             baseline_carbon_kgco2e=base_carbon_tot,
+            baseline_material_loss_kg=base_mat_loss,
+            baseline_rework_kwh=base_rw_kwh,
+            baseline_review_kwh=base_rev_kwh,
+            current_rework_kwh=energy.rework_kwh,
+            current_review_kwh=energy.human_review_kwh,
+            current_edge_kwh=energy.edge_compute_kwh,
+            baseline_n_escape=base_n_esc,
         )
 
         if baseline_result:
@@ -155,4 +179,5 @@ class ScenarioPipelineEvaluator:
             energy=energy,
             carbon=carbon,
             sqi=sqi_res,
+            waterfall=carbon.waterfall_components,
         )
