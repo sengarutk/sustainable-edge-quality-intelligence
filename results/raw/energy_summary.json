@@ -6,44 +6,44 @@
   "calibrated_continuous_fps": 30.0,
   "stages": {
     "BASELINE_IDLE": {
-      "p_total_mean_w": 9.33,
+      "p_total_mean_w": 11.42,
       "p_active_mean_w": 0.0,
-      "duration_s": 2.9959375039907172,
+      "duration_s": 2.9994089439860545,
       "e_frame_wh": 0.0,
       "e_edge_kwh_per_1k": 0.0
     },
     "STAGE_MODEL_INFER": {
-      "p_total_mean_w": 36.45,
-      "p_active_mean_w": 27.12,
-      "duration_s": 0.2386,
-      "fps": 1257.3,
+      "p_total_mean_w": 31.02,
+      "p_active_mean_w": 19.6,
+      "duration_s": 0.2521,
+      "fps": 1190.0,
       "e_frame_wh": 0.1112,
       "e_edge_kwh_per_1k": 0.1112,
       "joules_per_frame": 400.1
     },
     "STAGE_MODEL_CCT": {
-      "p_total_mean_w": 57.01,
-      "p_active_mean_w": 47.68,
-      "duration_s": 0.1988,
-      "fps": 1509.3,
+      "p_total_mean_w": 52.28,
+      "p_active_mean_w": 40.86,
+      "duration_s": 0.2706,
+      "fps": 1108.8,
       "e_frame_wh": 0.1368,
       "e_edge_kwh_per_1k": 0.1368,
       "joules_per_frame": 492.5
     },
     "STAGE_MODEL_POLICY": {
-      "p_total_mean_w": 57.85,
-      "p_active_mean_w": 48.52,
-      "duration_s": 0.2284,
-      "fps": 1313.7,
+      "p_total_mean_w": 57.01,
+      "p_active_mean_w": 45.59,
+      "duration_s": 0.2559,
+      "fps": 1172.2,
       "e_frame_wh": 0.1539,
       "e_edge_kwh_per_1k": 0.1539,
       "joules_per_frame": 554.0
     },
     "STAGE_FULL_PIPELINE": {
-      "p_total_mean_w": 21.98,
-      "p_active_mean_w": 12.65,
-      "duration_s": 2.2638,
-      "fps": 132.5,
+      "p_total_mean_w": 24.5,
+      "p_active_mean_w": 13.08,
+      "duration_s": 2.3364,
+      "fps": 128.4,
       "e_frame_wh": 0.171,
       "e_edge_kwh_per_1k": 0.171,
       "joules_per_frame": 615.6

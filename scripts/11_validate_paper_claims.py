@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Step 11: Validate paper claims, check numerical assertions, and generate LaTeX macros.
-Exports results/paper_b_generated_metrics.tex and paper/paper_b_generated_metrics.tex.
+Natively exports synchronized results/paper_b_generated_metrics.tex and paper/paper_b_generated_metrics.tex.
 """
 
 from pathlib import Path
@@ -13,6 +13,18 @@ PROCESSED_DIR = PROJECT_ROOT / "results" / "processed"
 RAW_RESULTS_DIR = PROJECT_ROOT / "results" / "raw"
 RESULTS_DIR = PROJECT_ROOT / "results"
 PAPER_DIR = PROJECT_ROOT / "paper"
+
+
+def export_metrics_dual(tex_content: str):
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    PAPER_DIR.mkdir(parents=True, exist_ok=True)
+    
+    p_res = RESULTS_DIR / "paper_b_generated_metrics.tex"
+    p_pap = PAPER_DIR / "paper_b_generated_metrics.tex"
+    
+    p_res.write_text(tex_content, encoding="utf-8")
+    p_pap.write_text(tex_content, encoding="utf-8")
+    print(f">> NATIVE SYNC: Exported verified macros to {p_res} and {p_pap}")
 
 
 def main():
@@ -90,15 +102,7 @@ def main():
         f"\\providecommand{{\\MonteCarloDraws}}{{10{{,}}000}}",
     ]
 
-    tex_content = "\n".join(tex_macros) + "\n"
-    out_tex = RESULTS_DIR / "paper_b_generated_metrics.tex"
-    out_tex.write_text(tex_content, encoding="utf-8")
-
-    PAPER_DIR.mkdir(parents=True, exist_ok=True)
-    paper_tex = PAPER_DIR / "paper_b_generated_metrics.tex"
-    paper_tex.write_text(tex_content, encoding="utf-8")
-
-    print(f"Exported verified macros to {out_tex} and {paper_tex}")
+    export_metrics_dual("\n".join(tex_macros) + "\n")
     print("Step 11 completed successfully.\n")
 
 
