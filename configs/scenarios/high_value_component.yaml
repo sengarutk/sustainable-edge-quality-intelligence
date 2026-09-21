@@ -1,0 +1,16 @@
+name: "high_value_component"
+description: "High-embodied-energy battery/power module where avoiding quality escapes dominates compute cost"
+functional_unit_units: 1000
+defect_prevalence: 0.015
+defect_distribution:
+  class_a_reworkable: 0.40
+  class_b_scrap_prone: 0.40
+  class_c_escape_sensitive: 0.20
+part_mass_kg: 14.500
+material_carbon_factor_kgco2e_per_kg: 22.50
+material_recovery_fraction: 0.60
+rework_energy_kwh_per_unit: 5.50
+escape_carbon_penalty_kgco2e: 450.0
+base_reworkability: 0.70
+reworkability_decay_per_sec: 0.25
+sampling_rate_fps: 30.0

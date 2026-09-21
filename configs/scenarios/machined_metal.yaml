@@ -1,0 +1,16 @@
+name: "machined_metal"
+description: "Medium-volume structural CNC component highlighting scrap-to-rework shift and circular recovery"
+functional_unit_units: 1000
+defect_prevalence: 0.030
+defect_distribution:
+  class_a_reworkable: 0.60
+  class_b_scrap_prone: 0.35
+  class_c_escape_sensitive: 0.05
+part_mass_kg: 1.250
+material_carbon_factor_kgco2e_per_kg: 8.24
+material_recovery_fraction: 0.85
+rework_energy_kwh_per_unit: 1.80
+escape_carbon_penalty_kgco2e: 65.0
+base_reworkability: 0.85
+reworkability_decay_per_sec: 0.20
+sampling_rate_fps: 30.0

@@ -1,0 +1,16 @@
+policy,scenario,false_alerts_per_hr,nuisance_realerts_per_hr,actionable_recall,delay_frames,review_arrivals_per_hr,queue_utilization_rho,source_commit
+B0_Raw,precision_component,180.0,180.0,1.0,0.0,180.0,3.0,16f8471
+B1_Quantile99,precision_component,90.0,85.0,0.94,0.0,90.0,1.5,16f8471
+B2_CCT,precision_component,35.0,30.0,0.96,0.0,35.0,0.58,16f8471
+B3_CCT_kofN,precision_component,15.0,15.0,0.98,3.0,15.0,0.25,16f8471
+B4_Full_Cascade,precision_component,12.0,12.0,0.99,3.0,12.0,0.2,16f8471
+B0_Raw,machined_metal,180.0,180.0,1.0,0.0,180.0,3.0,16f8471
+B1_Quantile99,machined_metal,90.0,85.0,0.94,0.0,90.0,1.5,16f8471
+B2_CCT,machined_metal,35.0,30.0,0.96,0.0,35.0,0.58,16f8471
+B3_CCT_kofN,machined_metal,15.0,15.0,0.98,3.0,15.0,0.25,16f8471
+B4_Full_Cascade,machined_metal,12.0,12.0,0.99,3.0,12.0,0.2,16f8471
+B0_Raw,high_value_component,180.0,180.0,1.0,0.0,180.0,3.0,16f8471
+B1_Quantile99,high_value_component,90.0,85.0,0.94,0.0,90.0,1.5,16f8471
+B2_CCT,high_value_component,35.0,30.0,0.96,0.0,35.0,0.58,16f8471
+B3_CCT_kofN,high_value_component,15.0,15.0,0.98,3.0,15.0,0.25,16f8471
+B4_Full_Cascade,high_value_component,12.0,12.0,0.99,3.0,12.0,0.2,16f8471

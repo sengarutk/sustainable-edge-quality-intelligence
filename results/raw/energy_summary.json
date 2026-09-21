@@ -1,0 +1,47 @@
+{
+  "device": "cuda:0",
+  "device_name": "NVIDIA GeForce RTX 4050 Laptop GPU",
+  "cycles": 300,
+  "warmup": 50,
+  "stages": {
+    "BASELINE_IDLE": {
+      "p_total_mean_w": 10.191655555555556,
+      "p_active_mean_w": 0.0,
+      "duration_s": 2.995783998980187,
+      "e_frame_wh": 0.0,
+      "e_edge_kwh_per_1k": 0.0
+    },
+    "STAGE_MODEL_INFER": {
+      "p_total_mean_w": 28.583,
+      "p_active_mean_w": 18.391,
+      "duration_s": 0.2509,
+      "fps": 1195.91,
+      "e_frame_wh": 4.493481077415561e-06,
+      "e_edge_kwh_per_1k": 4.493481077415561e-06
+    },
+    "STAGE_MODEL_CCT": {
+      "p_total_mean_w": 49.357,
+      "p_active_mean_w": 39.166,
+      "duration_s": 0.2285,
+      "fps": 1313.1,
+      "e_frame_wh": 8.311653955932858e-06,
+      "e_edge_kwh_per_1k": 8.311653955932858e-06
+    },
+    "STAGE_MODEL_POLICY": {
+      "p_total_mean_w": 64.48,
+      "p_active_mean_w": 54.288,
+      "duration_s": 0.2159,
+      "fps": 1389.37,
+      "e_frame_wh": 1.0687961391737617e-05,
+      "e_edge_kwh_per_1k": 1.0687961391737617e-05
+    },
+    "STAGE_FULL_PIPELINE": {
+      "p_total_mean_w": 9.626,
+      "p_active_mean_w": 3.617,
+      "duration_s": 6.8676,
+      "fps": 43.68,
+      "e_frame_wh": 2.2551309184910023e-05,
+      "e_edge_kwh_per_1k": 2.2551309184910023e-05
+    }
+  }
+}

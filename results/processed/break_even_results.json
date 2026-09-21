@@ -1,0 +1,26 @@
+[
+  {
+    "scenario": "precision_component",
+    "pi_star": 1.1078377396630613e-08,
+    "e_edge_star_kwh_per_1k": 126.37339897415399,
+    "d_star_frames": null,
+    "d_star_seconds": null,
+    "gamma_star": null
+  },
+  {
+    "scenario": "machined_metal",
+    "pi_star": 2.07356656722943e-09,
+    "e_edge_star_kwh_per_1k": 506.3750068878229,
+    "d_star_frames": null,
+    "d_star_seconds": null,
+    "gamma_star": 53.489228656125526
+  },
+  {
+    "scenario": "high_value_component",
+    "pi_star": 3.487972798544056e-10,
+    "e_edge_star_kwh_per_1k": 1505.1733905209169,
+    "d_star_frames": 42.56100675790107,
+    "d_star_seconds": 1.418700225263369,
+    "gamma_star": null
+  }
+]

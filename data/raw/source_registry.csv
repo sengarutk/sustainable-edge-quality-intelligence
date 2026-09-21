@@ -1,0 +1,38 @@
+parameter,symbol,scenario,low,central,high,unit,source_type,citation_key,classification,notes
+edge_active_power,P_active,all,5.0,8.5,14.0,W,hardware_measurement,this_study,Measured by this study,RTX 4050 laptop GPU active compute power over baseline idle
+edge_frame_energy,e_frame,all,0.010,0.025,0.050,Wh/frame,hardware_measurement,this_study,Measured by this study,Integrated active energy per frame across 300 cycles
+review_workstation_power,P_station,all,65.0,85.0,120.0,W,hardware_measurement,this_study,Measured by this study,Industrial inspection workstation display and host power
+baseline_false_alert_rate,lambda_B0,all,150.0,180.0,220.0,alerts/hr,derived_paper_a,paper_a_2026,Derived from Paper A,Raw uncalibrated threshold false alert arrival rate
+cascade_false_alert_rate,lambda_B4,all,8.0,12.0,18.0,alerts/hr,derived_paper_a,paper_a_2026,Derived from Paper A,Full 7-stage cascade sustained alert rate
+policy_detection_delay,d,all,2.0,3.0,5.0,frames,derived_paper_a,paper_a_2026,Derived from Paper A,Temporal persistence window detection delay
+review_service_rate,mu,all,45.0,60.0,75.0,reviews/hr,derived_paper_a,paper_a_2026,Derived from Paper A,Single operator manual verification service capacity
+actionable_defect_recall,r_p,all,0.92,0.99,1.00,fraction,benchmark_derived,flagship1_2026,Benchmark-derived,Actionable recall for PatchCore under CCT threshold
+cost_calibrated_threshold,cct_cwe_r10,all,0.05,0.18,0.35,score,benchmark_derived,flagship1_2026,Benchmark-derived,Cost-weighted error operating threshold at r10
+model_forward_latency,t_model,all,8.5,10.94,14.0,ms,benchmark_derived,flagship1_2026,Benchmark-derived,P50 forward pass latency for ResNet-18 PatchCore
+part_mass,m,precision_component,0.010,0.015,0.020,kg,scenario_spec,industry_oem,Scenario assumption,Lightweight plastic and aluminum sensor housing
+part_mass,m,machined_metal,1.00,1.25,1.60,kg,scenario_spec,industry_oem,Scenario assumption,Structural CNC machined aluminum bracket
+part_mass,m,high_value_component,12.0,14.5,18.0,kg,scenario_spec,industry_oem,Scenario assumption,High-embodied energy power electronics battery module
+defect_prevalence,pi,precision_component,0.025,0.040,0.060,fraction,scenario_spec,iso_2859,Scenario assumption,Base defective parts ratio per 1000 inspected units
+defect_prevalence,pi,machined_metal,0.015,0.030,0.050,fraction,scenario_spec,iso_2859,Scenario assumption,Base defective parts ratio per 1000 inspected units
+defect_prevalence,pi,high_value_component,0.008,0.015,0.025,fraction,scenario_spec,iso_2859,Scenario assumption,Base defective parts ratio per 1000 inspected units
+material_carbon_factor,EF_mat,precision_component,2.8,3.5,4.5,kgCO2e/kg,ecoinvent,ecoinvent_v3,Literature-derived,Embodied carbon for polymer and light alloy blend
+material_carbon_factor,EF_mat,machined_metal,6.5,8.24,10.5,kgCO2e/kg,ecoinvent,ecoinvent_v3,Literature-derived,Embodied carbon for primary wrought aluminum billet
+material_carbon_factor,EF_mat,high_value_component,18.0,22.5,28.0,kgCO2e/kg,ecoinvent,ecoinvent_v3,Literature-derived,Embodied carbon for battery cell and copper busbar assembly
+material_recovery_fraction,eta,precision_component,0.30,0.40,0.50,fraction,circular_economy,ellen_macarthur_2023,Scenario assumption,Post-consumer scrap remelting and recycling efficiency
+material_recovery_fraction,eta,machined_metal,0.75,0.85,0.92,fraction,circular_economy,ellen_macarthur_2023,Scenario assumption,High-grade swarf circular recovery efficiency
+material_recovery_fraction,eta,high_value_component,0.45,0.60,0.75,fraction,circular_economy,ellen_macarthur_2023,Scenario assumption,Complex multi-material module recycling yield
+rework_energy_per_unit,e_rw,precision_component,0.03,0.05,0.08,kWh/unit,lifecycle_data,gutowski_2017,Literature-derived,Thermal reflow and cleaning rework electrical energy
+rework_energy_per_unit,e_rw,machined_metal,1.20,1.80,2.50,kWh/unit,lifecycle_data,gutowski_2017,Literature-derived,CNC secondary re-pass and de-burring electrical energy
+rework_energy_per_unit,e_rw,high_value_component,3.80,5.50,7.50,kWh/unit,lifecycle_data,gutowski_2017,Literature-derived,Disassembly testing and cell re-bonding electrical energy
+escape_carbon_penalty,C_escape,precision_component,8.0,12.0,18.0,kgCO2e,lifecycle_data,wbcsh_ghg_2021,Literature-derived,Field failure return logistics and teardown penalty
+escape_carbon_penalty,C_escape,machined_metal,45.0,65.0,90.0,kgCO2e,lifecycle_data,wbcsh_ghg_2021,Literature-derived,Assembly rejection recall and freight carbon impact
+escape_carbon_penalty,C_escape,high_value_component,320.0,450.0,600.0,kgCO2e,lifecycle_data,wbcsh_ghg_2021,Literature-derived,Pack safety incident teardown and warranty replacement penalty
+grid_carbon_factor,gamma,all,0.350,0.417,0.520,kgCO2e/kWh,official_dataset,eea_eu27_2024,Official/public dataset,European Environment Agency EU-27 average electricity carbon intensity
+base_reworkability,q0,precision_component,0.80,0.90,0.95,fraction,domain_expert,quality_eng_2024,Scenario assumption,Initial rework success probability at zero delay
+base_reworkability,q0,machined_metal,0.75,0.85,0.92,fraction,domain_expert,quality_eng_2024,Scenario assumption,Initial rework success probability at zero delay
+base_reworkability,q0,high_value_component,0.60,0.70,0.80,fraction,domain_expert,quality_eng_2024,Scenario assumption,Initial rework success probability at zero delay
+reworkability_decay,beta,precision_component,0.10,0.15,0.22,s^-1,domain_expert,quality_eng_2024,Scenario assumption,Rework degradation coefficient per second of delay
+reworkability_decay,beta,machined_metal,0.12,0.20,0.28,s^-1,domain_expert,quality_eng_2024,Scenario assumption,Rework degradation coefficient per second of delay
+reworkability_decay,beta,high_value_component,0.18,0.25,0.35,s^-1,domain_expert,quality_eng_2024,Scenario assumption,Rework degradation coefficient per second of delay
+sampling_rate_fps,FPS,all,24.0,30.0,60.0,frames/s,vision_system,camera_specs,Scenario assumption,Optical edge sensor inspection frame capture rate
+review_duration_seconds,t_review,all,20.0,30.0,45.0,s,industrial_ergonomics,chaffin_2022,Literature-derived,Manual verification inspection time per candidate unit

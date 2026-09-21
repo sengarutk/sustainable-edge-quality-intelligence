@@ -1,0 +1,9 @@
+profiles:
+  balanced:
+    weights: {w_M: 0.25, w_E: 0.25, w_C: 0.25, w_H: 0.25}
+  material_priority:
+    weights: {w_M: 0.45, w_E: 0.15, w_C: 0.25, w_H: 0.15}
+  carbon_priority:
+    weights: {w_M: 0.15, w_E: 0.20, w_C: 0.50, w_H: 0.15}
+  human_centered:
+    weights: {w_M: 0.15, w_E: 0.15, w_C: 0.20, w_H: 0.50}
