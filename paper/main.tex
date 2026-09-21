@@ -243,7 +243,7 @@ C_{\text{escape}} &= N_{\text{escape}} \cdot C_{\text{esc}},
 \end{align}
 where $\gamma = 0.417$\,kgCO$_2$e/kWh is the official EU-27 average grid electricity carbon factor~\cite{eea2024greenhouse}, and $C_{\text{esc}}$ is the lifecycle carbon penalty of an escaped defective unit (field returns, warranty logistics, pack disassembly).
 
-The net greenhouse gas benefit relative to baseline decomposes into five additive operational waterfall drivers:
+The net greenhouse gas benefit relative to baseline decomposes into five additive operational waterfall drivers (visualized across scenarios in Fig.~\ref{fig:carbon_waterfall}):
 \begin{equation}
 \Delta C = \Delta C_{\text{mat}} + \Delta C_{\text{rw}} + \Delta C_{\text{rev}} - C_{\text{edge}} + \Delta C_{\text{esc}} \quad [\text{kgCO}_2\text{e}],
 \end{equation}
@@ -272,7 +272,7 @@ The scalar Multi-Profile Sustainability Quality Index (SQI) is evaluated as:
 \begin{equation}
 \text{SQI} = w_M S_M + w_E S_E + w_C S_C + w_H S_H,
 \end{equation}
-subject to $\sum w_i = 1.0$ and $w_i \ge 0$. Across four stakeholder priority profiles defined in our configuration ledger:
+subject to $\sum w_i = 1.0$ and $w_i \ge 0$ (profile geometries are contrasted in Fig.~\ref{fig:sqi_comparison}). Across four stakeholder priority profiles defined in our configuration ledger:
 \begin{itemize}
     \item \textbf{Balanced Profile:} $w = [0.25, 0.25, 0.25, 0.25]$
     \item \textbf{Material Priority Profile:} $w = [0.45, 0.15, 0.25, 0.15]$
@@ -370,13 +370,29 @@ Table~\ref{tab:break_even} and Fig.~\ref{fig:break_even_tornado} (left) present 
 \label{fig:sqi_comparison}
 \end{figure}
 
+\begin{figure*}[t]
+\centering
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\linewidth]{figures/fig7_waterfall_carbon_decomposition.pdf}
+\caption{Net carbon waterfall decomposition ($\Delta C = \Delta C_{\text{mat}} + \Delta C_{\text{rw}} + \Delta C_{\text{rev}} - C_{\text{edge}} + \Delta C_{\text{esc}}$) across Scenarios A, B, and C under Policy $B4$. Defect escape avoidance ($\Delta C_{\text{esc}}$) constitutes the primary positive contributor ($+48.0$\,kgCO$_2$e in A, $+208.0$\,kgCO$_2$e in B, $+1800.0$\,kgCO$_2$e in C), while continuous edge compute electricity ($-C_{\text{edge}} = -0.071$\,kgCO$_2$e) forms a persistent negative offset.}
+\label{fig:carbon_waterfall}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\includegraphics[width=\linewidth]{figures/fig8_adverse_sensitivity_sweeps.pdf}
+\caption{Adverse operational sensitivity sweeps showing empirical break-even frontiers: (Left) Net carbon $\Delta C$ as defect prevalence $\pi \to 0$, identifying net-negative carbon crossover at $\pi^\star = 0.0053\%$ ($0.053$ defects/1k parts) for Scenario A and $\pi^\star = 0.00093\%$ for Scenario B; (Right) Sensitivity to multi-view camera loading $n_f \in [1, 10]$ frames/part, illustrating linear compute energy escalation to $1.71$\,kWh/1k parts.}
+\label{fig:adverse_sensitivity}
+\end{minipage}
+\end{figure*}
+
 \section{Discussion, Negative Regimes \& Threats to Validity}
 \subsection{When Is Edge AI Not Green?}
-Our findings directly challenge the universal assumption that edge AI inspection is always environmentally beneficial. We identify three distinct operational regimes where edge AI is \textbf{net-negative}:
+Our findings directly challenge the universal assumption that edge AI inspection is always environmentally beneficial. As empirically demonstrated in Fig.~\ref{fig:adverse_sensitivity}, we identify three distinct operational regimes where edge AI is \textbf{net-negative}:
 \begin{enumerate}
-    \item \textbf{Ultraclean High-Volume Production ($\pi \to 0$):} In mature manufacturing lines operating under Six Sigma ($<3.4$\,defects per million), continuous AI vision systems consume continuous kilowatt-hours while intercepting virtually zero defects, producing a net carbon deficit ($\Delta C < 0$, e.g., $-0.071$\,kgCO$_2$e per $1{,}000$ units in Scenario~A).
+    \item \textbf{Ultraclean High-Volume Production ($\pi \to 0$):} In mature manufacturing lines operating under Six Sigma ($<3.4$\,defects per million), continuous AI vision systems consume continuous kilowatt-hours while intercepting virtually zero defects, producing a net carbon deficit ($\Delta C < 0$, e.g., $-0.071$\,kgCO$_2$e per $1{,}000$ units in Scenario~A, Fig.~\ref{fig:adverse_sensitivity} left).
     \item \textbf{Zero Field Escape Penalty Regimes ($C_{\text{esc}} = 0$):} When defect escapes carry zero downstream recall or teardown carbon penalty, the break-even threshold $\pi^\star_{\text{scrap}}$ shifts upward to $0.038$\% in Scenario~A ($0.38$ defects/1k parts), requiring compute emissions to be offset purely by embodied material savings.
-    \item \textbf{Multi-View Inspection Overhead ($n_f \ge 10$):} If complex part geometries require multi-angle camera inspection ($n_f = 10$ frames/part), continuous edge compute energy scales tenfold ($E_{\text{edge}} = 1.71$\,kWh/1k parts), narrowing the carbon payback margin.
+    \item \textbf{Multi-View Inspection Overhead ($n_f \ge 10$):} If complex part geometries require multi-angle camera inspection ($n_f = 10$ frames/part), continuous edge compute energy scales tenfold ($E_{\text{edge}} = 1.71$\,kWh/1k parts), narrowing the carbon payback margin (Fig.~\ref{fig:adverse_sensitivity} right).
     \item \textbf{High-Latency Filtering on Fast-Curing Lines ($d > d^\star$):} Naive temporal filters that accumulate frames over seconds degrade reworkability $q_{\text{rw}}(d)$ to zero, forcing parts into scrap while still consuming compute and rework electricity.
 \end{enumerate}
 
