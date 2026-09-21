@@ -40,6 +40,7 @@ class CarbonAccountingEngine:
         current_review_kwh: float = None,
         current_edge_kwh: float = None,
         baseline_n_escape: float = None,
+        baseline_edge_kwh: float = None,
     ) -> CarbonOutcomes:
         # Material embodied carbon loss
         c_mat = max(0.0, net_material_loss_kg) * self.ef_mat
@@ -67,8 +68,9 @@ class CarbonAccountingEngine:
             c_rev = current_review_kwh if current_review_kwh is not None else 0.0
             delta_c_rev = (b_rev - c_rev) * self.gamma
 
+            b_edge = baseline_edge_kwh if baseline_edge_kwh is not None else 0.0
             c_edge = current_edge_kwh if current_edge_kwh is not None else 0.0
-            c_edge_carbon = c_edge * self.gamma
+            delta_c_edge = (b_edge - c_edge) * self.gamma
 
             b_esc = baseline_n_escape if baseline_n_escape is not None else 0.0
             delta_c_esc = (b_esc - n_escape) * self.c_escape
@@ -77,11 +79,22 @@ class CarbonAccountingEngine:
                 "delta_c_mat": delta_c_mat,
                 "delta_c_rw": delta_c_rw,
                 "delta_c_rev": delta_c_rev,
-                "c_edge": -c_edge_carbon,
+                "c_edge": delta_c_edge,
                 "delta_c_esc": delta_c_esc,
                 "delta_c_total": benefit,
             }
 
+        # Assert additive closure residual
+        if waterfall:
+            wf_sum = (
+                waterfall.get("delta_c_mat", 0.0)
+                + waterfall.get("delta_c_rw", 0.0)
+                + waterfall.get("delta_c_rev", 0.0)
+                + waterfall.get("c_edge", 0.0)
+                + waterfall.get("delta_c_esc", 0.0)
+            )
+            res_val = benefit - wf_sum
+            assert abs(res_val) < 1e-3, f"Waterfall residual violation: sum={wf_sum}, net_benefit={benefit}"
         return CarbonOutcomes(
             material_embodied_carbon_kgco2e=c_mat,
             electricity_carbon_kgco2e=c_elec,

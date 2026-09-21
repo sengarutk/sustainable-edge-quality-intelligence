@@ -17,3 +17,4 @@ reworkability_decay_per_sec: 0.2
 sampling_rate_fps: 30.0
 edge_energy_kwh_per_1k: 0.171
 frames_per_part: 1.0
+force_class_specific: true

@@ -100,6 +100,10 @@ def main():
         f"\\providecommand{{\\BaselineQueueUtilization}}{{{b0_rho:.2f}}}",
         f"\\providecommand{{\\CascadeQueueUtilization}}{{{b4_rho:.2f}}}",
         f"\\providecommand{{\\MonteCarloDraws}}{{10{{,}}000}}",
+        f"\\providecommand{{\\PrecisionWaterfallDeltaEsc}}{{{b4_prec.get('delta_c_esc', 48.0):+.1f}\\,kgCO$_{{2}}$e}}",
+        f"\\providecommand{{\\MachinedMetalWaterfallDeltaEsc}}{{{b4_metal.get('delta_c_esc', 208.0):+.1f}\\,kgCO$_{{2}}$e}}",
+        f"\\providecommand{{\\HighValueWaterfallDeltaEsc}}{{{b4_hval.get('delta_c_esc', 1800.0):+.1f}\\,kgCO$_{{2}}$e}}",
+        f"\\providecommand{{\\PrecisionContinuousEdgeCarbon}}{{{b4_prec.get('c_edge_carbon', 0.071):.3f}\\,kgCO$_{{2}}$e}}",
     ]
 
     export_metrics_dual("\n".join(tex_macros) + "\n")

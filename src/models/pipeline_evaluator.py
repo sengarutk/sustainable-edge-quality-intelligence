@@ -103,7 +103,7 @@ class ScenarioPipelineEvaluator:
         delay_frames: float,
         baseline_result: PolicyEvaluationResult = None,
         edge_active: bool = True,
-        class_specific: bool = False,
+        class_specific: bool = True,
     ) -> PolicyEvaluationResult:
         interv = self.interv_engine.evaluate(
             total_defects=self.total_defects,
@@ -132,6 +132,7 @@ class ScenarioPipelineEvaluator:
         base_rw_kwh = baseline_result.energy.rework_kwh if baseline_result else None
         base_rev_kwh = baseline_result.energy.human_review_kwh if baseline_result else None
         base_n_esc = baseline_result.intervention.n_escape if baseline_result else None
+        base_edge_kwh = baseline_result.energy.edge_compute_kwh if baseline_result else None
 
         carbon = self.carbon_engine.evaluate(
             net_material_loss_kg=mat.net_loss_kg,
@@ -145,6 +146,7 @@ class ScenarioPipelineEvaluator:
             current_review_kwh=energy.human_review_kwh,
             current_edge_kwh=energy.edge_compute_kwh,
             baseline_n_escape=base_n_esc,
+            baseline_edge_kwh=base_edge_kwh,
         )
 
         if baseline_result:
