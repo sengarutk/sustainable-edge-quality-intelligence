@@ -17,7 +17,7 @@ class EnergyOutcomes:
 class EnergyAccountingEngine:
     def __init__(
         self,
-        edge_energy_kwh_per_1k: float = 0.000035,
+        edge_energy_kwh_per_1k: float = 0.171,
         review_workstation_power_w: float = 85.0,
         rework_energy_kwh_per_unit: float = 0.05,
         functional_unit_units: int = 1000,
@@ -34,7 +34,7 @@ class EnergyAccountingEngine:
         baseline_total_kwh: float = None,
         edge_active: bool = True,
     ) -> EnergyOutcomes:
-        # Edge compute energy
+        # Edge compute energy for functional unit (1,000 units)
         e_comp = self.e_edge if edge_active else 0.0
 
         # Human review workstation electrical energy [kWh] = Hours * Watts / 1000
@@ -47,7 +47,7 @@ class EnergyAccountingEngine:
 
         diff = 0.0
         if baseline_total_kwh is not None:
-            # Positive diff means savings (Baseline - Policy)
+            # Positive diff means energy saved; negative means net energy investment
             diff = baseline_total_kwh - total
 
         return EnergyOutcomes(

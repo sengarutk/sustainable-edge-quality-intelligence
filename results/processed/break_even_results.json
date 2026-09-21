@@ -1,26 +1,29 @@
 [
   {
     "scenario": "precision_component",
-    "pi_star": 1.1078377396630613e-08,
-    "e_edge_star_kwh_per_1k": 126.37339897415399,
+    "pi_star": 5.3491624672079105e-05,
+    "pi_star_scrap_only": 0.015884392513510388,
+    "e_edge_star_kwh_per_1k": 127.0476435784705,
     "d_star_frames": null,
     "d_star_seconds": null,
-    "gamma_star": null
+    "gamma_star": 32.323657495250856
   },
   {
     "scenario": "machined_metal",
-    "pi_star": 2.07356656722943e-09,
-    "e_edge_star_kwh_per_1k": 506.3750068878229,
+    "pi_star": 9.281973727418583e-06,
+    "pi_star_scrap_only": 0.0001467404379015417,
+    "e_edge_star_kwh_per_1k": 549.1240140820674,
     "d_star_frames": null,
     "d_star_seconds": null,
-    "gamma_star": 53.489228656125526
+    "gamma_star": 5.556305782883345
   },
   {
     "scenario": "high_value_component",
-    "pi_star": 3.487972798544056e-10,
-    "e_edge_star_kwh_per_1k": 1505.1733905209169,
-    "d_star_frames": 42.56100675790107,
-    "d_star_seconds": 1.418700225263369,
-    "gamma_star": null
+    "pi_star": 5.863939572090421e-07,
+    "pi_star_scrap_only": 9.933893367915253e-07,
+    "e_edge_star_kwh_per_1k": 4346.00806677991,
+    "d_star_frames": null,
+    "d_star_seconds": null,
+    "gamma_star": 33.1872877600699
   }
 ]

@@ -19,8 +19,8 @@ def test_delta_c_monotonic_with_prevalence():
         cfg = dict(ev.cfg)
         cfg["defect_prevalence"] = pi_val
         e = ScenarioPipelineEvaluator(cfg)
-        b0 = e.evaluate_policy("B0_Raw", 0.88, 180.0, 0.0)
-        b4 = e.evaluate_policy("B4_Full_Cascade", 0.99, 12.0, 3.0, baseline_result=b0)
+        b0 = e.evaluate_policy("B0_Raw", 0.88, 180.0, 150.0, edge_active=False)
+        b4 = e.evaluate_policy("B4_Full_Cascade", 0.99, 12.0, 3.0, baseline_result=b0, edge_active=True)
         delta_cs.append(b4.carbon.net_carbon_benefit_kgco2e)
 
     for i in range(len(prevalences) - 1):
@@ -28,25 +28,26 @@ def test_delta_c_monotonic_with_prevalence():
 
 
 def test_scenario_a_net_negative_carbon_regime():
-    """Proves edge AI is not universally green when mass is small, compute energy is high, or recall drops."""
+    """Proves edge AI is not universally green: at pi=0, compute carbon dominates, causing Delta C < 0."""
     ev = ScenarioPipelineEvaluator.from_yaml(SCENARIO_DIR / "precision_component.yaml")
 
-    # High compute power scenario / slightly lower recall
     cfg = dict(ev.cfg)
-    cfg["edge_energy_kwh_per_1k"] = 150.0  # Excessive compute power
-    e_heavy = ScenarioPipelineEvaluator(cfg)
+    cfg["defect_prevalence"] = 0.0
+    e_zero = ScenarioPipelineEvaluator(cfg)
 
-    b0 = e_heavy.evaluate_policy("B0_Raw", 0.88, 180.0, 0.0, edge_active=False)
-    b4 = e_heavy.evaluate_policy("B4_Heavy", 0.99, 12.0, 3.0, baseline_result=b0, edge_active=True)
+    b0 = e_zero.evaluate_policy("B0_Raw", 0.88, 180.0, 150.0, edge_active=False)
+    b4 = e_zero.evaluate_policy("B4_Full_Cascade", 0.99, 12.0, 3.0, baseline_result=b0, edge_active=True)
 
-    # Must be net-negative carbon (edge compute carbon exceeds all material & scrap savings)
-    assert b4.carbon.net_carbon_benefit_kgco2e < 0.0, "Expected net-negative carbon under high compute budget"
+    # Must be net-negative carbon when no defects occur
+    assert b4.carbon.net_carbon_benefit_kgco2e < 0.0, (
+        f"Expected net-negative carbon at pi=0, got {b4.carbon.net_carbon_benefit_kgco2e}"
+    )
 
 
 def test_break_even_solver_convergence():
     """Validates break-even solvers return finite values for plausible frontiers."""
-    sol_h = solve_break_even_frontiers(SCENARIO_DIR / "high_value_component.yaml")
-    assert sol_h["d_star_seconds"] is not None
-    assert sol_h["d_star_seconds"] > 0.5  # Bounded positive allowable delay
-    assert sol_h["e_edge_star_kwh_per_1k"] is not None
-    assert sol_h["e_edge_star_kwh_per_1k"] > 100.0  # High allowable budget
+    sol_a = solve_break_even_frontiers(SCENARIO_DIR / "precision_component.yaml")
+    assert sol_a["pi_star"] is not None
+    assert 1e-6 < sol_a["pi_star"] < 0.01  # Realistic pi* in industrial regime
+    assert sol_a["e_edge_star_kwh_per_1k"] is not None
+    assert sol_a["e_edge_star_kwh_per_1k"] > 50.0

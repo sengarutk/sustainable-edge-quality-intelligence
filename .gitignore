@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.class
+.pytest_cache/
+*.egg-info/
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out

@@ -32,11 +32,10 @@ def run_tornado_sensitivity(
 ) -> pd.DataFrame:
     evaluator = ScenarioPipelineEvaluator.from_yaml(scenario_path)
 
-    # Policy specs
-    baseline_policy = ("B0_Raw", 0.88, 180.0, 0.0)
+    # Baseline policy: B0_Raw with late detection
+    baseline_policy = ("B0_Raw", 0.88, 180.0, 150.0)
     eval_policy = ("B4_Full_Cascade", 0.99, 12.0, 3.0)
 
-    # Baseline run
     b0_base = evaluator.evaluate_policy(*baseline_policy, edge_active=False)
     b4_base = evaluator.evaluate_policy(*eval_policy, baseline_result=b0_base, edge_active=True)
     delta_c_nominal = b4_base.carbon.net_carbon_benefit_kgco2e

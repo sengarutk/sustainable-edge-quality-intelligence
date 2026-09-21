@@ -45,14 +45,14 @@ class ScenarioPipelineEvaluator:
         self.beta = float(scenario_config["reworkability_decay_per_sec"])
         self.fps = float(scenario_config.get("sampling_rate_fps", 30.0))
 
-        # Default hardware / external parameters
+        # Calibrated default parameters
         self.gamma = float(scenario_config.get("grid_carbon_factor", 0.417))
-        self.e_edge = float(scenario_config.get("edge_energy_kwh_per_1k", 0.000035))
+        self.e_edge = float(scenario_config.get("edge_energy_kwh_per_1k", 0.171))
         self.p_station = float(scenario_config.get("workstation_power_w", 85.0))
         self.mu = float(scenario_config.get("service_rate_mu", 60.0))
         self.t_review = float(scenario_config.get("review_duration_seconds", 30.0))
 
-        # Engines
+        # Initialize engines
         self.interv_engine = QualityInterventionModel(
             base_reworkability=self.q0,
             reworkability_decay_per_sec=self.beta,
@@ -135,7 +135,6 @@ class ScenarioPipelineEvaluator:
                 h_baseline_hours=base_work_hrs,
             )
         else:
-            # Baseline policy itself has 0 delta and 0 SQI
             sqi_res = self.sqi_engine.evaluate(
                 delta_m=0.0,
                 m_baseline_loss=mat.net_loss_kg,

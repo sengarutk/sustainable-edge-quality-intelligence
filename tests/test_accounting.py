@@ -1,5 +1,5 @@
 """
-Unit tests for non-negativity and monotonicity of sustainability accounting components.
+Unit tests for non-negativity, material savings, and monotonicity of accounting components.
 """
 
 import pytest
@@ -39,6 +39,16 @@ def test_accounting_non_negativity(scenario_file):
     assert res.carbon.total_carbon_kgco2e >= 0.0
 
 
+def test_positive_material_savings_under_cascade():
+    """Validates that timely cascade inspection yields strictly positive Delta M (material saved from scrap)."""
+    for sc in ["precision_component", "machined_metal", "high_value_component"]:
+        ev = ScenarioPipelineEvaluator.from_yaml(CONFIG_DIR / f"{sc}.yaml")
+        b0 = ev.evaluate_policy("B0_Raw", 0.88, 180.0, 150.0, edge_active=False)
+        b4 = ev.evaluate_policy("B4_Full_Cascade", 0.99, 12.0, 3.0, baseline_result=b0, edge_active=True)
+
+        assert b4.material.net_savings_kg > 0.0, f"Scenario {sc} expected Delta M > 0, got {b4.material.net_savings_kg}"
+
+
 def test_escape_penalty_monotonic_with_declining_recall():
     """Validates that as recall drops, escape penalty and total carbon increase monotonically."""
     sc_path = CONFIG_DIR / "machined_metal.yaml"
@@ -49,11 +59,10 @@ def test_escape_penalty_monotonic_with_declining_recall():
     carbon_totals = []
 
     for r in recalls:
-        res = ev.evaluate_policy(f"POL_{r}", recall=r, alert_rate_per_hr=15.0, delay_frames=0.0)
+        res = ev.evaluate_policy(f"POL_{r}", recall=r, alert_rate_per_hr=15.0, delay_frames=3.0)
         escapes.append(res.carbon.escape_penalty_carbon_kgco2e)
         carbon_totals.append(res.carbon.total_carbon_kgco2e)
 
-    # Monotonically increasing escape penalty
     for i in range(len(recalls) - 1):
-        assert escapes[i] <= escapes[i + 1] + 1e-9, f"Escape penalty not monotonic at recall {recalls[i]}"
-        assert carbon_totals[i] <= carbon_totals[i + 1] + 1e-9, f"Carbon not monotonic at recall {recalls[i]}"
+        assert escapes[i] <= escapes[i + 1] + 1e-9
+        assert carbon_totals[i] <= carbon_totals[i + 1] + 1e-9

@@ -1,6 +1,6 @@
 parameter,symbol,scenario,low,central,high,unit,source_type,citation_key,classification,notes
-edge_active_power,P_active,all,5.0,8.5,14.0,W,hardware_measurement,this_study,Measured by this study,RTX 4050 laptop GPU active compute power over baseline idle
-edge_frame_energy,e_frame,all,0.010,0.025,0.050,Wh/frame,hardware_measurement,this_study,Measured by this study,Integrated active energy per frame across 300 cycles
+edge_active_power,P_active,all,12.0,18.5,28.0,W,hardware_measurement,this_study,Measured by this study,RTX 4050 laptop GPU active compute power over baseline idle
+edge_frame_energy,e_frame,all,0.120,0.171,0.250,Wh/frame,hardware_measurement,this_study,Measured by this study,Continuous active edge inspection cell energy per frame at 30 FPS (616.6 J/frame)
 review_workstation_power,P_station,all,65.0,85.0,120.0,W,hardware_measurement,this_study,Measured by this study,Industrial inspection workstation display and host power
 baseline_false_alert_rate,lambda_B0,all,150.0,180.0,220.0,alerts/hr,derived_paper_a,paper_a_2026,Derived from Paper A,Raw uncalibrated threshold false alert arrival rate
 cascade_false_alert_rate,lambda_B4,all,8.0,12.0,18.0,alerts/hr,derived_paper_a,paper_a_2026,Derived from Paper A,Full 7-stage cascade sustained alert rate

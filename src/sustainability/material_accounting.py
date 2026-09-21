@@ -27,12 +27,13 @@ class MaterialAccountingEngine:
         recovered = gross * self.eta
         loss = gross * (1.0 - self.eta)
 
-        # Invariant check
+        # Invariant checks
         assert recovered <= gross + 1e-9, f"Recovery ({recovered}) exceeds gross ({gross})"
         assert loss >= -1e-9, f"Loss cannot be negative ({loss})"
 
         savings = 0.0
         if baseline_loss_kg is not None:
+            # Positive savings when current net material loss is less than baseline loss
             savings = baseline_loss_kg - loss
 
         return MaterialOutcomes(

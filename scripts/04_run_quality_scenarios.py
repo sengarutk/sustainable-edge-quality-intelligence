@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Step 4: Evaluate 5-Tier Policy Hierarchy (B0 to B4) across Scenarios A, B, and C.
+Calibrated with physical edge energy (0.171 kWh/1k) and late baseline discovery delay.
 """
 
 from pathlib import Path
@@ -15,9 +16,9 @@ OUTPUT_DIR = Path("/home/sengar/sustainable-edge-quality-intelligence/results/pr
 SCENARIOS = ["precision_component", "machined_metal", "high_value_component"]
 
 POLICY_TIERS = [
-    {"policy": "B0_Raw", "recall": 0.88, "fa_per_hr": 180.0, "delay_frames": 0.0, "edge_active": False},
-    {"policy": "B1_Quantile99", "recall": 0.92, "fa_per_hr": 90.0, "delay_frames": 0.0, "edge_active": True},
-    {"policy": "B2_CCT", "recall": 0.96, "fa_per_hr": 35.0, "delay_frames": 0.0, "edge_active": True},
+    {"policy": "B0_Raw", "recall": 0.88, "fa_per_hr": 180.0, "delay_frames": 150.0, "edge_active": False},
+    {"policy": "B1_Quantile99", "recall": 0.92, "fa_per_hr": 90.0, "delay_frames": 60.0, "edge_active": True},
+    {"policy": "B2_CCT", "recall": 0.96, "fa_per_hr": 35.0, "delay_frames": 30.0, "edge_active": True},
     {"policy": "B3_CCT_kofN", "recall": 0.98, "fa_per_hr": 15.0, "delay_frames": 3.0, "edge_active": True},
     {"policy": "B4_Full_Cascade", "recall": 0.99, "fa_per_hr": 12.0, "delay_frames": 3.0, "edge_active": True},
 ]
@@ -64,29 +65,29 @@ def main():
                 "alert_rate_per_hr": spec["fa_per_hr"],
                 "queue_rho": res.workload.queue_utilization_rho,
                 "is_overloaded": res.workload.is_overloaded,
-                "n_rework": res.intervention.n_rework,
-                "n_scrap": res.intervention.n_scrap,
-                "n_escape": res.intervention.n_escape,
-                "gross_scrap_kg": res.material.gross_scrap_kg,
-                "recovered_scrap_kg": res.material.recovered_scrap_kg,
-                "net_loss_kg": res.material.net_loss_kg,
-                "delta_m_kg": res.material.net_savings_kg,
-                "review_hours": res.workload.total_review_hours,
-                "delta_h_hours": res.workload.avoided_hours,
-                "edge_compute_kwh": res.energy.edge_compute_kwh,
-                "review_kwh": res.energy.human_review_kwh,
-                "rework_kwh": res.energy.rework_kwh,
-                "total_energy_kwh": res.energy.total_energy_kwh,
-                "delta_e_kwh": res.energy.net_energy_diff_kwh,
-                "mat_carbon_kgco2e": res.carbon.material_embodied_carbon_kgco2e,
-                "elec_carbon_kgco2e": res.carbon.electricity_carbon_kgco2e,
-                "escape_carbon_kgco2e": res.carbon.escape_penalty_carbon_kgco2e,
-                "total_carbon_kgco2e": res.carbon.total_carbon_kgco2e,
-                "delta_c_kgco2e": res.carbon.net_carbon_benefit_kgco2e,
-                "sqi_balanced": res.sqi.profile_scores.get("balanced", 0.0),
-                "sqi_material_priority": res.sqi.profile_scores.get("material_priority", 0.0),
-                "sqi_carbon_priority": res.sqi.profile_scores.get("carbon_priority", 0.0),
-                "sqi_human_centered": res.sqi.profile_scores.get("human_centered", 0.0),
+                "n_rework": round(res.intervention.n_rework, 3),
+                "n_scrap": round(res.intervention.n_scrap, 3),
+                "n_escape": round(res.intervention.n_escape, 3),
+                "gross_scrap_kg": round(res.material.gross_scrap_kg, 4),
+                "recovered_scrap_kg": round(res.material.recovered_scrap_kg, 4),
+                "net_loss_kg": round(res.material.net_loss_kg, 4),
+                "delta_m_kg": round(res.material.net_savings_kg, 4),
+                "review_hours": round(res.workload.total_review_hours, 5),
+                "delta_h_hours": round(res.workload.avoided_hours, 5),
+                "edge_compute_kwh": round(res.energy.edge_compute_kwh, 4),
+                "review_kwh": round(res.energy.human_review_kwh, 4),
+                "rework_kwh": round(res.energy.rework_kwh, 4),
+                "total_energy_kwh": round(res.energy.total_energy_kwh, 4),
+                "delta_e_kwh": round(res.energy.net_energy_diff_kwh, 4),
+                "mat_carbon_kgco2e": round(res.carbon.material_embodied_carbon_kgco2e, 3),
+                "elec_carbon_kgco2e": round(res.carbon.electricity_carbon_kgco2e, 3),
+                "escape_carbon_kgco2e": round(res.carbon.escape_penalty_carbon_kgco2e, 3),
+                "total_carbon_kgco2e": round(res.carbon.total_carbon_kgco2e, 3),
+                "delta_c_kgco2e": round(res.carbon.net_carbon_benefit_kgco2e, 3),
+                "sqi_balanced": round(res.sqi.profile_scores.get("balanced", 0.0), 3),
+                "sqi_material_priority": round(res.sqi.profile_scores.get("material_priority", 0.0), 3),
+                "sqi_carbon_priority": round(res.sqi.profile_scores.get("carbon_priority", 0.0), 3),
+                "sqi_human_centered": round(res.sqi.profile_scores.get("human_centered", 0.0), 3),
             }
             rows.append(record)
             json_records.append(record)

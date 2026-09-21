@@ -36,7 +36,7 @@ def run_monte_carlo_simulation(
     betas = draw_triangular(evaluator.beta, 0.8, 1.2)
     recalls_b0 = np.clip(draw_triangular(0.88, 0.95, 1.05), 0.80, 0.92)
     recalls_b4 = np.clip(draw_triangular(0.99, 0.98, 1.01), 0.95, 1.00)
-    delays = np.clip(draw_triangular(3.0, 0.6, 1.4), 1.0, 6.0)
+    delays_b4 = np.clip(draw_triangular(3.0, 0.6, 1.4), 1.0, 6.0)
 
     delta_ms = np.zeros(n_draws)
     delta_es = np.zeros(n_draws)
@@ -57,8 +57,8 @@ def run_monte_carlo_simulation(
         cfg["reworkability_decay_per_sec"] = betas[i]
 
         ev = ScenarioPipelineEvaluator(cfg)
-        b0 = ev.evaluate_policy("B0_Raw", recalls_b0[i], 180.0, 0.0, edge_active=False)
-        b4 = ev.evaluate_policy(policy_tier, recalls_b4[i], 12.0, delays[i], baseline_result=b0, edge_active=True)
+        b0 = ev.evaluate_policy("B0_Raw", recalls_b0[i], 180.0, 150.0, edge_active=False)
+        b4 = ev.evaluate_policy(policy_tier, recalls_b4[i], 12.0, delays_b4[i], baseline_result=b0, edge_active=True)
 
         delta_ms[i] = b4.material.net_savings_kg
         delta_es[i] = b4.energy.net_energy_diff_kwh

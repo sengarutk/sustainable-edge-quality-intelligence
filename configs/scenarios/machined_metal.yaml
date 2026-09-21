@@ -14,3 +14,4 @@ escape_carbon_penalty_kgco2e: 65.0
 base_reworkability: 0.85
 reworkability_decay_per_sec: 0.20
 sampling_rate_fps: 30.0
+edge_energy_kwh_per_1k: 0.171
