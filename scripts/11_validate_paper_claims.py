@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """
 Step 11: Validate paper claims, check numerical assertions, and generate LaTeX macros.
-Exports results/paper_b_generated_metrics.tex.
+Exports results/paper_b_generated_metrics.tex and paper/paper_b_generated_metrics.tex.
 """
 
 from pathlib import Path
 import json
 import pandas as pd
 
-PROCESSED_DIR = Path("/home/sengar/sustainable-edge-quality-intelligence/results/processed")
-RAW_RESULTS_DIR = Path("/home/sengar/sustainable-edge-quality-intelligence/results/raw")
-RESULTS_DIR = Path("/home/sengar/sustainable-edge-quality-intelligence/results")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROCESSED_DIR = PROJECT_ROOT / "results" / "processed"
+RAW_RESULTS_DIR = PROJECT_ROOT / "results" / "raw"
+RESULTS_DIR = PROJECT_ROOT / "results"
+PAPER_DIR = PROJECT_ROOT / "paper"
 
 
 def main():
@@ -88,11 +90,15 @@ def main():
         f"\\providecommand{{\\MonteCarloDraws}}{{10{{,}}000}}",
     ]
 
+    tex_content = "\n".join(tex_macros) + "\n"
     out_tex = RESULTS_DIR / "paper_b_generated_metrics.tex"
-    out_tex.write_text("\n".join(tex_macros) + "\n", encoding="utf-8")
-    paper_tex = Path("/home/sengar/sustainable-edge-quality-intelligence/paper/paper_b_generated_metrics.tex")
-    paper_tex.write_text("\n".join(tex_macros) + "\n", encoding="utf-8")
-    print(f"Exported verified macros to {out_tex}")
+    out_tex.write_text(tex_content, encoding="utf-8")
+
+    PAPER_DIR.mkdir(parents=True, exist_ok=True)
+    paper_tex = PAPER_DIR / "paper_b_generated_metrics.tex"
+    paper_tex.write_text(tex_content, encoding="utf-8")
+
+    print(f"Exported verified macros to {out_tex} and {paper_tex}")
     print("Step 11 completed successfully.\n")
 
 
