@@ -90,6 +90,8 @@ def main():
 
     out_tex = RESULTS_DIR / "paper_b_generated_metrics.tex"
     out_tex.write_text("\n".join(tex_macros) + "\n", encoding="utf-8")
+    paper_tex = Path("/home/sengar/sustainable-edge-quality-intelligence/paper/paper_b_generated_metrics.tex")
+    paper_tex.write_text("\n".join(tex_macros) + "\n", encoding="utf-8")
     print(f"Exported verified macros to {out_tex}")
     print("Step 11 completed successfully.\n")
 
