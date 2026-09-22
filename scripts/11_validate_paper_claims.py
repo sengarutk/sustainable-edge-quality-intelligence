@@ -74,10 +74,14 @@ def main():
     be_metal = df_be[df_be["scenario"] == "machined_metal"].iloc[0]
     be_hval = df_be[df_be["scenario"] == "high_value_component"].iloc[0]
 
-    esc_prec = b4_prec.get("delta_c_esc", 48.0)
-    esc_metal = b4_metal.get("delta_c_esc", 208.0)
-    esc_hval = b4_hval.get("delta_c_esc", 1800.0)
-    edge_carbon_prec = b4_prec.get("c_edge_carbon", 0.071)
+    assert not b4_prec.empty and "delta_c_esc" in b4_prec, "Strict governance fail: missing precision escape delta"
+    assert not b4_metal.empty and "delta_c_esc" in b4_metal, "Strict governance fail: missing metal escape delta"
+    assert not b4_hval.empty and "delta_c_esc" in b4_hval, "Strict governance fail: missing hval escape delta"
+    assert not b4_prec.empty and "c_edge_carbon" in b4_prec, "Strict governance fail: missing precision edge carbon"
+    esc_prec = float(b4_prec["delta_c_esc"])
+    esc_metal = float(b4_metal["delta_c_esc"])
+    esc_hval = float(b4_hval["delta_c_esc"])
+    edge_carbon_prec = float(b4_prec["c_edge_carbon"])
 
     tex_macros = [
         "% Auto-generated empirical macros for Paper B.",
