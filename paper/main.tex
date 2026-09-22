@@ -85,9 +85,9 @@ To ensure rigorous comparability across heterogeneous production environments, w
 \end{equation}
 The operational cadence is defined by an optical line-scan or matrix camera capture rate of $\text{FPS} = 30.0$\,frames/second. Thus, inspecting one functional unit spans an active inspection duration of:
 \begin{equation}
-T_{\text{FU}} = \frac{N}{\text{FPS}} = \frac{1{,}000}{30.0} = 33.33 \text{ seconds}.
+T_{\text{FU}} = \frac{N n_f}{\text{FPS}}, \quad \Theta = \frac{\text{FPS}}{n_f} \times 3{,}600 \text{ units/hr}.
 \end{equation}
-The corresponding line throughput is $\Theta = \text{FPS} \times 3{,}600 = 108{,}000$\,parts/hour.
+For the baseline single-view configuration ($n_f = 1.0$) at $\text{FPS} = 30.0$, $T_{\text{FU}} = 33.33$\,s and $\Theta = 108{,}000$\,parts/hour.
 
 The system boundary constitutes a gate-to-gate industrial inspection and rework cell, illustrated in Fig.~\ref{fig:sankey}. The boundary explicitly encompasses:
 \begin{enumerate}
@@ -303,7 +303,7 @@ To capture realistic operational behavior, five standardized execution pipeline 
 \subsection{Physical Power and Latency Observations}
 Fig.~\ref{fig:energy_latency} reports the physical power traces and calibrated frame energy metrics. Quiescent baseline idle power stabilized at $P_{\text{idle}} = \MeasuredGpuIdlePower$. During isolated tensor forward passes, active compute power averaged $P_{\text{active}} = 12.46$\,W at an unthrottled throughput of $\MeasuredInferenceFPS$\,FPS. When executing the full cascade logic, GPU utilization and memory bus activity drove active power to $P_{\text{active}} = 56.72$\,W. 
 
-When throttled to the line capture rate of $30.0$\,FPS with duty-cycled SQLite WAL spooling, the integrated active workcell power averaged $13.71$\,W, establishing an empirical continuous frame energy of $e_{\text{frame}} = \MeasuredFrameEnergyWh$ (\MeasuredFrameEnergyJoules), or $E_{\text{edge}} = \CalibratedEdgeEnergyKWh$ per $1{,}000$ inspected parts.
+When throttled to the line capture rate of $30.0$\,FPS with duty-cycled SQLite WAL spooling, the integrated duty-cycle-averaged RTX 4050 GPU-device power (polled via NVML at 100\,Hz host cadence; host platform/camera/storage power excluded from direct GPU telemetry term) averaged $13.71$\,W, establishing an empirical continuous frame energy of $e_{\text{frame}} = \MeasuredFrameEnergyWh$ (\MeasuredFrameEnergyJoules), or $E_{\text{edge}} = \CalibratedEdgeEnergyKWh$ per $1{,}000$ inspected parts.
 
 \input{tables/tab2_policy_hierarchy_sustainability.tex}
 
@@ -317,7 +317,7 @@ To evaluate policy performance under contrasting physical regimes, three represe
 \end{itemize}
 
 \subsection{Policy Hierarchy Progression ($B0 \to B4$)}
-Table~\ref{tab:policy_sustainability} and Fig.~\ref{fig:raw_outcomes} detail the sustainability outcomes across the 5-tier policy hierarchy:
+Table~\ref{tab:policy_sustainability} and Fig.~\ref{fig:raw_outcomes} detail the sustainability outcomes across the 5-tier policy hierarchy. Policies B0 through B4 are evaluated through a single unified simulation and accounting pipeline code path from raw anomaly scores through CCT calibration and temporal gating:
 \begin{enumerate}
     \item \textbf{B0 (Raw Baseline):} Uncalibrated thresholding with late end-of-line defect discovery ($d=150$\,frames / 5.0\,s). Due to late discovery, reworkability drops to $q_{\text{rw}} = 0.15$, condemning almost all intercepted defects to gross scrap ($29.92$\,units in A, $22.44$\,units in B, $11.22$\,units in C). In addition, raw false alarms spike to $180$\,alerts/hr, driving operator queue utilization to $\rho = 3.00$ (severe cognitive overload).
     \item \textbf{B1 (Quantile-99):} Fixed 99th percentile thresholding ($r_p = 0.92, d = 60$\,frames / 2.0\,s). Earlier discovery cuts gross scrap by over $50\%$, yielding initial positive material savings ($\Delta M = +0.137$\,kg in A, $+2.104$\,kg in B). Alert rate drops to $90$\,alerts/hr ($\rho = 1.50$, still overloaded).
