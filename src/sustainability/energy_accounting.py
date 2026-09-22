@@ -1,5 +1,7 @@
-"""
+﻿"""
 Energy sustainability accounting: edge compute, human workstation review, and machine rework.
+Dimensionally reconciles physical frame energy e_frame (Wh/frame, mWh/frame, J/frame)
+and functional unit energy E_edge = (N * n_f * e_frame) / 1000 [kWh/FU].
 """
 
 from dataclasses import dataclass
@@ -13,6 +15,8 @@ class EnergyOutcomes:
     total_energy_kwh: float
     net_energy_diff_kwh: float = 0.0
     frames_per_part: float = 1.0
+    e_frame_wh: float = 0.171
+    e_frame_joules: float = 615.6
 
 
 class EnergyAccountingEngine:
@@ -25,15 +29,23 @@ class EnergyAccountingEngine:
         frames_per_part: float = 1.0,
         edge_energy_wh_per_frame: float = None,
     ):
-        if edge_energy_wh_per_frame is not None:
-            self.e_frame_wh = edge_energy_wh_per_frame
-        else:
-            self.e_frame_wh = edge_energy_kwh_per_1k
-        self.e_edge_kwh_per_1k = edge_energy_kwh_per_1k
-        self.p_station = review_workstation_power_w
-        self.e_rw = rework_energy_kwh_per_unit
         self.n_units = functional_unit_units
         self.n_f = frames_per_part
+
+        if edge_energy_wh_per_frame is not None:
+            self.e_frame_wh = edge_energy_wh_per_frame
+        elif edge_energy_kwh_per_1k is not None:
+            # E_edge [kWh/FU] = (N * n_f * e_frame [Wh/frame]) / 1000
+            # => e_frame [Wh/frame] = (E_edge [kWh/FU] * 1000) / (N * n_f)
+            self.e_frame_wh = (edge_energy_kwh_per_1k * 1000.0) / (self.n_units * self.n_f)
+        else:
+            self.e_frame_wh = 0.171
+
+        self.e_frame_joules = self.e_frame_wh * 3600.0
+        self.e_frame_mwh = self.e_frame_wh * 1000.0
+        self.e_edge_kwh_per_1k = (self.n_units * self.n_f * self.e_frame_wh) / 1000.0
+        self.p_station = review_workstation_power_w
+        self.e_rw = rework_energy_kwh_per_unit
 
     def evaluate(
         self,
@@ -44,7 +56,8 @@ class EnergyAccountingEngine:
         frames_per_part: float = None,
     ) -> EnergyOutcomes:
         n_f = self.n_f if frames_per_part is None else frames_per_part
-        # Physical unit: E_edge = N * n_f * e_frame / 1000 [kWh/FU]
+        # Physical unit: E_edge = (N * n_f * e_frame_wh) / 1000 [kWh/FU]
+        # where e_frame_wh is in Wh/frame (or J/frame / 3600).
         e_comp = (self.n_units * n_f * self.e_frame_wh / 1000.0) if edge_active else 0.0
 
         # Human review workstation electrical energy [kWh] = Hours * Watts / 1000
@@ -66,4 +79,6 @@ class EnergyAccountingEngine:
             total_energy_kwh=total,
             net_energy_diff_kwh=diff,
             frames_per_part=n_f,
+            e_frame_wh=self.e_frame_wh,
+            e_frame_joules=self.e_frame_joules,
         )

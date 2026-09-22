@@ -10,7 +10,7 @@
   },
   {
     "scenario": "machined_metal",
-    "pi_star": 9.610738212127697e-06,
+    "pi_star": 9.610738212127699e-06,
     "pi_star_scrap_only": 0.00031955751857971676,
     "e_edge_star_kwh_per_1k": 530.3395973914202,
     "d_star_frames": null,

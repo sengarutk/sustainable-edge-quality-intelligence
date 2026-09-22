@@ -1,4 +1,4 @@
-"""
+﻿"""
 Analytical and numerical break-even frontier solvers for Paper B.
 Solves for pi* (prevalence), e_edge* (compute energy), d* (delay), and gamma* (grid carbon).
 """
@@ -25,7 +25,6 @@ def solve_break_even_frontiers(
     evaluator = ScenarioPipelineEvaluator.from_yaml(scenario_path)
 
     # 1. Total Defect Prevalence Break-Even (pi*)
-    # At pi = 0, Delta C = -0.071 kgCO2e < 0 (net-negative regime)
     def delta_c_vs_pi(pi_val: float) -> float:
         cfg = dict(evaluator.cfg)
         cfg["defect_prevalence"] = float(pi_val)
@@ -70,6 +69,7 @@ def solve_break_even_frontiers(
     def delta_c_vs_eedge(e_val: float) -> float:
         cfg = dict(evaluator.cfg)
         cfg["edge_energy_kwh_per_1k"] = float(e_val)
+        cfg["edge_energy_wh_per_frame"] = float(e_val) * 1000.0 / (evaluator.n_units * evaluator.n_f)
         ev = ScenarioPipelineEvaluator(cfg)
         b0 = ev.evaluate_policy(baseline_tier, recall_b0, alert_rate_b0, delay_frames_b0, edge_active=False)
         b4 = ev.evaluate_policy(policy_tier, recall_b4, alert_rate_b4, delay_frames_b4, baseline_result=b0, edge_active=True)

@@ -91,7 +91,7 @@ For the baseline single-view configuration ($n_f = 1.0$) at $\text{FPS} = 30.0$,
 
 The system boundary constitutes a gate-to-gate industrial inspection and rework cell, illustrated in Fig.~\ref{fig:sankey}. The boundary explicitly encompasses:
 \begin{enumerate}
-    \item \textbf{Active Edge Compute Infrastructure:} The electrical power consumed by the edge processing host, the dedicated GPU inference accelerator, the camera frame-grabber interface, and SQLite WAL persistence spooling.
+    \item \textbf{Active Edge Compute Infrastructure:} Bounded in scope to the duty-cycle-averaged NVIDIA RTX 4050 Laptop GPU power measured via NVML at 100\,Hz host cadence across continuous inference, Cost-Calibrated Thresholding (CCT), and temporal cascade filtering (host platform CPU/RAM and camera power are excluded from direct GPU telemetry and captured in cell baseline overhead).
     \item \textbf{Human Review Workstation:} The active electrical power consumed by the high-resolution operator display, verification terminal, and lighting during manual review of candidate alarm frames.
     \item \textbf{Secondary Rework Processing:} The operational electrical energy required by thermal reflow, CNC re-pass de-burring, or disassembly tooling to restore defective units to nominal tolerance.
     \item \textbf{Embodied Material Loss:} The cradle-to-gate embodied greenhouse gas emissions ($EF_{\text{mat}}$) of virgin material permanently lost as unrecovered scrap.
@@ -204,12 +204,12 @@ E_{\text{total}} = E_{\text{edge}} + E_{\text{review}} + E_{\text{rework}} \quad
 \begin{enumerate}
     \item \textbf{Edge Compute Energy ($E_{\text{edge}}$):} Calibrated for the continuous inspection workcell at $30$\,FPS, the edge compute energy per functional unit is:
     \begin{equation}
-    E_{\text{edge}} = 1{,}000 \times \frac{e_{\text{frame}}}{1{,}000} = e_{\text{frame}} \quad [\text{kWh / 1k parts}].
+    E_{\text{edge}} = \frac{N n_f e_{\text{frame}}}{1{,}000} \quad [\text{kWh / FU}].
     \end{equation}
-    For our calibrated workcell drawing $P_{\text{active}} \approx 18.5$\,W over $33.33$\,s, $E_{\text{edge}} = \CalibratedEdgeEnergyKWh$ ($e_{\text{frame}} = \MeasuredFrameEnergyWh = \MeasuredFrameEnergyJoules$).
-    \item \textbf{Human Review Workstation Energy ($E_{\text{review}}$):} Let $\lambda_p$ be the hourly alert arrival rate emitted by policy $p$. The number of alerts generated during the inspection of $1{,}000$ units is:
+    where $e_{\text{frame}}$ is the calibrated active edge energy per frame in Wh/frame (or $10^3$\,mWh/frame, derived from physical frame energy in Joules as $J / 3{,}600$). For our calibrated single-view workcell ($n_f = 1.0$) drawing duty-cycle-averaged GPU active power $P_{\text{active}} \approx 18.5$\,W over $33.33$\,s, $E_{\text{edge}} = \CalibratedEdgeEnergyKWh$ ($e_{\text{frame}} = \MeasuredFrameEnergyWh = \MeasuredFrameEnergyJoules$).
+    \item \textbf{Human Review Workstation Energy ($E_{\text{review}}$):} Let $\lambda_p$ be the hourly alert arrival rate emitted by policy $p$. The number of alerts generated during the inspection of $N = 1{,}000$ units is:
     \begin{equation}
-    n_{\text{alerts}} = \lambda_p \times \frac{1{,}000}{\Theta} = \lambda_p \times \frac{1{,}000}{\text{FPS} \times 3{,}600}.
+    n_{\text{alerts}} = \lambda_p \times \frac{N}{\Theta} = \lambda_p \times \frac{N n_f}{\text{FPS} \times 3{,}600}.
     \end{equation}
     If each alert requires $t_{\text{review}}$ seconds of manual operator scrutiny at an energized terminal drawing $P_{\text{station}}$\,Watts, the total review duration in hours is:
     \begin{equation}
@@ -317,7 +317,7 @@ To evaluate policy performance under contrasting physical regimes, three represe
 \end{itemize}
 
 \subsection{Policy Hierarchy Progression ($B0 \to B4$)}
-Table~\ref{tab:policy_sustainability} and Fig.~\ref{fig:raw_outcomes} detail the sustainability outcomes across the 5-tier policy hierarchy. Policies B0 through B4 are evaluated through a single unified simulation and accounting pipeline code path from raw anomaly scores through CCT calibration and temporal gating:
+Table~\ref{tab:policy_sustainability} and Fig.~\ref{fig:raw_outcomes} detail the sustainability outcomes across the 5-tier policy hierarchy. Policies B0 through B4 are evaluated through a single unified simulation and accounting pipeline code path evaluating structured scenario policy mappings from raw anomaly scores through CCT calibration and temporal gating:
 \begin{enumerate}
     \item \textbf{B0 (Raw Baseline):} Uncalibrated thresholding with late end-of-line defect discovery ($d=150$\,frames / 5.0\,s). Due to late discovery, reworkability drops to $q_{\text{rw}} = 0.15$, condemning almost all intercepted defects to gross scrap ($29.92$\,units in A, $22.44$\,units in B, $11.22$\,units in C). In addition, raw false alarms spike to $180$\,alerts/hr, driving operator queue utilization to $\rho = 3.00$ (severe cognitive overload).
     \item \textbf{B1 (Quantile-99):} Fixed 99th percentile thresholding ($r_p = 0.92, d = 60$\,frames / 2.0\,s). Earlier discovery cuts gross scrap by over $50\%$, yielding initial positive material savings ($\Delta M = +0.137$\,kg in A, $+2.104$\,kg in B). Alert rate drops to $90$\,alerts/hr ($\rho = 1.50$, still overloaded).

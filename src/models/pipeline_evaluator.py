@@ -1,10 +1,10 @@
-"""
+﻿"""
 Unified pipeline evaluator for edge quality inspection and sustainability accounting.
 Coordinates intervention, material, energy, workload, carbon, and SQI engines.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from pathlib import Path
 import yaml
 
@@ -46,10 +46,22 @@ class ScenarioPipelineEvaluator:
         self.q0 = float(scenario_config["base_reworkability"])
         self.beta = float(scenario_config["reworkability_decay_per_sec"])
         self.fps = float(scenario_config.get("sampling_rate_fps", 30.0))
+        self.q_field = float(scenario_config.get("q_field", 1.0))
 
         # Calibrated default parameters
         self.gamma = float(scenario_config.get("grid_carbon_factor", 0.417))
-        self.e_edge = float(scenario_config.get("edge_energy_kwh_per_1k", 0.171))
+        
+        # Harmonize energy scaling
+        if "edge_energy_kwh_per_1k" in scenario_config:
+            self.e_edge = float(scenario_config["edge_energy_kwh_per_1k"])
+            self.e_frame_wh = (self.e_edge * 1000.0) / (self.n_units * self.n_f)
+        elif "edge_energy_wh_per_frame" in scenario_config:
+            self.e_frame_wh = float(scenario_config["edge_energy_wh_per_frame"])
+            self.e_edge = (self.n_units * self.n_f * self.e_frame_wh) / 1000.0
+        else:
+            self.e_frame_wh = 0.171
+            self.e_edge = 0.171
+
         self.p_station = float(scenario_config.get("workstation_power_w", 85.0))
         self.mu = float(scenario_config.get("service_rate_mu", 60.0))
         self.t_review = float(scenario_config.get("review_duration_seconds", 30.0))
@@ -58,13 +70,16 @@ class ScenarioPipelineEvaluator:
             "class_b_scrap_prone": 0.25,
             "class_c_escape_sensitive": 0.05,
         })
+        self.class_decay_params = scenario_config.get("class_decay_params", None)
 
         # Initialize engines
         self.interv_engine = QualityInterventionModel(
             base_reworkability=self.q0,
             reworkability_decay_per_sec=self.beta,
             sampling_rate_fps=self.fps,
+            q_field=self.q_field,
             defect_distribution=self.defect_dist,
+            class_decay_params=self.class_decay_params,
         )
         self.mat_engine = MaterialAccountingEngine(
             part_mass_kg=self.m_kg, recovery_fraction=self.eta
@@ -81,6 +96,7 @@ class ScenarioPipelineEvaluator:
             rework_energy_kwh_per_unit=self.e_rw,
             functional_unit_units=self.n_units,
             frames_per_part=self.n_f,
+            edge_energy_wh_per_frame=self.e_frame_wh,
         )
         self.carbon_engine = CarbonAccountingEngine(
             material_carbon_factor_kgco2e_per_kg=self.ef_mat,
@@ -110,6 +126,7 @@ class ScenarioPipelineEvaluator:
             recall=recall,
             delay_frames=delay_frames,
             defect_distribution=self.defect_dist,
+            q_field=self.q_field,
             class_specific=class_specific,
         )
 
@@ -133,6 +150,10 @@ class ScenarioPipelineEvaluator:
         base_rev_kwh = baseline_result.energy.human_review_kwh if baseline_result else None
         base_n_esc = baseline_result.intervention.n_escape if baseline_result else None
         base_edge_kwh = baseline_result.energy.edge_compute_kwh if baseline_result else None
+        n_downstream = interv.class_counts.get("downstream_catch", 0.0)
+        base_n_down = (
+            baseline_result.carbon.n_downstream_catch if baseline_result else None
+        )
 
         carbon = self.carbon_engine.evaluate(
             net_material_loss_kg=mat.net_loss_kg,
@@ -147,6 +168,9 @@ class ScenarioPipelineEvaluator:
             current_edge_kwh=energy.edge_compute_kwh,
             baseline_n_escape=base_n_esc,
             baseline_edge_kwh=base_edge_kwh,
+            class_counts=interv.class_counts,
+            n_downstream_catch=n_downstream,
+            baseline_n_downstream=base_n_down,
         )
 
         if baseline_result:
