@@ -15,6 +15,8 @@
 % Input auto-generated metrics from single source of truth
 \input{paper_b_generated_metrics.tex}
 
+\vbadness=10000
+\hbadness=10000
 \begin{document}
 
 \title{Quantifying Material, Energy, Carbon, and Human-Workload Trade-offs of AI-Enabled Defect Prevention in Edge Manufacturing Inspection}
@@ -206,7 +208,7 @@ E_{\text{total}} = E_{\text{edge}} + E_{\text{review}} + E_{\text{rework}} \quad
     \begin{equation}
     E_{\text{edge}} = \frac{N n_f e_{\text{frame}}}{1{,}000} \quad [\text{kWh / FU}].
     \end{equation}
-    where $e_{\text{frame}}$ is the calibrated active edge energy per frame in Wh/frame (or $10^3$\,mWh/frame, derived from physical frame energy in Joules as $J / 3{,}600$). For our calibrated single-view workcell ($n_f = 1.0$) drawing duty-cycle-averaged GPU active power $P_{\text{active}} \approx 18.5$\,W over $33.33$\,s, $E_{\text{edge}} = \CalibratedEdgeEnergyKWh$ ($e_{\text{frame}} = \MeasuredFrameEnergyWh = \MeasuredFrameEnergyJoules$).
+    where $e_{\text{frame}}$ is the calibrated active edge energy per frame in Wh/frame (or $10^3$\,mWh/frame, derived from physical frame energy in Joules as $J / 3{,}600$). For our calibrated single-view workcell ($n_f = 1.0$) drawing active GPU power $P_{\text{active}} \approx 13.71$\,W at $30$\,FPS, yielding per-frame energy $e_{\text{frame}} = 13.71/30 = 0.457$\,J ($1.27\times 10^{-4}$\,Wh / $0.127$\,mWh), giving $E_{\text{edge}} = 0.127$\,kWh per functional unit.
     \item \textbf{Human Review Workstation Energy ($E_{\text{review}}$):} Let $\lambda_p$ be the hourly alert arrival rate emitted by policy $p$. The number of alerts generated during the inspection of $N = 1{,}000$ units is:
     \begin{equation}
     n_{\text{alerts}} = \lambda_p \times \frac{N}{\Theta} = \lambda_p \times \frac{N n_f}{\text{FPS} \times 3{,}600}.
@@ -396,6 +398,11 @@ Our findings directly challenge the universal assumption that edge AI inspection
 
 \subsection{Threats to Validity}
 Our findings are subject to several boundary constraints. First, physical power measurements were gathered on an RTX 4050 GPU architecture; embedded NPU or FPGA accelerators may achieve lower active power ($3$--$8$\,W), shifting $e_{\text{edge}}^\star$ upward. Second, grid emission factors ($\gamma$) vary across regional interconnections ($0.05$\,kgCO$_2$e/kWh in France to $0.75$\,kgCO$_2$e/kWh in coal-dominant regions). Finally, manual review service times ($t_{\text{review}}$) were treated as deterministic averages, whereas human fatigue introduces stochastic tails in practice.
+
+
+\section{Limitations and Future Scope}
+While this study establishes an operational framework for evaluating edge inspection trade-offs, several limitations must be noted. First, active compute power was profiled on an NVIDIA RTX 4050 mobile GPU; embedded NPUs or specialized edge ASICs may exhibit lower quiescent power draw. Second, policy operating parameters ($\lambda_p, r_p, d_p$) were treated as scenario-driven configurations rather than dynamic, data-driven closed-loop estimators. Finally, the analysis relies on deterministic review service times, whereas human ergonomic fatigue introduces stochastic variance in high-workload queues. Future work will integrate live industrial floor data streams and multi-platform hardware profiling.
+
 
 \section{Conclusion \& Artifact Availability}
 This paper presented a conservation-enforcing scenario-based research platform quantifying material, energy, carbon, and human-workload trade-offs in AI-enabled edge manufacturing inspection. By uniting live RTX 4050 GPU power profiling with a 5-tier policy hierarchy and 10,000-draw Monte Carlo uncertainty quantification, we demonstrated that a cost-calibrated 7-stage cascade policy (Policy $B4$) achieves peak material recovery ($+0.23$\,kg to $+48.57$\,kg/1k units) and cuts operator cognitive queue load to a sustainable $\rho = 0.20$. Crucially, our break-even derivations establish the operational boundaries where edge AI ceases to be green, providing industrial engineers with an objective framework for sustainable cyber-physical system design.
