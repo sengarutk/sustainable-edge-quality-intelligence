@@ -194,6 +194,8 @@ def main():
         m[f"{P}CellHeadroom"] = f"{headrooms[-1]:,.0f}".replace(",", "{,}")
         rl = f["recall_loss_star_B3_vs_B0"]
         m[f"{P}RecallLossStar"] = sig(100 * rl["value"], 3) if rl["status"] == "root" else "none"
+        if sc == "high_value_component":
+            claim(rl["status"] == "root" and rl["value"] < 0.01, "C: recall-loss margin is a fraction of a percentage point")
         top = prcc[prcc.scenario == sc].iloc[0]
         m[f"{P}TopPrcc"] = f"{top.prcc:+.2f}"
 
@@ -222,10 +224,16 @@ def main():
     claim(prec.loc[PRIMARY].rho > 1 and all(reg[(reg.scenario == sc) & (reg.regime == PRIMARY)].rho.iloc[0] < 1 for sc in SCENARIOS[1:]),
           "B3 overloads one reviewer only in scenario A")
     b3b1 = comp[(comp.baseline == "B1_EMA") & (comp.policy == PRIMARY)]
-    claim((b3b1.delta_C > 0).all(), "B3 emits less than smoothing alone (B1) in every scenario")
+    claim((b3b1[b3b1.scenario != "high_value_component"].delta_C > 0).all(), "B3 emits less than smoothing alone (B1) in A and B")
     hv_b1 = b3b1[b3b1.scenario == "high_value_component"].iloc[0]
     claim(hv_b1.delta_M < 0, "C: the persistence delay of B3 costs some material relative to B1")
     m["HiValDelayMaterialCost"] = sig(-hv_b1.delta_M)
+    hv = reg[reg.scenario == "high_value_component"].set_index("regime")
+    claim(hv_b1.delta_C < 0 and -hv_b1.delta_C < 0.001 * hv.loc[PRIMARY].carbon_total,
+          "C: B1 emits marginally (<0.1%) less than B3 because the persistence delay costs reworkability")
+    claim(hv.loc["B1_EMA"].rho > 2 and hv.loc[PRIMARY].rho < 1, "C: B1 needs several reviewers, B3 fewer than one")
+    m["HiValBOneCarbonEdge"] = sig(-hv_b1.delta_C, 2)
+    m["HiValReviewersBOne"] = str(int(np.ceil(hv.loc["B1_EMA"].rho)))
     reviewers_b0 = [int(m[f"{PREFIX[sc]}ReviewersBZero"]) for sc in SCENARIOS]
     claim(min(reviewers_b0) >= 10 and max(reviewers_b0) >= 100, "B0 needs tens to hundreds of reviewers")
     pol = {r.key: r.central for r in records if r.scope.startswith("policy:")}

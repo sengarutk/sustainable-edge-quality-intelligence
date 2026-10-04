@@ -15,7 +15,7 @@ glare_burst_rate,g,all,10,30,60,bursts/h,Scenario assumption,sengar2026paperA,Ra
 ai_recall,r_AI,all,0.8188,0.9857,1,fraction,Measured by this study,this_study,Per-part recall of PatchCore at the 99th-percentile calibration threshold on seven MVTec AD categories (median and min-max over categories); written by scripts/03b
 persistence_recall_loss,delta_r,all,0,0,0.02,fraction,Scenario assumption,sengar2026paperA,Recall lost by persistence filtering (B2 and B3); central 0 because Paper A measured no loss; upper bound is an assumption
 freight_carbon_intensity,EF_fr,all,0.115,0.195,0.8,kgCO2e/t-km,Literature-derived,glec2023,GLEC Framework v3 Europe well-to-wheel starting points: HGV 0.115 / MGV 0.195 / van 0.800 kgCO2e per t-km
-return_distance,d_ret,all,100,500,2000,km,Scenario assumption,none,Road distance of the return shipment of an escaped part and of its replacement
+return_distance,d_ret,all,97.5,142.3,593.5,km,Official/public dataset,eurostat2026road,EU road freight average distance per tonne (2025): national 97.5 / all 142.3 / international 593.5 km
 nominal_false_alarm_rate,lambda_B0,policy:B0_Raw,1933.31,3970.86,6299.11,alarms/h,Derived from Paper A,sengar2026paperA,False alerts per hour on good parts; Paper A mean and 95% bootstrap interval
 alerts_per_defect,a_B0,policy:B0_Raw,135.154,144.232,153.364,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
 detection_delay,d_B0,policy:B0_Raw,0.0119048,0.0416667,0.077381,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
@@ -35,9 +35,9 @@ glare_alerts_per_burst,b_B3,policy:B3_Full_Policy,0.69,0.69,0.69,alerts/burst,De
 line_throughput,Theta,precision_component,1200,1800,3600,parts/h,Scenario assumption,none,High-volume sensor housing line
 line_throughput,Theta,machined_metal,60,120,240,parts/h,Scenario assumption,none,CNC cell (30 s nominal cycle)
 line_throughput,Theta,high_value_component,15,30,60,parts/h,Scenario assumption,none,Battery / power module assembly (2 min nominal cycle)
-defect_prevalence,pi,precision_component,0.025,0.040,0.060,fraction,Scenario assumption,none,Defective fraction of inspected parts
+defect_prevalence,pi,precision_component,0.025,0.046,0.093,fraction,Literature-derived,nguyen2004injection,Measured visual-defect scrap rates (splay/sink/burn/contamination/partial fill) per resin at a production injection-moulding plant: ABS 2.5% / median of five resins 4.6% / glass-filled compound 9.3%
 defect_prevalence,pi,machined_metal,0.015,0.030,0.050,fraction,Scenario assumption,none,Defective fraction of inspected parts
-defect_prevalence,pi,high_value_component,0.008,0.015,0.025,fraction,Scenario assumption,none,Defective fraction of inspected parts
+defect_prevalence,pi,high_value_component,0.0434,0.0767,0.1,fraction,Literature-derived,yu2024scrap,Li-ion manufacturing scrap rate used as a proxy for defect prevalence: 2030 projection 4.34% / 2023 global average 7.67% / 10% profitability ceiling
 part_mass,m,precision_component,0.010,0.015,0.020,kg,Scenario assumption,none,Lightweight polymer / light-alloy sensor housing
 part_mass,m,machined_metal,1.00,1.25,1.60,kg,Scenario assumption,none,Machined aluminium bracket
 part_mass,m,high_value_component,12.0,14.5,18.0,kg,Scenario assumption,none,Battery / power electronics module
@@ -47,9 +47,9 @@ material_carbon_factor,EF_mat,high_value_component,8.91,13.5,27.2,kgCO2e/kg,Lite
 material_recovery_fraction,eta,precision_component,0.30,0.40,0.50,fraction,Scenario assumption,allwood2011material,Mass fraction of scrap recovered for recycling
 material_recovery_fraction,eta,machined_metal,0.75,0.85,0.92,fraction,Scenario assumption,allwood2011material,Mass fraction of scrap recovered for recycling
 material_recovery_fraction,eta,high_value_component,0.45,0.60,0.75,fraction,Scenario assumption,allwood2011material,Mass fraction of scrap recovered for recycling
-recycling_burden,EF_rec,precision_component,0.3,0.5,1.0,kgCO2e/kg,Scenario assumption,none,Processing burden per kg of recovered scrap (collection + remelt / regranulation)
+recycling_burden,EF_rec,precision_component,0.073,0.152,0.5,kgCO2e/kg,Literature-derived,ruggeri2025postindustrial;jrc2023plastics,Central: mechanical recycling of post-industrial PE-LD (152 kgCO2e/t); bounds: 300 / 700 kWh/t mechanical-recycling electricity (JRC 2023) x EU / India grid factors
 recycling_burden,EF_rec,machined_metal,1.45,1.81,2.12,kgCO2e/kg,Literature-derived,ice2011,ICE v2.0 recycled aluminium: cast 1.45 / general 1.81 / extruded 2.12 kgCO2e/kg
-recycling_burden,EF_rec,high_value_component,1.0,2.0,4.0,kgCO2e/kg,Scenario assumption,none,Processing burden per kg of recovered scrap (disassembly + hydro/pyrometallurgy)
+recycling_burden,EF_rec,high_value_component,1.0,2.8,6.1,kgCO2e/kg,Literature-derived,machala2025recycling,Industrial Li-ion recycling to battery-grade material: manufacturing-scrap stream 2.8 / end-of-life stream 6.1 kgCO2e per kg output; low bound (low-carbon electricity) is an assumption
 rework_energy,e_rw,precision_component,0.03,0.05,0.08,kWh/part,Scenario assumption,none,Electrical energy per rework cycle (reflow / cleaning)
 rework_energy,e_rw,machined_metal,1.20,1.80,2.50,kWh/part,Scenario assumption,none,Electrical energy per rework cycle (CNC re-pass / deburr)
 rework_energy,e_rw,high_value_component,3.80,5.50,7.50,kWh/part,Scenario assumption,none,Electrical energy per rework cycle (disassembly / test / re-bond)
