@@ -343,7 +343,7 @@ def part_e_manuscript():
         ("misses 20--30\\% of defects", (recs["manual_inspection_recall"].low, recs["manual_inspection_recall"].high) == (0.70, 0.80),
          "registry r_L0 bounds"),
         ("$28\\times28\\times384$", 224 // 8 == 28 and 128 + 256 == 384, "ResNet-18 layer2 (stride 8, 128 ch) + layer3 (256 ch)"),
-        ("$\\PaperABank\\times384$", "MEMORY_BANK_SIZE = " + macro("PaperABank").replace("{,}", "") in
+        ("coreset of $\\PaperABank$ real patch features", "MEMORY_BANK_SIZE = " + macro("PaperABank").replace("{,}", "") in
          (Path(__file__).parents[1] / "src/experiments/energy_benchmark.py").read_text()
          and "torch.randn(memory_bank_size, 384)" in (Path(__file__).parents[1] / "src/experiments/energy_benchmark.py").read_text()
          and summary["workload"].count(macro("PaperABank").replace("{,}", "")) == 1,
@@ -371,7 +371,7 @@ def part_e_manuscript():
     # Every macro used in the manuscript and generated tables must be defined.
     defined = set(macros) | set(re.findall(r"\\newcommand\{\\(\w+)\}", tex))
     used = set(re.findall(r"\\([A-Z][A-Za-z]+)\b", tex))
-    latex_builtin = {"IEEEPARstart", "IEEEkeywords", "Delta", "Theta", "Gamma", "Lambda", "Sigma", "Omega", "Pi", "Phi"}
+    latex_builtin = {"IEEEPARstart", "IEEEkeywords", "Big", "Delta", "Theta", "Gamma", "Lambda", "Sigma", "Omega", "Pi", "Phi"}
     undefined = sorted(used - defined - latex_builtin)
     check(S, "every macro used in main.tex is defined", not undefined, ", ".join(undefined))
     unused = sorted(defined - used - {"kgce"})

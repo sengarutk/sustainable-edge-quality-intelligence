@@ -68,6 +68,12 @@ def main():
     m["BenchWindow"] = f"{energy['window_s']:.0f}"
     m["BenchFps"] = f"{energy['target_fps']:.0f}"
     m["IdlePower"] = f"{st['BASELINE_IDLE']['p_total_w']['median']:.2f}"
+    wd = energy.get("workload_detail", {})
+    claim(wd.get("category") not in (None, "synthetic"), "energy was measured on the real PatchCore workload")
+    m["BenchCategory"] = wd["category"].replace("_", " ")
+    m["BenchBank"] = f"{wd['bank_size']:,}".replace(",", "{,}")
+    m["BenchFrames"] = str(wd["n_frames"])
+    m["BenchFitImages"] = str(wd["n_fit_images"])
     for key, name in (("STAGE_MODEL_INFER", "Infer"), ("STAGE_MODEL_THRESHOLD", "Thr"), ("STAGE_MODEL_POLICY", "Policy"),
                       ("STAGE_FULL_PIPELINE", "Full")):
         m[f"{name}TotalPower"] = f"{st[key]['p_total_w']['median']:.2f}"
@@ -224,6 +230,66 @@ def main():
     claim(stars["high_value_component"] < 0.015 and stars["precision_component"] > 0.1,
           "recall margin is about one point for high-value parts and wide for lightweight parts")
     m["BOneBTwoHoursDiffMax"] = f"{100 * max(b12):.0f}"
+
+    # measured detector operating points (MVTec AD)
+    ref = pd.read_csv(PROCESSED_DIR / "detector_reference_points.csv")
+    det_meta = json.loads((REPO_ROOT / "data" / "raw" / "detector_scores" / "run_meta.json").read_text(encoding="utf-8"))
+    m["DetCategories"] = str(len(ref))
+    m["DetSeeds"] = str(len(det_meta["seeds"]))
+    m["DetAurocMin"] = f"{ref.auroc.min():.3f}"
+    m["DetAurocMax"] = f"{ref.auroc.max():.3f}"
+    m["DetRecallMin"] = f"{ref.recall_q99.min():.2f}"
+    m["DetRecallMedian"] = f"{ref.recall_q99.median():.3f}"
+    m["DetRecallMax"] = f"{ref.recall_q99.max():.2f}"
+    m["DetFprMin"] = f"{100 * ref.fpr_q99.min():.1f}"
+    m["DetFprMax"] = f"{100 * ref.fpr_q99.max():.1f}"
+    m["DetWorstCategory"] = ref.sort_values("recall_q99").category.iloc[0].replace("_", " ")
+    banks = [v["bank_size"] for v in det_meta["runs"].values()]
+    m["DetBankMin"] = f"{min(banks):,}".replace(",", "{,}")
+    m["DetBankMax"] = f"{max(banks):,}".replace(",", "{,}")
+    m["DetGoodEvalMin"] = str(int(ref.n_good_eval.min()))
+    claim(ref.auroc.min() > 0.98, "PatchCore AUROC > 0.98 in every category")
+    claim(central["ai_recall"] == round(ref.recall_q99.median(), 4), "registry detector recall is the measured median")
+
+    # carbon-optimal thresholds
+    opt = pd.read_csv(PROCESSED_DIR / "carbon_optimal_thresholds.csv")
+    for sc in SCENARIOS:
+        P = PREFIX[sc]
+        o = opt[opt.scenario == sc]
+        m[f"{P}OptSavingMax"] = sig(o.saving_vs_q99.max())
+        m[f"{P}OptSavingCapMax"] = sig(o.saving_cap_vs_q99.max())
+        m[f"{P}OptRhoMax"] = f"{o.rho_opt.max():.1f}"
+        m[f"{P}OptSavingCapShare"] = f"{100 * o.saving_cap_vs_q99.sum() / o.saving_vs_q99.sum():.0f}" if o.saving_vs_q99.sum() > 0 else "100"
+    m["OptFprMedian"] = f"{100 * opt.fpr_opt.median():.1f}"
+    m["OptFprMax"] = f"{100 * opt.fpr_opt.max():.0f}"
+    m["BudgetFprMedian"] = f"{100 * opt.fpr_budget.median():.1f}"
+    m["OptMorePermissive"] = str(int((opt.fpr_opt > opt.fpr_q99 + 1e-12).sum()))
+    m["OptPairs"] = str(len(opt))
+    m["OptRecallWorstQ"] = f"{opt[opt.category == 'cable'].recall_q99.iloc[0]:.2f}"
+    m["OptRecallWorstOpt"] = f"{opt[opt.category == 'cable'].recall_opt.iloc[0]:.2f}"
+    m["OptFprWorst"] = f"{100 * opt[opt.category == 'cable'].fpr_opt.iloc[0]:.0f}"
+    for sc in ("machined_metal", "high_value_component"):
+        o = opt[opt.scenario == sc]
+        claim(o.saving_cap_vs_q99.sum() >= 0.95 * o.saving_vs_q99.sum(),
+              f"{sc}: the staffing-capped optimum captures >= 95% of the attainable saving")
+    hv = opt[opt.scenario == "high_value_component"]
+    claim(abs(hv.saving_cap_vs_q99.max() - hv.saving_vs_q99.max()) < 1e-9,
+          "C: the largest saving is reached without additional reviewers")
+    claim((opt[opt.scenario == "precision_component"].rho_opt > 1).any(), "on the fast line (A) staffing binds")
+    claim(((opt.fpr_opt >= opt.fpr_budget - 1e-12)).all(), "carbon-optimal thresholds are never stricter than the alarm budget")
+    claim((opt.carbon_opt <= opt.carbon_q99 + 1e-9).all() and (opt.carbon_cap <= opt.carbon_q99 + 1e-9).all(),
+          "optimised thresholds never emit more than q99")
+
+    # population study
+    pop = pd.read_csv(PROCESSED_DIR / "population.csv")
+    share = pop.edge_share_of_benefit_L0.dropna()
+    m["PopSize"] = f"{len(pop):,}".replace(",", "{,}")
+    m["PopWinNZero"] = f"{100 * (pop.dc_N0 > 0).mean():.1f}"
+    m["PopWinLZero"] = f"{100 * (pop.dc_L0 > 0).mean():.1f}"
+    m["PopEdgeShareMedian"] = sig(100 * share.median(), 2)
+    m["PopEdgeShareNinetyFive"] = sig(100 * share.quantile(0.95), 2)
+    m["PopEdgeShareAboveOne"] = f"{100 * (share > 0.01).mean():.0f}"
+    claim((((pop.psi > 1) == (pop.dc_N0 > 0)) | (pop.beta <= 0)).all(), "decision rule psi > 1 <=> Delta C > 0 for every product")
     claim(max(b12) < 0.05, "B1 and B2 operator hours differ by < 5%")
     draws = pd.read_csv(PROCESSED_DIR / "monte_carlo_draws.csv")
     claim((draws.B3_vs_L0_delta_C > 0).all(), "B3 beats L0 in every Monte Carlo draw")

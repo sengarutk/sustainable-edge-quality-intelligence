@@ -14,10 +14,11 @@ if [[ "${1:-}" == "--measure" ]]; then
   pin="$("$PY" -c 'import json; print(json.load(open("data/raw/paper_a_exports/paper_a_metrics.json"))["source_commit"])')"
   "$PY" scripts/01_import_upstream.py --ref "$pin" --update-registry
   "$PY" scripts/03_measure_energy.py
+  "$PY" scripts/03b_measure_detector.py
 fi
 
 steps=(02_validate_sources 04_run_scenarios 05_run_sensitivity 06_run_monte_carlo
-       07_run_break_even 08_generate_figures 09_generate_tables 10_generate_macros)
+       07_run_break_even 07b_run_operating_points 08_generate_figures 09_generate_tables 10_generate_macros)
 for s in "${steps[@]}"; do
   echo "== $s"
   "$PY" "scripts/$s.py"

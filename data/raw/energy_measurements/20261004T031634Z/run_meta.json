@@ -1,0 +1,56 @@
+{
+  "run_id": "20261004T031634Z",
+  "method": "NVML power sensor sampled at 20 Hz, trapezoid-integrated over fixed windows at target FPS; shuffled stage order; idle reference per repeat; median [min, max] across repeats",
+  "target_fps": 30.0,
+  "repeats": 5,
+  "window_s": 30.0,
+  "idle_window_s": 15.0,
+  "seed": 2026,
+  "workload": "PatchCore: ImageNet ResNet-18 layer2+3 features (28x28x384), 1-NN vs 13798x384 memory bank, Gaussian-smoothed max score, batch 1, 224x224, FP32; frames: real (hazelnut)",
+  "workload_detail": {
+    "category": "hazelnut",
+    "bank_size": 13798,
+    "n_fit_images": 313,
+    "n_frames": 110,
+    "threshold": 2.327104141712189,
+    "backbone_sha256": "b6e132d398763cadd5e66a4e994f5a5eb6cf7bd415eb7e8fae476475f749ffe2"
+  },
+  "hardware": {
+    "gpu_name": "NVIDIA GeForce RTX 4050 Laptop GPU",
+    "driver_version": "581.86",
+    "torch": "2.5.1+cu121",
+    "cuda_runtime": "12.1",
+    "kernel": "6.6.87.2-microsoft-standard-WSL2",
+    "python": "3.13.9"
+  },
+  "unthrottled": {
+    "STAGE_MODEL_INFER": {
+      "frames": 818,
+      "wall_s": 5.003548198990757,
+      "achieved_fps": 163.48398525770074,
+      "latency_ms_p50": 5.789532980998047,
+      "latency_ms_p95": 8.449679904151706
+    },
+    "STAGE_MODEL_THRESHOLD": {
+      "frames": 827,
+      "wall_s": 5.004326037014835,
+      "achieved_fps": 165.25701840428437,
+      "latency_ms_p50": 5.804421991342679,
+      "latency_ms_p95": 7.946982199791818
+    },
+    "STAGE_MODEL_POLICY": {
+      "frames": 849,
+      "wall_s": 5.000981282006251,
+      "achieved_fps": 169.76668220189887,
+      "latency_ms_p50": 5.676990025676787,
+      "latency_ms_p95": 7.532112399348989
+    },
+    "STAGE_FULL_PIPELINE": {
+      "frames": 713,
+      "wall_s": 5.047995525994338,
+      "achieved_fps": 141.24418223598872,
+      "latency_ms_p50": 6.027939001796767,
+      "latency_ms_p95": 9.001249604625627
+    }
+  }
+}

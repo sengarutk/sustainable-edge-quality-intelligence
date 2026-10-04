@@ -304,6 +304,75 @@ def fig8_sqi():
     save(fig, "fig8_sqi_subindicators")
 
 
+CAT_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7"]
+
+
+def fig9_operating_points():
+    cur = pd.read_csv(PROCESSED_DIR / "detector_curves.csv")
+    ref = pd.read_csv(PROCESSED_DIR / "detector_reference_points.csv")
+    opt = pd.read_csv(PROCESSED_DIR / "carbon_optimal_thresholds.csv")
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(DOUBLE, 2.5), gridspec_kw={"width_ratios": [1.15, 1]})
+    for color, (cat, sub) in zip(CAT_COLORS, cur.groupby("category", sort=False)):
+        sub = sub.sort_values("q")  # threshold order: averaged curves stay monotone
+        a1.plot(np.maximum(sub.fpr, 1e-3), sub.recall, color=color, lw=1.4, label=cat.replace("_", " "))
+        r = ref[ref.category == cat].iloc[0]
+        a1.plot(max(r.fpr_q99, 1e-3), r.recall_q99, marker="o", ms=4, color=color, mec=SURFACE, mew=0.8)
+    a1.set_xscale("log")
+    a1.set_xlim(1e-3, 1)
+    a1.set_xlabel("False-positive rate per good part")
+    a1.set_ylabel("Recall per defective part")
+    a1.legend(loc="lower right", fontsize=6, ncol=2)
+    for i, sc in enumerate(SCENARIOS):
+        sub = opt[opt.scenario == sc]
+        x = np.full(len(sub), i) + np.linspace(-0.18, 0.18, len(sub))
+        a2.scatter(x, np.maximum(sub.fpr_opt, 1e-3), s=14, color=SC_COLOR[sc], edgecolor=SURFACE, lw=0.6, zorder=3)
+        a2.scatter(x, np.maximum(sub.fpr_budget, 1e-3), s=10, marker="_", color=INK2, zorder=2)
+    a2.axhline(0.01, color=INK2, lw=0.8, ls="--")
+    a2.text(2.45, 0.0108, "q99", fontsize=6.2, color=INK2, ha="right", va="bottom")
+    a2.set_yscale("log")
+    a2.set_ylim(1e-3, 1)
+    a2.set_xticks(range(len(SCENARIOS)), [SC_LABEL[sc].replace(": ", ":\n") for sc in SCENARIOS])
+    a2.set_ylabel("False-positive rate")
+    a2.grid(axis="x", visible=False)
+    from matplotlib.lines import Line2D
+    a2.legend(handles=[Line2D([], [], marker="o", ls="none", color=INK2, label="carbon-optimal (per category)"),
+                       Line2D([], [], marker="_", ls="none", color=INK2, label="5 alarms / 1,000 parts")],
+              loc="lower left", fontsize=6)
+    fig.tight_layout()
+    save(fig, "fig9_detector_operating_points")
+
+
+def fig10_decision_rule():
+    pop = pd.read_csv(PROCESSED_DIR / "population.csv")
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(DOUBLE, 2.5))
+    star = pop.k / pop.beta
+    ok = (pop.beta > 0)
+    win = ok & (pop.dc_N0 > 0)
+    lose = ~win
+    a1.scatter(pop.defect_prevalence[win], star[win], s=2, color="#2a78d6", alpha=0.35, lw=0, label=r"$\Delta C>0$")
+    a1.scatter(pop.defect_prevalence[lose & ok], star[lose & ok], s=2, color=NEG, alpha=0.6, lw=0, label=r"$\Delta C<0$")
+    xlo, xhi = pop.defect_prevalence.min() / 1.5, pop.defect_prevalence.max() * 1.5
+    a1.plot((xlo, xhi), (xlo, xhi), color=INK, lw=0.9)
+    a1.set_xscale("log")
+    a1.set_yscale("log")
+    a1.set_xlim(xlo, xhi)
+    a1.set_ylim(1e-9, 1)
+    a1.set_xlabel(r"Defect prevalence $\pi$")
+    a1.set_ylabel(r"Break-even $\pi^\star = k/\beta$")
+    leg = a1.legend(loc="lower right", markerscale=4, fontsize=6.2, framealpha=0.9, frameon=True, edgecolor=GRID)
+    for h in leg.legend_handles:
+        h.set_alpha(1)
+    share = np.sort(pop.edge_share_of_benefit_L0.dropna().values)
+    a2.plot(100 * share, np.arange(1, len(share) + 1) / len(share), color="#2a78d6", lw=1.6)
+    a2.axvline(1.0, color=INK2, lw=0.8, ls="--")
+    a2.set_xscale("log")
+    a2.set_xlim(1e-3, 100)
+    a2.set_xlabel("Edge-cell carbon as % of benefit over manual inspection")
+    a2.set_ylabel("Share of products (cumulative)")
+    fig.tight_layout()
+    save(fig, "fig10_decision_rule_population")
+
+
 def main():
     print("Step 08: generating figures")
     fig1_system_boundary()
@@ -314,6 +383,8 @@ def main():
     fig6_prcc()
     fig7_uncertainty_tradeoff()
     fig8_sqi()
+    fig9_operating_points()
+    fig10_decision_rule()
 
 
 if __name__ == "__main__":

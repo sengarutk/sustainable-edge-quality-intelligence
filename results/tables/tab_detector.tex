@@ -1,0 +1,20 @@
+\begin{table}[!t]
+\centering
+\scriptsize
+\caption{Measured PatchCore operating points on MVTec~AD (mean over three splits). Recall and false-positive rate (FPR) at the 99th percentile of the calibration scores (q99), and the carbon-optimal FPR and recall of a one-shot station for scenario~C.}
+\label{tab:detector}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Category & AUROC & Recall (q99) & FPR (q99) & FPR$^\star$ (C) & Recall$^\star$ (C) \\
+\midrule
+bottle & 1.000 & 1.000 & 0.011 & 0.011 & 1.000 \\
+cable & 0.988 & 0.819 & 0.023 & 0.269 & 1.000 \\
+carpet & 0.985 & 0.963 & 0.063 & 0.548 & 0.993 \\
+grid & 1.000 & 1.000 & 0.033 & 0.019 & 1.000 \\
+hazelnut & 1.000 & 0.986 & 0.008 & 0.042 & 1.000 \\
+leather & 1.000 & 1.000 & 0.029 & 0.029 & 1.000 \\
+metal nut & 0.992 & 0.964 & 0.010 & 0.091 & 0.989 \\
+\bottomrule
+\end{tabular}
+\end{table}

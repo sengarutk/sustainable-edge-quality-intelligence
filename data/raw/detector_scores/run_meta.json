@@ -1,0 +1,128 @@
+{
+  "created": "2026-10-04T03:11:42+00:00",
+  "device": "cuda:0",
+  "torch": "2.5.1+cu121",
+  "torchvision": "unknown",
+  "python": "3.13.9",
+  "img_size": 224,
+  "coreset_ratio": 0.1,
+  "projection_dim": 128,
+  "split_fit_cal_heldout": [
+    0.6,
+    0.2,
+    0.2
+  ],
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "runs": {
+    "bottle_seed0": {
+      "bank_size": 9800,
+      "n_fit": 125,
+      "n_scores": 170
+    },
+    "bottle_seed1": {
+      "bank_size": 9800,
+      "n_fit": 125,
+      "n_scores": 170
+    },
+    "bottle_seed2": {
+      "bank_size": 9800,
+      "n_fit": 125,
+      "n_scores": 170
+    },
+    "cable_seed0": {
+      "bank_size": 10505,
+      "n_fit": 134,
+      "n_scores": 240
+    },
+    "cable_seed1": {
+      "bank_size": 10505,
+      "n_fit": 134,
+      "n_scores": 240
+    },
+    "cable_seed2": {
+      "bank_size": 10505,
+      "n_fit": 134,
+      "n_scores": 240
+    },
+    "carpet_seed0": {
+      "bank_size": 13171,
+      "n_fit": 168,
+      "n_scores": 229
+    },
+    "carpet_seed1": {
+      "bank_size": 13171,
+      "n_fit": 168,
+      "n_scores": 229
+    },
+    "carpet_seed2": {
+      "bank_size": 13171,
+      "n_fit": 168,
+      "n_scores": 229
+    },
+    "grid_seed0": {
+      "bank_size": 9408,
+      "n_fit": 120,
+      "n_scores": 185
+    },
+    "grid_seed1": {
+      "bank_size": 9408,
+      "n_fit": 120,
+      "n_scores": 185
+    },
+    "grid_seed2": {
+      "bank_size": 9408,
+      "n_fit": 120,
+      "n_scores": 185
+    },
+    "hazelnut_seed0": {
+      "bank_size": 18424,
+      "n_fit": 235,
+      "n_scores": 266
+    },
+    "hazelnut_seed1": {
+      "bank_size": 18424,
+      "n_fit": 235,
+      "n_scores": 266
+    },
+    "hazelnut_seed2": {
+      "bank_size": 18424,
+      "n_fit": 235,
+      "n_scores": 266
+    },
+    "leather_seed0": {
+      "bank_size": 9408,
+      "n_fit": 120,
+      "n_scores": 185
+    },
+    "leather_seed1": {
+      "bank_size": 9408,
+      "n_fit": 120,
+      "n_scores": 185
+    },
+    "leather_seed2": {
+      "bank_size": 9408,
+      "n_fit": 120,
+      "n_scores": 185
+    },
+    "metal_nut_seed0": {
+      "bank_size": 10348,
+      "n_fit": 132,
+      "n_scores": 203
+    },
+    "metal_nut_seed1": {
+      "bank_size": 10348,
+      "n_fit": 132,
+      "n_scores": 203
+    },
+    "metal_nut_seed2": {
+      "bank_size": 10348,
+      "n_fit": 132,
+      "n_scores": 203
+    }
+  },
+  "resnet18_weights_sha256": "b6e132d398763cadd5e66a4e994f5a5eb6cf7bd415eb7e8fae476475f749ffe2"
+}

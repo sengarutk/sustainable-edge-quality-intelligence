@@ -12,10 +12,10 @@ is repeated with a seeded, shuffled stage order so that thermal / clock-state
 drift is not confounded with stage cost. An idle window precedes every repeat,
 so active power is always referenced to a nearby idle level.
 
-The inference workload is a PatchCore-style detector: a ResNet-18 backbone
-(randomly initialised weights -- compute cost is independent of weight values),
-layer2+layer3 patch features at 28x28, and 1-NN search against a synthetic
-memory bank. No measurement value is ever substituted: if NVML is unavailable
+The inference workload (default) is a real PatchCore detector: an ImageNet-pretrained
+ResNet-18, layer2+layer3 patch features at 28x28, 1-NN search against a coreset of real
+patch features, Gaussian smoothing, and real MVTec AD frames cycled at line rate. A
+synthetic proxy (random weights and frames) remains available as workload="proxy". No measurement value is ever substituted: if NVML is unavailable
 the harness raises instead of fabricating a fallback.
 
 Boundary: GPU device only. Host CPU/RAM, camera and lighting power are not
@@ -96,6 +96,33 @@ def build_patchcore_proxy(device, memory_bank_size: int = MEMORY_BANK_SIZE, seed
             return d.max()
 
     return PatchCoreProxy().to(device).eval()
+
+
+def build_real_detector(device, category: str = "hazelnut", mvtec_root: Path | None = None,
+                        bank_size: int = MEMORY_BANK_SIZE, n_frames: int = 120, seed: int = 0):
+    """Real PatchCore workload: ImageNet ResNet-18, coreset of `bank_size` real patch features from
+    80 % of the category's good training images, threshold = 99th percentile of the remaining 20 %,
+    and real test frames (good and defective) cycled at line rate. Returns (score_fn, threshold, meta);
+    score_fn(i) scores frame i % n_frames including the CPU-side Gaussian smoothing."""
+    from src.experiments.detector_eval import PatchCore, default_mvtec_root, load_images, split_good, weights_digest
+
+    root = mvtec_root or default_mvtec_root()
+    train = sorted((root / category / "train" / "good").glob("*.png"))
+    fit, cal, held = split_good(train, seed)
+    fit, cal = fit + cal, held  # 80 % memory bank, 20 % threshold calibration
+    model = PatchCore(device, seed=seed, bank_size=bank_size)
+    model.fit(load_images(fit, device))
+    threshold = float(np.quantile(model.score(load_images(cal, device)), 0.99))
+    test = sorted((root / category / "test").glob("*/*.png"))
+    rng = np.random.default_rng(seed)
+    frames = load_images([test[i] for i in rng.choice(len(test), size=min(n_frames, len(test)), replace=False)], device)
+
+    def score_fn(i: int) -> float:
+        return float(model.score(frames[i % len(frames):i % len(frames) + 1], batch=1)[0])
+
+    meta = {"category": category, "bank_size": int(model.bank.shape[0]), "n_fit_images": len(fit),
+            "n_frames": int(len(frames)), "threshold": threshold, "backbone_sha256": weights_digest(model.net)}
+    return score_fn, threshold, meta
 
 
 class NvmlMeter:
@@ -182,7 +209,6 @@ class StageRunner:
             conn = sqlite3.connect(str(self.db_path))
             conn.execute("PRAGMA journal_mode=WAL;")
             conn.execute("CREATE TABLE IF NOT EXISTS events (frame_id INT, score REAL, escalated INT, ts REAL)")
-        frame = torch.rand(1, 3, 224, 224, device=self.device)
         lat: List[float] = []
         t_start = time.perf_counter()
         i = 0
@@ -196,7 +222,7 @@ class StageRunner:
                 t0 = time.perf_counter()
                 if t0 - t_start >= duration_s:
                     break
-                score = float(self.model(frame))  # .item() synchronises the device
+                score = self.model(i)  # returns a Python float: synchronises the device
                 if stage == "STAGE_MODEL_THRESHOLD":
                     _ = score > self.threshold
                 elif stage == "STAGE_MODEL_POLICY":
@@ -267,6 +293,7 @@ def run_benchmark(
     seed: int = 2026,
     trace_root: Path = ENERGY_TRACE_DIR,
     summary_path: Path = ENERGY_SUMMARY,
+    workload: str = "real",
 ) -> Dict:
     """Measure all stages; raw traces go to trace_root/<run_id>/ and the summary to summary_path.
     trace_root must lie inside the repository (the summary stores it repository-relative)."""
@@ -276,17 +303,22 @@ def run_benchmark(
         raise RuntimeError("CUDA device required for the GPU energy benchmark.")
     device = torch.device("cuda:0")
     meter = NvmlMeter()
-    model = build_patchcore_proxy(device)
+    if workload == "real":
+        score_fn, threshold, workload_meta = build_real_detector(device)
+    elif workload == "proxy":
+        proxy = build_patchcore_proxy(device)
+        frame = torch.rand(1, 3, 224, 224, device=device)
+        score_fn, threshold, workload_meta = (lambda i: float(proxy(frame))), 0.5, {"category": "synthetic"}
+    else:
+        raise ValueError("workload must be 'real' or 'proxy'")
 
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     trace_dir = trace_root / run_id
     trace_dir.mkdir(parents=True, exist_ok=True)
-    runner = StageRunner(model=model, device=device, db_path=trace_dir / "spool.db")
+    runner = StageRunner(model=score_fn, device=device, db_path=trace_dir / "spool.db", threshold=threshold)
 
-    with torch.no_grad():
-        x = torch.rand(1, 3, 224, 224, device=device)
-        for _ in range(warmup_frames):
-            float(model(x))
+    for i in range(warmup_frames):
+        score_fn(i)
     torch.cuda.synchronize()
 
     # Unthrottled throughput / latency (not used for energy).
@@ -331,7 +363,10 @@ def run_benchmark(
         "method": "NVML power sensor sampled at 20 Hz, trapezoid-integrated over fixed windows at target FPS; "
                   "shuffled stage order; idle reference per repeat; median [min, max] across repeats",
         "target_fps": fps, "repeats": repeats, "window_s": window_s, "idle_window_s": idle_s, "seed": seed,
-        "workload": "PatchCore-style: ResNet-18 layer2+3 features (28x28x384), 1-NN vs 13798x384 memory bank, batch 1, 224x224, FP32",
+        "workload": (f"PatchCore: ImageNet ResNet-18 layer2+3 features (28x28x384), 1-NN vs {workload_meta.get('bank_size', MEMORY_BANK_SIZE)}x384 "
+                     f"memory bank, Gaussian-smoothed max score, batch 1, 224x224, FP32; frames: {workload}"
+                     f" ({workload_meta.get('category')})"),
+        "workload_detail": workload_meta,
         "hardware": {**meter.metadata(), "torch": torch.__version__, "cuda_runtime": torch.version.cuda,
                      "kernel": platform.release(), "python": platform.python_version()},
         "unthrottled": throughput,

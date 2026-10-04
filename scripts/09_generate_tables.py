@@ -142,6 +142,27 @@ def table_policies():
     save("\n".join(lines), "tab_policies.tex")
 
 
+def table_detector():
+    ref = pd.read_csv(PROCESSED_DIR / "detector_reference_points.csv")
+    opt = pd.read_csv(PROCESSED_DIR / "carbon_optimal_thresholds.csv")
+    hv = opt[opt.scenario == SCENARIOS[-1]].set_index("category")
+    lines = [
+        r"\begin{table}[!t]", r"\centering", r"\scriptsize",
+        r"\caption{Measured PatchCore operating points on MVTec~AD (mean over three splits). Recall and false-positive "
+        r"rate (FPR) at the 99th percentile of the calibration scores (q99), and the carbon-optimal FPR and recall "
+        r"of a one-shot station for scenario~C.}",
+        r"\label{tab:detector}", r"\setlength{\tabcolsep}{3pt}",
+        r"\begin{tabular}{@{}lccccc@{}}", r"\toprule",
+        r"Category & AUROC & Recall (q99) & FPR (q99) & FPR$^\star$ (C) & Recall$^\star$ (C) \\", r"\midrule",
+    ]
+    for _, r in ref.iterrows():
+        o = hv.loc[r.category]
+        lines.append(rf"{r.category.replace('_', ' ')} & {r.auroc:.3f} & {r.recall_q99:.3f} & {r.fpr_q99:.3f} & "
+                     rf"{o.fpr_opt:.3f} & {o.recall_opt:.3f} \\")
+    lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]
+    save("\n".join(lines), "tab_detector.tex")
+
+
 def table2_regimes():
     df = pd.read_csv(PROCESSED_DIR / "regime_outcomes.csv")
     regimes = load_regimes()
@@ -240,6 +261,7 @@ def main():
     print("Step 09: generating tables")
     table1_ledger()
     table_policies()
+    table_detector()
     table2_regimes()
     table3_uncertainty()
 
