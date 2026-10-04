@@ -66,8 +66,9 @@ bash scripts/reproduce_all.sh --measure  # also re-measure GPU power (NVIDIA GPU
 | — | `sync_paper_assets.py [--check]` | copy generated assets into `paper/` (never edits `main.tex`) |
 | — | `verify_math_proofs.py` (needs `.[dev]`) | SymPy proofs of the Section III model, dimensional analysis, paper-vs-code equivalence, closed-form break-even checks, manuscript literals vs registry |
 | — | `package_release.py` | clean LaTeX build + reproducible release zips in `dist/` |
+| — | `check_drift.py` | after regeneration: LaTeX outputs byte-identical, numeric tables equal to 1e-6 (used by CI) |
 
-All paths are repository-relative. CI regenerates every result from the committed inputs, fails on any drift, and compiles the manuscript.
+All paths are repository-relative. CI regenerates every result from the committed inputs, fails on any drift (LaTeX outputs byte-identical, numeric tables to 1e-6, which absorbs last-digit floating-point differences between CPUs), and compiles the manuscript.
 
 ## Provenance and limitations
 
