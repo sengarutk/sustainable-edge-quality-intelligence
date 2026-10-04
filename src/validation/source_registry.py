@@ -26,6 +26,7 @@ class SourceClassification(str, Enum):
     LITERATURE_DERIVED = "Literature-derived"
     OFFICIAL_DATASET = "Official/public dataset"
     SCENARIO_ASSUMPTION = "Scenario assumption"
+    SCENARIO_DEFINITION = "Scenario definition"  # defines the reference product or study design; not an empirical claim
 
 
 class ParameterRecord(BaseModel):
@@ -47,7 +48,8 @@ class ParameterRecord(BaseModel):
         valid_scopes = {"all", *SCENARIOS}
         if self.scope not in valid_scopes and not self.scope.startswith(("policy:", "platform:")):
             raise ValueError(f"{self.parameter}: unknown scope '{self.scope}'")
-        if self.classification != SourceClassification.SCENARIO_ASSUMPTION and self.citation_key == "none":
+        uncited = (SourceClassification.SCENARIO_ASSUMPTION, SourceClassification.SCENARIO_DEFINITION)
+        if self.classification not in uncited and self.citation_key == "none":
             raise ValueError(f"{self.parameter}@{self.scope}: '{self.classification.value}' requires a citation key")
         return self
 

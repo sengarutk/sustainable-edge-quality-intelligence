@@ -158,7 +158,7 @@ def main():
     m["RegistryEntries"] = str(len(records))
     for cls, name in (("Measured by this study", "Measured"), ("Derived from Paper A", "PaperA"),
                       ("Literature-derived", "Literature"), ("Official/public dataset", "Official"),
-                      ("Scenario assumption", "Assumption")):
+                      ("Scenario assumption", "Assumption"), ("Scenario definition", "Definition")):
         m[f"Registry{name}Count"] = str(sum(r.classification.value == cls for r in records))
     n_draws = {mc[sc]["n_draws"] for sc in SCENARIOS}
     claim(len(n_draws) == 1, "all scenarios use the same number of Monte Carlo draws")
@@ -479,6 +479,44 @@ def main():
     for v in ("workstation_central", "jetson_high_grid"):
         r = nomo[nomo.variant == v].defects_per_hour_star.values / cen
         claim(np.nanmax(r[np.isfinite(r)]) < 3, f"{v} shifts the break-even line by less than 3x")
+
+    # does more compute buy recall?
+    cr = pd.read_csv(PROCESSED_DIR / "compute_recall.csv")
+    crs = pd.read_csv(PROCESSED_DIR / "compute_recall_summary.csv")
+    one = cr[cr.scenario == SCENARIOS[0]]
+    tags = {"patchcore": "Pc", "patchcore_448": "Hires", "patchcore_wrn50": "Wrn", "padim": "Pd"}
+    for det, tag in tags.items():
+        sub = one[one.detector == det]
+        m[f"Cr{tag}Recall"] = f"{sub.recall_q99.median():.2f}"
+        m[f"Cr{tag}VisaRecall"] = f"{sub[sub.dataset == 'visa'].recall_q99.median():.2f}"
+        m[f"Cr{tag}MvtecRecall"] = f"{sub[sub.dataset == 'mvtec'].recall_q99.median():.2f}"
+        m[f"Cr{tag}WorstRecall"] = f"{sub.recall_q99.min():.2f}"
+        m[f"Cr{tag}FrameMJ"] = f"{sub.frame_mj.iloc[0]:.0f}"
+        m[f"Cr{tag}ActiveW"] = f"{sub.active_w.iloc[0]:.2f}"
+        for sc in SCENARIOS:
+            v = crs[(crs.scenario == sc) & (crs.detector == det)].iloc[0]
+            m[f"{PREFIX[sc]}Cr{tag}Share"] = f"{100 * v.share_beating_L0:.0f}"
+    pc, hi, wr = (one[one.detector == d] for d in ("patchcore", "patchcore_448", "patchcore_wrn50"))
+    m["CrHiresEnergyRatio"] = f"{hi.frame_mj.iloc[0] / pc.frame_mj.iloc[0]:.1f}"
+    m["CrWrnEnergyRatio"] = f"{wr.frame_mj.iloc[0] / pc.frame_mj.iloc[0]:.1f}"
+    extra = []
+    gain = []
+    for sc in SCENARIOS:
+        a = crs[(crs.scenario == sc) & (crs.detector == "patchcore")].iloc[0]
+        b = crs[(crs.scenario == sc) & (crs.detector == "patchcore_448")].iloc[0]
+        extra.append(b.edge_cell_carbon - a.edge_cell_carbon)
+        gain.append(b.delta_C_mean - a.delta_C_mean)
+        m[f"{PREFIX[sc]}CrHiresGain"] = sig(b.delta_C_mean - a.delta_C_mean)
+        m[f"{PREFIX[sc]}CrHiresExtra"] = sig(b.edge_cell_carbon - a.edge_cell_carbon, 2)
+        claim(b.share_beating_L0 >= a.share_beating_L0, f"{sc}: 448 px beats manual in at least as many categories")
+    m["CrHiresPaybackMin"] = f"{min(g / e for g, e in zip(gain, extra)):,.0f}".replace(",", "{,}")
+    claim(all(e > 0 for e in extra) and all(g > 10 * e for g, e in zip(gain, extra)),
+          "the extra electricity of 448 px is repaid more than tenfold by its recall gain")
+    claim(hi[hi.dataset == "visa"].recall_q99.median() > pc[pc.dataset == "visa"].recall_q99.median() + 0.1
+          and hi.recall_q99.min() > pc.recall_q99.min(), "448 px raises VisA recall and the worst category")
+    claim(wr[wr.dataset == "visa"].recall_q99.median() < pc[pc.dataset == "visa"].recall_q99.median() + 0.05
+          and wr[wr.dataset == "mvtec"].recall_q99.median() > pc[pc.dataset == "mvtec"].recall_q99.median(),
+          "the larger backbone helps on MVTec AD but not on VisA")
 
     if FAILED_CLAIMS:
         raise ClaimError("Manuscript claims no longer hold:\n  - " + "\n  - ".join(FAILED_CLAIMS))

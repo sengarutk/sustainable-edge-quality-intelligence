@@ -78,7 +78,7 @@
       "comparison": "B3_Full_Policy_vs_N0_NoInspection",
       "lower": 0.0,
       "upper": 0.5,
-      "value": 2.041986841e-05,
+      "value": 2.079194179e-05,
       "status": "root",
       "unit": "fraction"
     },
@@ -88,7 +88,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 0.5,
-      "value": 7.152340733e-05,
+      "value": 6.642335607e-05,
       "status": "root",
       "unit": "fraction"
     },
@@ -98,7 +98,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1000000.0,
-      "value": 21989.3239,
+      "value": 23680.79732,
       "status": "root",
       "unit": "W"
     },
@@ -108,7 +108,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1.0,
-      "value": 0.920351262,
+      "value": 0.9409972374,
       "status": "root",
       "unit": "fraction"
     },
@@ -138,7 +138,7 @@
       "comparison": "B3_Full_Policy_vs_B0_Raw",
       "lower": 0.0,
       "upper": 0.99,
-      "value": 0.04164236117,
+      "value": 0.04237349673,
       "status": "root",
       "unit": "fraction"
     }

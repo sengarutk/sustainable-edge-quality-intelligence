@@ -23,7 +23,8 @@ from typing import Dict
 
 import numpy as np
 
-from src.experiments.detector_eval import (IMG_SIZE, PaDiM, PatchCore, default_mvtec_root, load_images, split_good,
+from src.experiments.detector_eval import (IMG_SIZE, PaDiM, PatchCore, default_mvtec_root, load_images, make_detector,
+                                           split_good,
                                            weights_digest)
 from src.experiments.energy_benchmark import MEMORY_BANK_SIZE
 
@@ -42,8 +43,9 @@ def _graph_module(det):
     import torch.nn as nn
     import torch.nn.functional as F
 
-    sym = torch.tensor(list(range(RADIUS - 1, -1, -1)) + list(range(IMG_SIZE))
-                       + list(range(IMG_SIZE - 1, IMG_SIZE - 1 - RADIUS, -1)))
+    size = det.img_size
+    sym = torch.tensor(list(range(RADIUS - 1, -1, -1)) + list(range(size))
+                       + list(range(size - 1, size - 1 - RADIUS, -1)))
     k = torch.from_numpy(_gaussian_kernel())
 
     class Graph(nn.Module):
@@ -54,6 +56,7 @@ def _graph_module(det):
             self.register_buffer("sym", sym)
             self.register_buffer("kx", k.view(1, 1, 1, -1))
             self.register_buffer("ky", k.view(1, 1, -1, 1))
+            self.wide = getattr(det, "arch", "resnet18") == "wide_resnet50_2"
             if isinstance(det, PatchCore):
                 self.kind = "patchcore"
                 self.register_buffer("bank_t", det.bank.T.contiguous())
@@ -65,7 +68,7 @@ def _graph_module(det):
                 self.register_buffer("cov_inv", det.cov_inv)  # (P, C, C)
 
         def blur_max(self, d, h, w):
-            a = F.interpolate(d.reshape(1, 1, h, w), size=(IMG_SIZE, IMG_SIZE), mode="bilinear", align_corners=False)
+            a = F.interpolate(d.reshape(1, 1, h, w), size=(size, size), mode="bilinear", align_corners=False)
             a = F.conv2d(a.index_select(3, self.sym), self.kx)
             a = F.conv2d(a.index_select(2, self.sym), self.ky)
             return a.amax(dim=(1, 2, 3))
@@ -79,6 +82,8 @@ def _graph_module(det):
                 p2, p3 = self.pool(l2), self.pool(l3)
                 p3 = F.interpolate(p3, size=p2.shape[-2:], mode="bilinear", align_corners=False)
                 f = torch.cat([p2, p3], dim=1)
+                if self.wide:
+                    f = f.reshape(1, f.shape[1] // 2, 2, f.shape[2], f.shape[3]).mean(2)
                 h, w = f.shape[-2:]
                 q = f.flatten(2)[0].T  # (784, 384)
                 d2 = (q * q).sum(1, keepdim=True) - 2.0 * (q @ self.bank_t) + self.bank_sq
@@ -102,11 +107,20 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def export_workload(out_dir: Path, category: str = "hazelnut", seed: int = 0, n_frames: int = 120,
-                    mvtec_root: Path | None = None) -> Dict:
+def _make(name: str, device, seed: int):
+    """Edge configurations: the primary PatchCore with the companion study's bank size, and the detector
+    variants of Section V in the configuration in which their recall was measured."""
+    if name == "patchcore":
+        return PatchCore(device, seed=seed, bank_size=MEMORY_BANK_SIZE)
+    return make_detector(name, device, seed)
+
+
+def export_workload(out_dir: Path, detectors=("patchcore", "padim"), category: str = "hazelnut", seed: int = 0,
+                    n_frames: int = 120, mvtec_root: Path | None = None, device=None) -> Dict:
+    """Export each detector's single graph; existing entries of out_dir/workload.json are kept."""
     import torch
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = device or torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     torch.backends.cudnn.allow_tf32 = False  # exact FP32 so graph and reference scorer are comparable
     torch.backends.cuda.matmul.allow_tf32 = False
     root = mvtec_root or default_mvtec_root()
@@ -116,15 +130,19 @@ def export_workload(out_dir: Path, category: str = "hazelnut", seed: int = 0, n_
     test = sorted((root / category / "test").glob("*/*.png"))
     rng = np.random.default_rng(seed)
     pick = [test[i] for i in rng.choice(len(test), size=min(n_frames, len(test)), replace=False)]
-    frames = load_images(pick, device)
     out_dir.mkdir(parents=True, exist_ok=True)
-    np.save(out_dir / "frames.npy", frames.cpu().numpy().astype(np.float32))
-    meta = {"category": category, "seed": seed, "n_frames": len(pick), "n_fit_images": len(fit),
-            "frames": [str(p.relative_to(root)) for p in pick], "detectors": {}}
-    for name, det in (("patchcore", PatchCore(device, seed=seed, bank_size=MEMORY_BANK_SIZE)),
-                      ("padim", PaDiM(device, seed=seed))):
-        det.fit(load_images(fit, device))
-        threshold = float(np.quantile(det.score(load_images(cal, device)), 0.99))
+    meta_path = out_dir / "workload.json"
+    meta = json.loads(meta_path.read_text()) if meta_path.exists() else {"detectors": {}}
+    meta.update({"category": category, "seed": seed, "n_frames": len(pick), "n_fit_images": len(fit),
+                 "frames": [str(p.relative_to(root)) for p in pick]})
+    for name in detectors:
+        det = _make(name, device, seed)
+        size = det.img_size
+        frames_file = "frames.npy" if size == IMG_SIZE else f"frames_{size}.npy"
+        frames = load_images(pick, device, size)
+        np.save(out_dir / frames_file, frames.cpu().numpy().astype(np.float32))
+        det.fit(load_images(fit, device) if size == IMG_SIZE else fit, **({} if size == IMG_SIZE else {"batch": 8}))
+        threshold = float(np.quantile(det.score(load_images(cal, device, size)), 0.99))
         ref = det.score(frames)
         graph = _graph_module(det).to(device)
         with torch.no_grad():
@@ -136,11 +154,11 @@ def export_workload(out_dir: Path, category: str = "hazelnut", seed: int = 0, n_
         torch.onnx.export(graph.cpu(), frames[:1].cpu(), str(path), input_names=["frame"], output_names=["score"],
                           opset_version=17, dynamo=False)
         meta["detectors"][name] = {
-            "threshold": threshold, "state_size": det.state_size, "reference_scores": ref.tolist(),
-            "graph_max_rel_error": rel, "onnx_sha256": _sha256(path), "onnx_bytes": path.stat().st_size,
-            "backbone_sha256": weights_digest(det.net)}
+            "threshold": threshold, "state_size": det.state_size, "reference_scores": ref.tolist(), "img_size": size,
+            "frames_file": frames_file, "graph_max_rel_error": rel, "onnx_sha256": _sha256(path),
+            "onnx_bytes": path.stat().st_size, "backbone": det.arch, "backbone_sha256": weights_digest(det.net)}
         del graph, det
         if device.type == "cuda":
             torch.cuda.empty_cache()
-    (out_dir / "workload.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8", newline="\n")
+    meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8", newline="\n")
     return meta

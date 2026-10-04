@@ -1,6 +1,6 @@
 {
   "coreset_ratio": 0.1,
-  "created": "2026-10-04T14:00:03+00:00",
+  "created": "2026-10-04T19:26:34+00:00",
   "device": "cuda:0",
   "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU",
   "img_size": 224,
@@ -816,6 +816,816 @@
       "state_size": 21168
     },
     "patchcore/visa/pipe_fryum/seed2": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 21168
+    },
+    "patchcore_448/mvtec/bottle/seed0": {
+      "n_fit": 125,
+      "n_scores": 167,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/bottle/seed1": {
+      "n_fit": 125,
+      "n_scores": 167,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/bottle/seed2": {
+      "n_fit": 125,
+      "n_scores": 167,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/cable/seed0": {
+      "n_fit": 134,
+      "n_scores": 240,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/cable/seed1": {
+      "n_fit": 134,
+      "n_scores": 240,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/cable/seed2": {
+      "n_fit": 134,
+      "n_scores": 240,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/capsule/seed0": {
+      "n_fit": 131,
+      "n_scores": 220,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/capsule/seed1": {
+      "n_fit": 131,
+      "n_scores": 220,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/capsule/seed2": {
+      "n_fit": 131,
+      "n_scores": 220,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/carpet/seed0": {
+      "n_fit": 168,
+      "n_scores": 229,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/carpet/seed1": {
+      "n_fit": 168,
+      "n_scores": 229,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/carpet/seed2": {
+      "n_fit": 168,
+      "n_scores": 229,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/grid/seed0": {
+      "n_fit": 158,
+      "n_scores": 184,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/grid/seed1": {
+      "n_fit": 158,
+      "n_scores": 184,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/grid/seed2": {
+      "n_fit": 158,
+      "n_scores": 184,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/hazelnut/seed0": {
+      "n_fit": 235,
+      "n_scores": 266,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/hazelnut/seed1": {
+      "n_fit": 235,
+      "n_scores": 266,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/hazelnut/seed2": {
+      "n_fit": 235,
+      "n_scores": 266,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/leather/seed0": {
+      "n_fit": 147,
+      "n_scores": 222,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/leather/seed1": {
+      "n_fit": 147,
+      "n_scores": 222,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/leather/seed2": {
+      "n_fit": 147,
+      "n_scores": 222,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/metal_nut/seed0": {
+      "n_fit": 132,
+      "n_scores": 203,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/metal_nut/seed1": {
+      "n_fit": 132,
+      "n_scores": 203,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/metal_nut/seed2": {
+      "n_fit": 132,
+      "n_scores": 203,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/pill/seed0": {
+      "n_fit": 160,
+      "n_scores": 274,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/pill/seed1": {
+      "n_fit": 160,
+      "n_scores": 274,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/pill/seed2": {
+      "n_fit": 160,
+      "n_scores": 274,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/screw/seed0": {
+      "n_fit": 192,
+      "n_scores": 288,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/screw/seed1": {
+      "n_fit": 192,
+      "n_scores": 288,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/screw/seed2": {
+      "n_fit": 192,
+      "n_scores": 288,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/tile/seed0": {
+      "n_fit": 138,
+      "n_scores": 209,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/tile/seed1": {
+      "n_fit": 138,
+      "n_scores": 209,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/tile/seed2": {
+      "n_fit": 138,
+      "n_scores": 209,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/toothbrush/seed0": {
+      "n_fit": 36,
+      "n_scores": 66,
+      "state_size": 11289
+    },
+    "patchcore_448/mvtec/toothbrush/seed1": {
+      "n_fit": 36,
+      "n_scores": 66,
+      "state_size": 11289
+    },
+    "patchcore_448/mvtec/toothbrush/seed2": {
+      "n_fit": 36,
+      "n_scores": 66,
+      "state_size": 11289
+    },
+    "patchcore_448/mvtec/transistor/seed0": {
+      "n_fit": 128,
+      "n_scores": 185,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/transistor/seed1": {
+      "n_fit": 128,
+      "n_scores": 185,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/transistor/seed2": {
+      "n_fit": 128,
+      "n_scores": 185,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/wood/seed0": {
+      "n_fit": 148,
+      "n_scores": 178,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/wood/seed1": {
+      "n_fit": 148,
+      "n_scores": 178,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/wood/seed2": {
+      "n_fit": 148,
+      "n_scores": 178,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/zipper/seed0": {
+      "n_fit": 144,
+      "n_scores": 247,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/zipper/seed1": {
+      "n_fit": 144,
+      "n_scores": 247,
+      "state_size": 30000
+    },
+    "patchcore_448/mvtec/zipper/seed2": {
+      "n_fit": 144,
+      "n_scores": 247,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/candle/seed0": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/candle/seed1": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/candle/seed2": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/capsules/seed0": {
+      "n_fit": 325,
+      "n_scores": 377,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/capsules/seed1": {
+      "n_fit": 325,
+      "n_scores": 377,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/capsules/seed2": {
+      "n_fit": 325,
+      "n_scores": 377,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/cashew/seed0": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/cashew/seed1": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/cashew/seed2": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/chewinggum/seed0": {
+      "n_fit": 272,
+      "n_scores": 331,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/chewinggum/seed1": {
+      "n_fit": 272,
+      "n_scores": 331,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/chewinggum/seed2": {
+      "n_fit": 272,
+      "n_scores": 331,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/fryum/seed0": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/fryum/seed1": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/fryum/seed2": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/macaroni1/seed0": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/macaroni1/seed1": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/macaroni1/seed2": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/macaroni2/seed0": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/macaroni2/seed1": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/macaroni2/seed2": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pcb1/seed0": {
+      "n_fit": 542,
+      "n_scores": 562,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pcb1/seed1": {
+      "n_fit": 542,
+      "n_scores": 562,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pcb1/seed2": {
+      "n_fit": 542,
+      "n_scores": 562,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pcb2/seed0": {
+      "n_fit": 541,
+      "n_scores": 560,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pcb2/seed1": {
+      "n_fit": 541,
+      "n_scores": 560,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pcb2/seed2": {
+      "n_fit": 541,
+      "n_scores": 560,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pcb3/seed0": {
+      "n_fit": 543,
+      "n_scores": 563,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pcb3/seed1": {
+      "n_fit": 543,
+      "n_scores": 563,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pcb3/seed2": {
+      "n_fit": 543,
+      "n_scores": 563,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pcb4/seed0": {
+      "n_fit": 542,
+      "n_scores": 563,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pcb4/seed1": {
+      "n_fit": 542,
+      "n_scores": 563,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pcb4/seed2": {
+      "n_fit": 542,
+      "n_scores": 563,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pipe_fryum/seed0": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pipe_fryum/seed1": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 30000
+    },
+    "patchcore_448/visa/pipe_fryum/seed2": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 30000
+    },
+    "patchcore_wrn50/mvtec/bottle/seed0": {
+      "n_fit": 125,
+      "n_scores": 167,
+      "state_size": 9800
+    },
+    "patchcore_wrn50/mvtec/bottle/seed1": {
+      "n_fit": 125,
+      "n_scores": 167,
+      "state_size": 9800
+    },
+    "patchcore_wrn50/mvtec/bottle/seed2": {
+      "n_fit": 125,
+      "n_scores": 167,
+      "state_size": 9800
+    },
+    "patchcore_wrn50/mvtec/cable/seed0": {
+      "n_fit": 134,
+      "n_scores": 240,
+      "state_size": 10505
+    },
+    "patchcore_wrn50/mvtec/cable/seed1": {
+      "n_fit": 134,
+      "n_scores": 240,
+      "state_size": 10505
+    },
+    "patchcore_wrn50/mvtec/cable/seed2": {
+      "n_fit": 134,
+      "n_scores": 240,
+      "state_size": 10505
+    },
+    "patchcore_wrn50/mvtec/capsule/seed0": {
+      "n_fit": 131,
+      "n_scores": 220,
+      "state_size": 10270
+    },
+    "patchcore_wrn50/mvtec/capsule/seed1": {
+      "n_fit": 131,
+      "n_scores": 220,
+      "state_size": 10270
+    },
+    "patchcore_wrn50/mvtec/capsule/seed2": {
+      "n_fit": 131,
+      "n_scores": 220,
+      "state_size": 10270
+    },
+    "patchcore_wrn50/mvtec/carpet/seed0": {
+      "n_fit": 168,
+      "n_scores": 229,
+      "state_size": 13171
+    },
+    "patchcore_wrn50/mvtec/carpet/seed1": {
+      "n_fit": 168,
+      "n_scores": 229,
+      "state_size": 13171
+    },
+    "patchcore_wrn50/mvtec/carpet/seed2": {
+      "n_fit": 168,
+      "n_scores": 229,
+      "state_size": 13171
+    },
+    "patchcore_wrn50/mvtec/grid/seed0": {
+      "n_fit": 158,
+      "n_scores": 184,
+      "state_size": 12387
+    },
+    "patchcore_wrn50/mvtec/grid/seed1": {
+      "n_fit": 158,
+      "n_scores": 184,
+      "state_size": 12387
+    },
+    "patchcore_wrn50/mvtec/grid/seed2": {
+      "n_fit": 158,
+      "n_scores": 184,
+      "state_size": 12387
+    },
+    "patchcore_wrn50/mvtec/hazelnut/seed0": {
+      "n_fit": 235,
+      "n_scores": 266,
+      "state_size": 18424
+    },
+    "patchcore_wrn50/mvtec/hazelnut/seed1": {
+      "n_fit": 235,
+      "n_scores": 266,
+      "state_size": 18424
+    },
+    "patchcore_wrn50/mvtec/hazelnut/seed2": {
+      "n_fit": 235,
+      "n_scores": 266,
+      "state_size": 18424
+    },
+    "patchcore_wrn50/mvtec/leather/seed0": {
+      "n_fit": 147,
+      "n_scores": 222,
+      "state_size": 11524
+    },
+    "patchcore_wrn50/mvtec/leather/seed1": {
+      "n_fit": 147,
+      "n_scores": 222,
+      "state_size": 11524
+    },
+    "patchcore_wrn50/mvtec/leather/seed2": {
+      "n_fit": 147,
+      "n_scores": 222,
+      "state_size": 11524
+    },
+    "patchcore_wrn50/mvtec/metal_nut/seed0": {
+      "n_fit": 132,
+      "n_scores": 203,
+      "state_size": 10348
+    },
+    "patchcore_wrn50/mvtec/metal_nut/seed1": {
+      "n_fit": 132,
+      "n_scores": 203,
+      "state_size": 10348
+    },
+    "patchcore_wrn50/mvtec/metal_nut/seed2": {
+      "n_fit": 132,
+      "n_scores": 203,
+      "state_size": 10348
+    },
+    "patchcore_wrn50/mvtec/pill/seed0": {
+      "n_fit": 160,
+      "n_scores": 274,
+      "state_size": 12544
+    },
+    "patchcore_wrn50/mvtec/pill/seed1": {
+      "n_fit": 160,
+      "n_scores": 274,
+      "state_size": 12544
+    },
+    "patchcore_wrn50/mvtec/pill/seed2": {
+      "n_fit": 160,
+      "n_scores": 274,
+      "state_size": 12544
+    },
+    "patchcore_wrn50/mvtec/screw/seed0": {
+      "n_fit": 192,
+      "n_scores": 288,
+      "state_size": 15052
+    },
+    "patchcore_wrn50/mvtec/screw/seed1": {
+      "n_fit": 192,
+      "n_scores": 288,
+      "state_size": 15052
+    },
+    "patchcore_wrn50/mvtec/screw/seed2": {
+      "n_fit": 192,
+      "n_scores": 288,
+      "state_size": 15052
+    },
+    "patchcore_wrn50/mvtec/tile/seed0": {
+      "n_fit": 138,
+      "n_scores": 209,
+      "state_size": 10819
+    },
+    "patchcore_wrn50/mvtec/tile/seed1": {
+      "n_fit": 138,
+      "n_scores": 209,
+      "state_size": 10819
+    },
+    "patchcore_wrn50/mvtec/tile/seed2": {
+      "n_fit": 138,
+      "n_scores": 209,
+      "state_size": 10819
+    },
+    "patchcore_wrn50/mvtec/toothbrush/seed0": {
+      "n_fit": 36,
+      "n_scores": 66,
+      "state_size": 2822
+    },
+    "patchcore_wrn50/mvtec/toothbrush/seed1": {
+      "n_fit": 36,
+      "n_scores": 66,
+      "state_size": 2822
+    },
+    "patchcore_wrn50/mvtec/toothbrush/seed2": {
+      "n_fit": 36,
+      "n_scores": 66,
+      "state_size": 2822
+    },
+    "patchcore_wrn50/mvtec/transistor/seed0": {
+      "n_fit": 128,
+      "n_scores": 185,
+      "state_size": 10035
+    },
+    "patchcore_wrn50/mvtec/transistor/seed1": {
+      "n_fit": 128,
+      "n_scores": 185,
+      "state_size": 10035
+    },
+    "patchcore_wrn50/mvtec/transistor/seed2": {
+      "n_fit": 128,
+      "n_scores": 185,
+      "state_size": 10035
+    },
+    "patchcore_wrn50/mvtec/wood/seed0": {
+      "n_fit": 148,
+      "n_scores": 178,
+      "state_size": 11603
+    },
+    "patchcore_wrn50/mvtec/wood/seed1": {
+      "n_fit": 148,
+      "n_scores": 178,
+      "state_size": 11603
+    },
+    "patchcore_wrn50/mvtec/wood/seed2": {
+      "n_fit": 148,
+      "n_scores": 178,
+      "state_size": 11603
+    },
+    "patchcore_wrn50/mvtec/zipper/seed0": {
+      "n_fit": 144,
+      "n_scores": 247,
+      "state_size": 11289
+    },
+    "patchcore_wrn50/mvtec/zipper/seed1": {
+      "n_fit": 144,
+      "n_scores": 247,
+      "state_size": 11289
+    },
+    "patchcore_wrn50/mvtec/zipper/seed2": {
+      "n_fit": 144,
+      "n_scores": 247,
+      "state_size": 11289
+    },
+    "patchcore_wrn50/visa/candle/seed0": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 42336
+    },
+    "patchcore_wrn50/visa/candle/seed1": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 42336
+    },
+    "patchcore_wrn50/visa/candle/seed2": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 42336
+    },
+    "patchcore_wrn50/visa/capsules/seed0": {
+      "n_fit": 325,
+      "n_scores": 377,
+      "state_size": 25480
+    },
+    "patchcore_wrn50/visa/capsules/seed1": {
+      "n_fit": 325,
+      "n_scores": 377,
+      "state_size": 25480
+    },
+    "patchcore_wrn50/visa/capsules/seed2": {
+      "n_fit": 325,
+      "n_scores": 377,
+      "state_size": 25480
+    },
+    "patchcore_wrn50/visa/cashew/seed0": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 21168
+    },
+    "patchcore_wrn50/visa/cashew/seed1": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 21168
+    },
+    "patchcore_wrn50/visa/cashew/seed2": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 21168
+    },
+    "patchcore_wrn50/visa/chewinggum/seed0": {
+      "n_fit": 272,
+      "n_scores": 331,
+      "state_size": 21324
+    },
+    "patchcore_wrn50/visa/chewinggum/seed1": {
+      "n_fit": 272,
+      "n_scores": 331,
+      "state_size": 21324
+    },
+    "patchcore_wrn50/visa/chewinggum/seed2": {
+      "n_fit": 272,
+      "n_scores": 331,
+      "state_size": 21324
+    },
+    "patchcore_wrn50/visa/fryum/seed0": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 21168
+    },
+    "patchcore_wrn50/visa/fryum/seed1": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 21168
+    },
+    "patchcore_wrn50/visa/fryum/seed2": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 21168
+    },
+    "patchcore_wrn50/visa/macaroni1/seed0": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 42336
+    },
+    "patchcore_wrn50/visa/macaroni1/seed1": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 42336
+    },
+    "patchcore_wrn50/visa/macaroni1/seed2": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 42336
+    },
+    "patchcore_wrn50/visa/macaroni2/seed0": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 42336
+    },
+    "patchcore_wrn50/visa/macaroni2/seed1": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 42336
+    },
+    "patchcore_wrn50/visa/macaroni2/seed2": {
+      "n_fit": 540,
+      "n_scores": 560,
+      "state_size": 42336
+    },
+    "patchcore_wrn50/visa/pcb1/seed0": {
+      "n_fit": 542,
+      "n_scores": 562,
+      "state_size": 42492
+    },
+    "patchcore_wrn50/visa/pcb1/seed1": {
+      "n_fit": 542,
+      "n_scores": 562,
+      "state_size": 42492
+    },
+    "patchcore_wrn50/visa/pcb1/seed2": {
+      "n_fit": 542,
+      "n_scores": 562,
+      "state_size": 42492
+    },
+    "patchcore_wrn50/visa/pcb2/seed0": {
+      "n_fit": 541,
+      "n_scores": 560,
+      "state_size": 42414
+    },
+    "patchcore_wrn50/visa/pcb2/seed1": {
+      "n_fit": 541,
+      "n_scores": 560,
+      "state_size": 42414
+    },
+    "patchcore_wrn50/visa/pcb2/seed2": {
+      "n_fit": 541,
+      "n_scores": 560,
+      "state_size": 42414
+    },
+    "patchcore_wrn50/visa/pcb3/seed0": {
+      "n_fit": 543,
+      "n_scores": 563,
+      "state_size": 42571
+    },
+    "patchcore_wrn50/visa/pcb3/seed1": {
+      "n_fit": 543,
+      "n_scores": 563,
+      "state_size": 42571
+    },
+    "patchcore_wrn50/visa/pcb3/seed2": {
+      "n_fit": 543,
+      "n_scores": 563,
+      "state_size": 42571
+    },
+    "patchcore_wrn50/visa/pcb4/seed0": {
+      "n_fit": 542,
+      "n_scores": 563,
+      "state_size": 42492
+    },
+    "patchcore_wrn50/visa/pcb4/seed1": {
+      "n_fit": 542,
+      "n_scores": 563,
+      "state_size": 42492
+    },
+    "patchcore_wrn50/visa/pcb4/seed2": {
+      "n_fit": 542,
+      "n_scores": 563,
+      "state_size": 42492
+    },
+    "patchcore_wrn50/visa/pipe_fryum/seed0": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 21168
+    },
+    "patchcore_wrn50/visa/pipe_fryum/seed1": {
+      "n_fit": 270,
+      "n_scores": 330,
+      "state_size": 21168
+    },
+    "patchcore_wrn50/visa/pipe_fryum/seed2": {
       "n_fit": 270,
       "n_scores": 330,
       "state_size": 21168

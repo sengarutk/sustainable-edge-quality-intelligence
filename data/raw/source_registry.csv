@@ -1,6 +1,6 @@
 parameter,symbol,scope,low,central,high,unit,classification,citation_key,notes
-functional_unit,N,all,1000,1000,1000,parts,Scenario assumption,none,Functional unit: 1000 consecutively inspected parts
-camera_fps,f_cam,all,30,30,30,frames/s,Scenario assumption,none,Line camera capture rate; edge model runs continuously at this rate
+functional_unit,N,all,1000,1000,1000,parts,Scenario definition,none,Functional unit: 1000 consecutively inspected parts
+camera_fps,f_cam,all,30,30,30,frames/s,Scenario definition,none,Line camera capture rate; edge model runs continuously at this rate
 edge_idle_power,P_idle,all,3.11,3.11,3.162,W,Measured by this study,this_study,Jetson Orin Nano module input power (INA3221 VDD_IN) at idle; median (min-max) across repeats (results/raw/energy_summary_jetson.json); written by scripts/03c
 edge_active_power,P_active,all,0.819,0.846,1.038,W,Measured by this study,this_study,Jetson VDD_IN above idle for the full PatchCore pipeline (TensorRT FP16) at 30 FPS; median (min-max) across repeats; written by scripts/03c
 host_power,P_host,all,5,12,30,W,Scenario assumption,none,"Carrier board, industrial camera and inspection lighting of the embedded cell (outside the module's VDD_IN rail)"
@@ -38,20 +38,20 @@ nominal_false_alarm_rate,lambda_B3,policy:B3_Full_Policy,0,0.571429,1.71429,alar
 alerts_per_defect,a_B3,policy:B3_Full_Policy,1,1.11905,1.25,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
 detection_delay,d_B3,policy:B3_Full_Policy,3.20238,3.3631,3.55372,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
 glare_alerts_per_burst,b_B3,policy:B3_Full_Policy,0.69,0.69,0.69,alerts/burst,Derived from Paper A,sengar2026paperA,Alerts per 1-3 frame glare burst; Paper A mean (no interval reported)
-line_throughput,Theta,precision_component,1200,1800,3600,parts/h,Scenario assumption,none,High-volume sensor housing line
-line_throughput,Theta,machined_metal,60,120,240,parts/h,Scenario assumption,none,CNC cell (30 s nominal cycle)
-line_throughput,Theta,high_value_component,15,30,60,parts/h,Scenario assumption,none,Battery / power module assembly (2 min nominal cycle)
+line_throughput,Theta,precision_component,1200,1800,3600,parts/h,Scenario definition,none,High-volume sensor housing line
+line_throughput,Theta,machined_metal,60,120,240,parts/h,Scenario definition,none,CNC cell (30 s nominal cycle)
+line_throughput,Theta,high_value_component,15,30,60,parts/h,Scenario definition,none,Battery / power module assembly (2 min nominal cycle)
 defect_prevalence,pi,precision_component,0.025,0.046,0.093,fraction,Literature-derived,nguyen2004injection,Measured visual-defect scrap rates (splay/sink/burn/contamination/partial fill) per resin at a production injection-moulding plant: ABS 2.5% / median of five resins 4.6% / glass-filled compound 9.3%
 defect_prevalence,pi,machined_metal,0.015,0.030,0.050,fraction,Scenario assumption,none,Defective fraction of inspected parts
 defect_prevalence,pi,high_value_component,0.0434,0.0767,0.1,fraction,Literature-derived,yu2024scrap,Li-ion manufacturing scrap rate used as a proxy for defect prevalence: 2030 projection 4.34% / 2023 global average 7.67% / 10% profitability ceiling
-part_mass,m,precision_component,0.010,0.015,0.020,kg,Scenario assumption,none,Lightweight polymer / light-alloy sensor housing
-part_mass,m,machined_metal,1.00,1.25,1.60,kg,Scenario assumption,none,Machined aluminium bracket
-part_mass,m,high_value_component,12.0,14.5,18.0,kg,Scenario assumption,none,Battery / power electronics module
+part_mass,m,precision_component,0.010,0.015,0.020,kg,Scenario definition,none,Lightweight polymer / light-alloy sensor housing
+part_mass,m,machined_metal,1.00,1.25,1.60,kg,Scenario definition,none,Machined aluminium bracket
+part_mass,m,high_value_component,12.0,14.5,18.0,kg,Scenario definition,none,Battery / power electronics module
 material_carbon_factor,EF_mat,precision_component,3.31,3.76,7.62,kgCO2e/kg,Literature-derived,ice2011,ICE v2.0: general plastics 3.31 / ABS 3.76 / polycarbonate 7.62 kgCO2e/kg
 material_carbon_factor,EF_mat,machined_metal,1.81,9.16,14.8,kgCO2e/kg,Literature-derived,ice2011;iai2023,ICE v2.0 aluminium: recycled 1.81 / general with 33% recycled content 9.16 kgCO2e/kg; IAI 2023 global primary aluminium 14.8 kgCO2e/kg
 material_carbon_factor,EF_mat,high_value_component,8.91,13.5,27.2,kgCO2e/kg,Literature-derived,ivl2019,IVL C 444: 61-106 kgCO2e per kWh of battery capacity x pack specific energy 0.146 / 0.162 / 0.257 kWh/kg (assumption)
 material_recovery_fraction,eta,precision_component,0.30,0.40,0.50,fraction,Scenario assumption,allwood2011material,Mass fraction of scrap recovered for recycling
-material_recovery_fraction,eta,machined_metal,0.75,0.85,0.92,fraction,Scenario assumption,allwood2011material,Mass fraction of scrap recovered for recycling
+material_recovery_fraction,eta,machined_metal,0.76,0.81,0.86,fraction,Literature-derived,iai2024recycling,Aluminium recycling efficiency rate (new and old scrap): global 76% / Europe 81% / transport sector 86%; conservative for process scrap
 material_recovery_fraction,eta,high_value_component,0.45,0.60,0.75,fraction,Scenario assumption,allwood2011material,Mass fraction of scrap recovered for recycling
 recycling_burden,EF_rec,precision_component,0.073,0.152,0.5,kgCO2e/kg,Literature-derived,ruggeri2025postindustrial;jrc2023plastics,Central: mechanical recycling of post-industrial PE-LD (152 kgCO2e/t); bounds: 300 / 700 kWh/t mechanical-recycling electricity (JRC 2023) x EU / India grid factors
 recycling_burden,EF_rec,machined_metal,1.45,1.81,2.12,kgCO2e/kg,Literature-derived,ice2011,ICE v2.0 recycled aluminium: cast 1.45 / general 1.81 / extruded 2.12 kgCO2e/kg

@@ -1,7 +1,7 @@
 \begin{table*}[!t]
 \centering
 \scriptsize
-\caption{Parameter ledger (generated from \texttt{data/raw/source\_registry.csv}). Values are central [low, high]; Monte Carlo draws are triangular on these bounds. Class: M measured, P derived from our alert-policy study~\cite{sengar2026paperA}, L literature, O official dataset, A scenario assumption.}
+\caption{Parameter ledger (generated from \texttt{data/raw/source\_registry.csv}). Values are central [low, high]; Monte Carlo draws are triangular on these bounds. Class: M measured, P derived from our alert-policy study~\cite{sengar2026paperA}, L literature, O official dataset, D scenario definition (defines the reference product), A scenario assumption.}
 \label{tab:parameters}
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{0.94}
@@ -10,8 +10,8 @@
 Parameter & Sym. & Unit & A: Precision & B: Machined metal & C: High-value & Cl. & Source \\
 \midrule
 \multicolumn{8}{@{}l}{\emph{Global and edge-cell parameters}} \\
-functional unit & $N$ & parts & \multicolumn{3}{c}{1{,}000} & A & -- \\
-camera fps & $f_{cam}$ & frames/s & \multicolumn{3}{c}{30} & A & -- \\
+functional unit & $N$ & parts & \multicolumn{3}{c}{1{,}000} & D & -- \\
+camera fps & $f_{cam}$ & frames/s & \multicolumn{3}{c}{30} & D & -- \\
 edge idle power & $P_{idle}$ & W & \multicolumn{3}{c}{3.11 [3.11, 3.16]} & M & this study \\
 edge active power & $P_{active}$ & W & \multicolumn{3}{c}{0.846 [0.819, 1.04]} & M & this study \\
 host power & $P_{host}$ & W & \multicolumn{3}{c}{12 [5, 30]} & A & -- \\
@@ -30,11 +30,11 @@ freight carbon intensity & $EF_{fr}$ & kgCO$_2$e/t-km & \multicolumn{3}{c}{0.195
 return distance & $d_{ret}$ & km & \multicolumn{3}{c}{142 [97.5, 594]} & O & \cite{eurostat2026road} \\
 \midrule
 \multicolumn{8}{@{}l}{\emph{Scenario parameters}} \\
-line throughput & $\Theta$ & parts/h & 1{,}800 [1{,}200, 3{,}600] & 120 [60, 240] & 30 [15, 60] & A & -- \\
+line throughput & $\Theta$ & parts/h & 1{,}800 [1{,}200, 3{,}600] & 120 [60, 240] & 30 [15, 60] & D & -- \\
 defect prevalence & $\pi$ & fraction & 0.0460 [0.0250, 0.0930] & 0.0300 [0.0150, 0.0500] & 0.0767 [0.0434, 0.100] & L & \cite{nguyen2004injection,yu2024scrap} \\
-part mass & $m$ & kg & 0.015 [0.01, 0.02] & 1.25 [1, 1.6] & 14.5 [12, 18] & A & -- \\
+part mass & $m$ & kg & 0.015 [0.01, 0.02] & 1.25 [1, 1.6] & 14.5 [12, 18] & D & -- \\
 material carbon factor & $EF_{mat}$ & kgCO$_2$e/kg & 3.76 [3.31, 7.62] & 9.16 [1.81, 14.8] & 13.5 [8.91, 27.2] & L & \cite{ice2011,iai2023,ivl2019} \\
-material recovery fraction & $\eta$ & fraction & 0.400 [0.300, 0.500] & 0.850 [0.750, 0.920] & 0.600 [0.450, 0.750] & A & \cite{allwood2011material} \\
+material recovery fraction & $\eta$ & fraction & 0.400 [0.300, 0.500] & 0.810 [0.760, 0.860] & 0.600 [0.450, 0.750] & A & \cite{allwood2011material,iai2024recycling} \\
 recycling burden & $EF_{rec}$ & kgCO$_2$e/kg & 0.152 [0.073, 0.5] & 1.81 [1.45, 2.12] & 2.8 [1, 6.1] & L & \cite{ruggeri2025postindustrial,jrc2023plastics,ice2011,machala2025recycling} \\
 rework energy & $e_{rw}$ & kWh/part & 0.05 [0.03, 0.08] & 1.8 [1.2, 2.5] & 5.5 [3.8, 7.5] & A & -- \\
 base reworkability & $q_0$ & fraction & 0.900 [0.800, 0.950] & 0.850 [0.750, 0.920] & 0.700 [0.600, 0.800] & A & -- \\

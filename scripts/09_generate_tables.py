@@ -15,7 +15,8 @@ from src.paths import PROCESSED_DIR, RESULTS_TABLE_DIR, SCENARIOS  # noqa: E402
 from src.validation.source_registry import load_registry  # noqa: E402
 
 CLASS_SHORT = {"Measured by this study": "M", "Derived from Paper A": "P", "Literature-derived": "L",
-               "Official/public dataset": "O", "Scenario assumption": "A"}
+               "Official/public dataset": "O", "Scenario assumption": "A",
+               "Scenario definition": "D"}
 UNIT_TEX = {"kgCO2e": r"kgCO$_2$e", "kgCO2e/kg": r"kgCO$_2$e/kg", "kgCO2e/kWh": r"kgCO$_2$e/kWh",
             "kgCO2e/escape": r"kgCO$_2$e", "kgCO2e/t-km": r"kgCO$_2$e/t-km", "s^-1": r"s$^{-1}$", "-": "--"}
 SYMBOL_TEX = {
@@ -98,7 +99,7 @@ def table1_ledger():
         r"\begin{table*}[!t]", r"\centering", r"\scriptsize",
         r"\caption{Parameter ledger (generated from \texttt{data/raw/source\_registry.csv}). Values are central [low, high]; "
         r"Monte Carlo draws are triangular on these bounds. Class: M measured, P derived from our alert-policy study~\cite{sengar2026paperA}, L literature, "
-        r"O official dataset, A scenario assumption.}",
+        r"O official dataset, D scenario definition (defines the reference product), A scenario assumption.}",
         r"\label{tab:parameters}", r"\setlength{\tabcolsep}{3pt}", r"\renewcommand{\arraystretch}{0.94}",
         r"\begin{tabular}{@{}llllllll@{}}", r"\toprule",
         r"Parameter & Sym. & Unit & A: Precision & B: Machined metal & C: High-value & Cl. & Source \\", r"\midrule",

@@ -23,7 +23,8 @@ def configurations():
     """(name, platform label, overrides) for every measured edge configuration."""
     js = json.loads(JETSON_SUMMARY.read_text(encoding="utf-8"))
     out = []
-    for cfg, run in sorted(js["runs"].items(), key=lambda kv: kv[0] != js["primary"]):
+    runs = {c: r for c, r in js["runs"].items() if c.rsplit("_", 1)[0] in ("patchcore", "padim")}  # Section IV set
+    for cfg, run in sorted(runs.items(), key=lambda kv: kv[0] != js["primary"]):
         active = run["stages"]["STAGE_FULL_PIPELINE"]["p_active_w"]["median"]
         over = {} if cfg == js["primary"] else {"edge_active_power": active}
         out.append((f"jetson_{cfg}", "Jetson Orin Nano", over))

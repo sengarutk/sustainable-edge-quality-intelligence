@@ -19,7 +19,7 @@ def test_registry_validates():
 
 def test_every_non_assumption_has_citation():
     for r in load_registry():
-        if r.classification.value != "Scenario assumption":
+        if r.classification.value not in ("Scenario assumption", "Scenario definition"):
             assert r.citation_key != "none", r.key
 
 

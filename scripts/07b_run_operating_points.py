@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pandas as pd  # noqa: E402
 
+from src.experiments.compute_recall import compute_for_recall, summary  # noqa: E402
 from src.experiments.decision_rule import evaluate_population, nomogram  # noqa: E402
 from src.experiments.detector_eval import units  # noqa: E402
 from src.experiments.operating_points import curve, optimal_thresholds, reference_points  # noqa: E402
@@ -25,6 +26,9 @@ def main():
     write_csv(opt, PROCESSED_DIR / "carbon_optimal_thresholds.csv")
     print(opt.groupby("scenario")[["fpr_opt", "recall_opt", "saving_vs_q99", "saving_vs_budget"]].median())
     write_csv(nomogram(), PROCESSED_DIR / "nomogram.csv")
+    cr = compute_for_recall()
+    write_csv(cr, PROCESSED_DIR / "compute_recall.csv")
+    write_csv(summary(cr), PROCESSED_DIR / "compute_recall_summary.csv")
     pop = evaluate_population(POPULATION_SIZE, POPULATION_SEED)
     write_csv(pd.DataFrame(pop), PROCESSED_DIR / "population.csv")
     print(f"population: B3 beats N0 in {100 * (pop['dc_N0'] > 0).mean():.1f}%, L0 in {100 * (pop['dc_L0'] > 0).mean():.1f}%")

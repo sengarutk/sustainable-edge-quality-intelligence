@@ -466,6 +466,102 @@ def fig12_nomogram():
     save(fig, "fig12_nomogram")
 
 
+DET_LABEL = {"patchcore": "PatchCore R18, 224 px", "patchcore_448": "PatchCore R18, 448 px",
+             "patchcore_wrn50": "PatchCore WRN50, 224 px", "padim": "PaDiM R18, 224 px"}
+DET_COLOR = {"patchcore": "#2a78d6", "patchcore_448": "#1baf7a", "patchcore_wrn50": "#7a5195", "padim": "#eb6834"}
+
+
+def fig13_compute_for_recall():
+    cr = pd.read_csv(PROCESSED_DIR / "compute_recall.csv")
+    summ = pd.read_csv(PROCESSED_DIR / "compute_recall_summary.csv")
+    dets = [d for d in DET_LABEL if d in set(cr.detector)]
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(DOUBLE, 2.5), gridspec_kw={"width_ratios": [1, 1.15]})
+    one = cr[cr.scenario == SCENARIOS[0]]
+    label_pos = {"patchcore": (5, 0.88, "left"), "padim": (5, 0.40, "left"), "patchcore_wrn50": (5, 0.40, "left"),
+                 "patchcore_448": (-5, 0.28, "right")}
+    for d in dets:
+        sub = one[one.detector == d]
+        x0 = sub.frame_mj.iloc[0]
+        ym, yv = sub[sub.dataset == "mvtec"].recall_q99.median(), sub[sub.dataset == "visa"].recall_q99.median()
+        a1.plot([x0, x0], [yv, ym], color=DET_COLOR[d], lw=1.2, alpha=0.6)
+        a1.plot(x0, ym, marker="o", ms=6, color=DET_COLOR[d], mec=SURFACE, ls="none")
+        a1.plot(x0, yv, marker="s", ms=6, color=DET_COLOR[d], mec=SURFACE, ls="none")
+        dx, ylab, ha = label_pos[d]
+        a1.annotate(DET_LABEL[d].replace(", ", "\n"), (x0, ylab), xytext=(dx, 0), textcoords="offset points",
+                    fontsize=6, color=DET_COLOR[d], va="center", ha=ha)
+    a1.axhline(load_scenario(SCENARIOS[0]).central()["manual_inspection_recall"], color=INK2, lw=0.8, ls="--")
+    a1.text(0.02, 0.765, "manual inspection", transform=a1.get_yaxis_transform(), fontsize=6.3, color=INK2, ha="left", va="bottom")
+    from matplotlib.lines import Line2D
+    a1.legend(handles=[Line2D([], [], marker="o", ls="none", color=INK2, label="MVTec AD median"),
+                       Line2D([], [], marker="s", ls="none", color=INK2, label="VisA median")], loc="lower left", fontsize=6.3)
+    a1.set_xlim(0, 200)
+    a1.set_ylim(0, 1.05)
+    a1.set_xlabel("Jetson active energy per frame (mJ, FP16)")
+    a1.set_ylabel("Recall at q99 (median over categories)")
+    w = 0.8 / len(dets)
+    x = np.arange(len(SCENARIOS))
+    for i, d in enumerate(dets):
+        v = summ[summ.detector == d].set_index("scenario").loc[list(SCENARIOS)]
+        a2.bar(x + (i - (len(dets) - 1) / 2) * w, 100 * v.share_beating_L0, w, color=DET_COLOR[d], edgecolor=SURFACE,
+               label=DET_LABEL[d])
+    a2.set_xticks(x, [SC_LABEL[sc].replace(": ", ":\n") for sc in SCENARIOS])
+    a2.set_ylabel("Categories where B3 beats manual (%)")
+    a2.set_ylim(0, 128)
+    a2.legend(loc="upper center", ncol=2, fontsize=6, handlelength=1.0, columnspacing=0.8)
+    a2.grid(axis="x", visible=False)
+    fig.tight_layout()
+    save(fig, "fig13_compute_for_recall")
+
+
+def graphical_abstract():
+    plat = pd.read_csv(PROCESSED_DIR / "platform_comparison.csv")
+    nomo = pd.read_csv(PROCESSED_DIR / "nomogram.csv")
+    ref = pd.read_csv(PROCESSED_DIR / "detector_reference_points.csv").query("detector == 'patchcore'")
+    fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(10.0, 4.0))
+    # 1: compute vs benefit
+    jp = plat[plat.configuration == "jetson_patchcore_fp16"].set_index("scenario").loc[list(SCENARIOS)]
+    x = np.arange(len(SCENARIOS))
+    a1.bar(x - 0.2, jp.delta_C_vs_L0, 0.38, color="#2a78d6", label="carbon benefit vs manual")
+    a1.bar(x + 0.2, jp.edge_cell_carbon, 0.38, color="#e34948", label="edge cell (Jetson)")
+    a1.set_yscale("log")
+    a1.set_xticks(x, [SC_LABEL[sc].replace(": ", ":\n") for sc in SCENARIOS], fontsize=8)
+    a1.set_ylabel("kgCO$_2$e per 1,000 parts")
+    a1.set_title("1  Compute is negligible", fontsize=10, loc="left", fontweight="bold")
+    a1.legend(fontsize=7.5, loc="upper left")
+    a1.grid(axis="x", visible=False)
+    # 2: recall decides against human inspectors
+    s_ = load_scenario(SCENARIOS[1])
+    rec = np.linspace(0.3, 1.0, 141)
+    res = evaluate_all({**s_.central(), "ai_recall": rec}, s_.class_shares)
+    dc = compare(res["L0_Manual"], res[PRIMARY_TIER]).delta["C"]
+    a2.plot(rec, dc, color="#2a78d6", lw=2.0)
+    a2.axhline(0, color=INK2, lw=0.8)
+    a2.axvline(s_.central()["manual_inspection_recall"], color=INK2, lw=0.8, ls="--")
+    a2.text(s_.central()["manual_inspection_recall"] - 0.01, a2.get_ylim()[1] * 0.85, "human\ninspectors", ha="right", fontsize=7.5, color=INK2)
+    for ds, c in (("mvtec", "#2a78d6"), ("visa", "#eb6834")):
+        v = ref[ref.dataset == ds].recall_q99.median()
+        a2.plot(v, 0, marker="v", ms=8, ls="none", color=c, mec=SURFACE, label={"mvtec": "MVTec AD median", "visa": "VisA median"}[ds])
+    a2.set_xlabel("Detector recall")
+    a2.set_ylabel(r"$\Delta C$ vs manual (machined part)")
+    a2.set_title("2  Recall decides vs humans", fontsize=10, loc="left", fontweight="bold")
+    a2.legend(fontsize=7.5, loc="lower right")
+    # 3: the rule
+    jc = nomo[nomo.variant == "jetson_central"]
+    a3.plot(jc.embodied_per_part, jc.defects_per_hour_star, color="#2a78d6", lw=2.0)
+    a3.fill_between(jc.embodied_per_part, jc.defects_per_hour_star, 1e4, color="#2a78d6", alpha=0.08, lw=0)
+    a3.set_xscale("log")
+    a3.set_yscale("log")
+    a3.set_ylim(1e-6, 1e3)
+    a3.set_xlim(jc.embodied_per_part.min(), jc.embodied_per_part.max())
+    a3.text(0.95, 0.92, "inspect", transform=a3.transAxes, ha="right", fontsize=9, color="#2a78d6", fontweight="bold")
+    a3.text(0.05, 0.08, "do not\ninspect", transform=a3.transAxes, ha="left", fontsize=9, color=INK2)
+    a3.set_xlabel("Embodied carbon per part (kgCO$_2$e)")
+    a3.set_ylabel("Break-even defects per hour")
+    a3.set_title("3  One rule decides vs no inspection", fontsize=10, loc="left", fontweight="bold")
+    fig.tight_layout()
+    save(fig, "graphical_abstract")
+
+
 def main():
     print("Step 08: generating figures")
     fig1_system_boundary()
@@ -480,6 +576,8 @@ def main():
     fig10_decision_rule()
     fig11_cry_wolf()
     fig12_nomogram()
+    fig13_compute_for_recall()
+    graphical_abstract()
 
 
 if __name__ == "__main__":

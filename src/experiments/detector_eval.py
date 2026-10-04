@@ -1,10 +1,12 @@
 """
 Measured detector operating points: two detectors on two public industrial datasets.
 
-Detectors (both on an ImageNet ResNet-18, image size 224):
+Detectors (ImageNet backbones, image size 224):
   PatchCore -- as in the companion alert-policy study: layer2 + layer3 features average-pooled
                3x3 and concatenated (28x28x384), greedy k-center coreset of 10 % of the patches,
-               1-NN distance to the memory bank;
+               1-NN distance to the memory bank. Two higher-compute variants test whether compute buys
+               recall: a WideResNet-50 backbone (patchcore_wrn50, 768-d patches) and 448x448 input
+               (patchcore_448; a seeded 300k-patch subset enters the coreset selection);
   PaDiM     -- layer1-3 features at 56x56 (448 channels, 100 kept by a seeded random choice),
                one Gaussian per patch position, Mahalanobis distance.
 Image score = max of the Gaussian-smoothed (sigma 4) anomaly map at 224x224.
@@ -40,7 +42,8 @@ DATASETS = {
     "visa": ("candle", "capsules", "cashew", "chewinggum", "fryum", "macaroni1", "macaroni2", "pcb1", "pcb2",
              "pcb3", "pcb4", "pipe_fryum"),
 }
-DETECTORS = ("patchcore", "padim")
+DETECTORS = ("patchcore", "padim", "patchcore_wrn50", "patchcore_448")
+HIRES_SIZE, HIRES_MAX_PATCHES = 448, 300_000
 PRIMARY_DETECTOR = "patchcore"
 SEEDS = (0, 1, 2)
 IMG_SIZE = 224
@@ -99,7 +102,7 @@ def dataset_paths(dataset: str, root: Path, category: str) -> Tuple[List[Path], 
     raise KeyError(dataset)
 
 
-def load_images(paths: List[Path], device):
+def load_images(paths: List[Path], device, size: int = IMG_SIZE):
     import torch
     from PIL import Image
 
@@ -107,22 +110,95 @@ def load_images(paths: List[Path], device):
     std = torch.tensor(IMAGENET_STD).view(3, 1, 1)
     out = []
     for p in paths:
-        img = Image.open(p).convert("RGB").resize((IMG_SIZE, IMG_SIZE), Image.BILINEAR)
+        img = Image.open(p).convert("RGB").resize((size, size), Image.BILINEAR)
         t = torch.from_numpy(np.asarray(img, dtype=np.float32) / 255.0).permute(2, 0, 1)
         out.append((t - mean) / std)
     return torch.stack(out).to(device)
 
 
+BACKBONES = ("resnet18", "wide_resnet50_2")
+WRN50_URL = "https://download.pytorch.org/models/wide_resnet50_2-95faca4d.pth"  # torchvision IMAGENET1K_V1
+
+
+def wide_resnet50_2():
+    """WideResNet-50-2 with torchvision's parameter names and the official ImageNet weights. Defined here
+    because old torchvision releases lack it; the checkpoint is verified against the hash prefix in its name."""
+    import hashlib as _h
+
+    import torch
+    import torch.nn as nn
+
+    class Bottleneck(nn.Module):
+        expansion = 4
+
+        def __init__(self, inp, planes, stride=1, downsample=None):
+            super().__init__()
+            width = planes * 2  # width_per_group = 128
+            self.conv1 = nn.Conv2d(inp, width, 1, bias=False)
+            self.bn1 = nn.BatchNorm2d(width)
+            self.conv2 = nn.Conv2d(width, width, 3, stride, 1, bias=False)
+            self.bn2 = nn.BatchNorm2d(width)
+            self.conv3 = nn.Conv2d(width, planes * 4, 1, bias=False)
+            self.bn3 = nn.BatchNorm2d(planes * 4)
+            self.relu = nn.ReLU(inplace=True)
+            self.downsample = downsample
+
+        def forward(self, x):
+            idt = x if self.downsample is None else self.downsample(x)
+            out = self.relu(self.bn1(self.conv1(x)))
+            out = self.relu(self.bn2(self.conv2(out)))
+            return self.relu(self.bn3(self.conv3(out)) + idt)
+
+    class WRN(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.inplanes = 64
+            self.conv1 = nn.Conv2d(3, 64, 7, 2, 3, bias=False)
+            self.bn1 = nn.BatchNorm2d(64)
+            self.relu = nn.ReLU(inplace=True)
+            self.maxpool = nn.MaxPool2d(3, 2, 1)
+            self.layer1 = self._layer(64, 3)
+            self.layer2 = self._layer(128, 4, 2)
+            self.layer3 = self._layer(256, 6, 2)
+            self.layer4 = self._layer(512, 3, 2)
+            self.avgpool = nn.AdaptiveAvgPool2d(1)
+            self.fc = nn.Linear(2048, 1000)
+
+        def _layer(self, planes, blocks, stride=1):
+            ds = None
+            if stride != 1 or self.inplanes != planes * 4:
+                ds = nn.Sequential(nn.Conv2d(self.inplanes, planes * 4, 1, stride, bias=False), nn.BatchNorm2d(planes * 4))
+            layers = [Bottleneck(self.inplanes, planes, stride, ds)]
+            self.inplanes = planes * 4
+            layers += [Bottleneck(self.inplanes, planes) for _ in range(1, blocks)]
+            return nn.Sequential(*layers)
+
+    net = WRN()
+    path = torch.hub.get_dir() + "/checkpoints/" + WRN50_URL.rsplit("/", 1)[1]
+    import os
+    if not os.path.exists(path):
+        torch.hub.download_url_to_file(WRN50_URL, path, progress=False)
+    with open(path, "rb") as fh:
+        if not _h.sha256(fh.read()).hexdigest().startswith("95faca4d"):
+            raise RuntimeError("WideResNet-50-2 checkpoint hash mismatch")
+    net.load_state_dict(torch.load(path, map_location="cpu", weights_only=True), strict=True)
+    return net
+
+
 class Backbone:
-    def __init__(self, device, seed: int = 0):
+    def __init__(self, device, seed: int = 0, arch: str = "resnet18", img_size: int = IMG_SIZE):
         import torch
         import torch.nn as nn
-        from torchvision.models import resnet18
+        import torchvision.models as tvm
 
+        if arch not in BACKBONES:
+            raise ValueError(f"unknown backbone '{arch}'")
         self.torch = torch
         self.device = device
         self.seed = seed
-        net = resnet18(pretrained=True)  # ImageNet weights (torchvision cache); API valid across torchvision versions
+        self.arch = arch
+        self.img_size = img_size
+        net = tvm.resnet18(pretrained=True) if arch == "resnet18" else wide_resnet50_2()  # ImageNet weights
         self.net = net.to(device).eval()
         self.pool = nn.AvgPool2d(3, 1, 1)
 
@@ -130,14 +206,19 @@ class Backbone:
         import torch.nn.functional as F
         from scipy.ndimage import gaussian_filter
 
-        amap = F.interpolate(d.reshape(b, 1, h, w), size=(IMG_SIZE, IMG_SIZE), mode="bilinear",
+        amap = F.interpolate(d.reshape(b, 1, h, w), size=(self.img_size, self.img_size), mode="bilinear",
                              align_corners=False)[:, 0].cpu().numpy()
         return [float(gaussian_filter(a, sigma=4).max()) for a in amap]
 
 
 class PatchCore(Backbone):
-    def __init__(self, device, seed: int = 0, coreset_ratio: float = CORESET_RATIO, bank_size: int | None = None):
-        super().__init__(device, seed)
+    """PatchCore with ResNet-18 (384-d patches, as in the companion study) or WideResNet-50 (the backbone of the
+    original paper; its 1536 layer-2/3 channels are averaged in adjacent pairs to 768-d patches)."""
+
+    def __init__(self, device, seed: int = 0, coreset_ratio: float = CORESET_RATIO, bank_size: int | None = None,
+                 arch: str = "resnet18", img_size: int = IMG_SIZE, max_patches: int | None = None):
+        super().__init__(device, seed, arch, img_size)
+        self.max_patches = max_patches
         self.coreset_ratio = coreset_ratio
         self.bank_size = bank_size
         self.bank = None
@@ -152,7 +233,10 @@ class PatchCore(Backbone):
             l3 = n.layer3(l2)
             p2, p3 = self.pool(l2), self.pool(l3)
             p3 = F.interpolate(p3, size=p2.shape[-2:], mode="bilinear", align_corners=False)
-            f = torch.cat([p2, p3], dim=1)  # (B, 384, 28, 28)
+            f = torch.cat([p2, p3], dim=1)  # (B, 384, 28, 28) for ResNet-18
+            if self.arch == "wide_resnet50_2":
+                b, c, h, w = f.shape
+                f = f.reshape(b, c // 2, 2, h, w).mean(2)  # (B, 768, 28, 28)
         return f
 
     def _coreset(self, patches):
@@ -178,11 +262,20 @@ class PatchCore(Backbone):
         return patches[sel[:m]]
 
     def fit(self, images, batch: int = 32):
+        """images: a tensor, or a list of paths loaded batch by batch (high resolutions). With max_patches, a
+        seeded random subset of the patches enters the coreset selection (approximate greedy coreset)."""
+        torch = self.torch
         feats = []
         for i in range(0, len(images), batch):
-            f = self.features(images[i:i + batch])
+            x = images[i:i + batch]
+            x = load_images(x, self.device, self.img_size) if isinstance(x, list) else x
+            f = self.features(x)
             feats.append(f.permute(0, 2, 3, 1).reshape(-1, f.shape[1]))
-        self.bank = self._coreset(self.torch.cat(feats))
+        patches = torch.cat(feats)
+        if self.max_patches is not None and len(patches) > self.max_patches:
+            g = torch.Generator(device=self.device).manual_seed(self.seed)
+            patches = patches[torch.randperm(len(patches), generator=g, device=self.device)[:self.max_patches]]
+        self.bank = self._coreset(patches)
 
     def score(self, images, batch: int = 16) -> np.ndarray:
         torch = self.torch
@@ -253,6 +346,10 @@ class PaDiM(Backbone):
 
 
 def make_detector(name: str, device, seed: int):
+    if name == "patchcore_wrn50":
+        return PatchCore(device, seed=seed, arch="wide_resnet50_2")
+    if name == "patchcore_448":
+        return PatchCore(device, seed=seed, img_size=HIRES_SIZE, max_patches=HIRES_MAX_PATCHES)
     return {"patchcore": PatchCore, "padim": PaDiM}[name](device, seed=seed)
 
 
@@ -280,12 +377,15 @@ def evaluate_unit(unit: Unit, root: Path, seed: int, device) -> Dict:
         raise FileNotFoundError(f"{unit.label}: missing images under {root}")
     fit, cal, held = split_good(train_good, seed)
     model = make_detector(unit.detector, device, seed)
-    model.fit(load_images(fit, device))
+    if model.img_size == IMG_SIZE:
+        model.fit(load_images(fit, device))
+    else:  # high resolution: stream the fit images in small batches
+        model.fit(fit, batch=8)
     roles = {"calibration": cal, "heldout_good": held, "test_good": test_good, "test_defect": test_def}
     scores, role, dtype, files = [], [], [], []
     for r, ps in roles.items():
         for j in range(0, len(ps), 64):  # bounded GPU memory for large categories
-            scores.extend(model.score(load_images(ps[j:j + 64], device)))
+            scores.extend(model.score(load_images(ps[j:j + 64], device, model.img_size)))
         role.extend([r] * len(ps))
         dtype.extend([p.parent.name for p in ps])
         files.extend([str(p.relative_to(root)) for p in ps])
@@ -294,7 +394,7 @@ def evaluate_unit(unit: Unit, root: Path, seed: int, device) -> Dict:
 
 
 def run_detector_eval(roots: Dict[str, Path] | None = None, out_dir: Path = SCORE_DIR,
-                      detectors=DETECTORS, datasets=tuple(DATASETS)) -> Path:
+                      detectors=DETECTORS, datasets=tuple(DATASETS), skip_existing: bool = False) -> Path:
     import torch
     import torchvision
 
@@ -318,6 +418,8 @@ def run_detector_eval(roots: Dict[str, Path] | None = None, out_dir: Path = SCOR
         for ds in datasets:
             for unit in units(det, ds):
                 for seed in SEEDS:
+                    if skip_existing and score_path(unit, seed).exists() and f"{unit.label}/seed{seed}" in meta["runs"]:
+                        continue
                     r = evaluate_unit(unit, roots[ds], seed, device)
                     path = score_path(unit, seed)
                     path.parent.mkdir(parents=True, exist_ok=True)

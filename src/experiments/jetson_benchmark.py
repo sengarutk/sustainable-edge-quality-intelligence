@@ -193,7 +193,7 @@ def run(export_dir: Path, detector: str, precision: str, out_root: Path, repeats
     workload = json.loads((export_dir / "workload.json").read_text())
     det = workload["detectors"][detector]
     engine = export_dir / f"{detector}_{precision}.engine"
-    score_fn = TrtScorer(engine, np.load(export_dir / "frames.npy"))
+    score_fn = TrtScorer(engine, np.load(export_dir / det.get("frames_file", "frames.npy")))
     meter = InaMeter()
     fid = fidelity(score_fn, det["reference_scores"], det["threshold"])
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + f"_{detector}_{precision}"
@@ -223,7 +223,7 @@ def run(export_dir: Path, detector: str, precision: str, out_root: Path, repeats
         "method": "Jetson INA3221 VDD_IN (module input power) sampled at 20 Hz, trapezoid-integrated over fixed "
                   "windows at target FPS; shuffled stage order; idle reference per repeat; median [min, max] across repeats",
         "target_fps": fps, "repeats": repeats, "window_s": window_s, "idle_window_s": idle_s, "seed": seed,
-        "workload": f"{detector} single-graph TensorRT engine ({precision}), batch 1, 224x224, MVTec AD "
+        "workload": f"{detector} single-graph TensorRT engine ({precision}), batch 1, {det.get('img_size', 224)}x{det.get('img_size', 224)}, MVTec AD "
                     f"{workload['category']} frames; host-to-device copy per frame",
         "workload_detail": {"detector": detector, "precision": precision, "category": workload["category"],
                             "state_size": det["state_size"], "threshold": det["threshold"],
@@ -243,7 +243,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--export-dir", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
-    ap.add_argument("--detector", choices=("patchcore", "padim"), required=True)
+    ap.add_argument("--detector", choices=("patchcore", "padim", "patchcore_448", "patchcore_wrn50"), required=True)
     ap.add_argument("--precision", choices=("fp32", "fp16"), required=True)
     ap.add_argument("--repeats", type=int, default=5)
     a = ap.parse_args()
