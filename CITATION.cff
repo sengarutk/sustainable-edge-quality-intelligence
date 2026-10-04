@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software or data, please cite it as below."
+title: "Sustainable Edge Quality Intelligence: measured edge-inference energy versus quality-driven carbon, material and workload effects"
+authors:
+  - family-names: Sengar
+    given-names: Utkarsh
+    affiliation: "Indian Institute of Technology Dharwad"
+version: 0.2.0
+license: MIT
+repository-code: "https://github.com/sengarutk/sustainable-edge-quality-intelligence"

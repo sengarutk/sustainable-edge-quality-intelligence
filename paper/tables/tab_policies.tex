@@ -1,0 +1,17 @@
+\begin{table}[!t]
+\centering
+\scriptsize
+\caption{Alert policies, as measured in~\cite{sengar2026paperA} on PatchCore scores of seven MVTec~AD categories (21 paired units; mean [95\% bootstrap interval]). B0 thresholds every frame, B1 adds exponential smoothing, B2 adds $k$-of-$N$ persistence, and B3 adds the incident latch, machine-state gating and divergence triage. All four detected every sustained defect.}
+\label{tab:policies}
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Quantity & B0 & B1 & B2 & B3 \\
+\midrule
+False alerts on good parts $\lambda_t$ (1/h) & \shortstack{3{,}971\\[-1pt]{\tiny[1{,}933, 6{,}299]}} & \shortstack{60.0\\[-1pt]{\tiny[6.27, 123]}} & \shortstack{2.86\\[-1pt]{\tiny[0, 8.57]}} & \shortstack{0.571\\[-1pt]{\tiny[0, 1.71]}} \\
+Alerts per 1--3 frame glare burst $b_t$ (--) & 2.54 & 4.42 & 5.94 & 0.690 \\
+Alerts per defect episode $a_t$ (--) & \shortstack{144\\[-1pt]{\tiny[135, 153]}} & \shortstack{152\\[-1pt]{\tiny[144, 161]}} & \shortstack{155\\[-1pt]{\tiny[147, 164]}} & \shortstack{1.12\\[-1pt]{\tiny[1.00, 1.25]}} \\
+Mean detection delay $d_t$ (frames) & \shortstack{0.0417\\[-1pt]{\tiny[0.0119, 0.0774]}} & \shortstack{0.363\\[-1pt]{\tiny[0.202, 0.554]}} & \shortstack{3.36\\[-1pt]{\tiny[3.20, 3.55]}} & \shortstack{3.36\\[-1pt]{\tiny[3.20, 3.55]}} \\
+\bottomrule
+\end{tabular}
+\end{table}

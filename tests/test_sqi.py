@@ -1,46 +1,45 @@
-"""
-Unit tests for the Multi-Profile Sustainability Quality Index (SQI).
-"""
+import pytest
 
-from pathlib import Path
-from src.sustainability.sqi import SQIEngine, DEFAULT_PROFILES
-from src.models.pipeline_evaluator import ScenarioPipelineEvaluator
-
-CONFIG_PATH = Path("/home/sengar/sustainable-edge-quality-intelligence/configs/sqi_weights.yaml")
-SCENARIO_PATH = Path("/home/sengar/sustainable-edge-quality-intelligence/configs/scenarios/precision_component.yaml")
+from src.sustainability.sqi import DIMENSIONS, bounded_indicator, evaluate_sqi, load_profiles, weight_robustness
 
 
-def test_sqi_weight_sum_to_unity():
-    engine = SQIEngine(config_path=CONFIG_PATH)
-    for profile, weights in engine.profiles.items():
-        total_w = sum(weights.values())
-        assert abs(total_w - 1.0) < 1e-4, f"Profile {profile} weights do not sum to 1.0: {total_w}"
+def test_profiles_are_convex_weights():
+    for w in load_profiles().values():
+        assert set(w) == set(DIMENSIONS)
+        assert sum(w.values()) == pytest.approx(1.0)
+        assert min(w.values()) >= 0
 
 
-def test_baseline_identity_sqi_zero():
-    """Validates that a policy identical to baseline yields SQI = 0.0."""
-    ev = ScenarioPipelineEvaluator.from_yaml(SCENARIO_PATH)
-    b0 = ev.evaluate_policy("B0_Raw", recall=1.0, alert_rate_per_hr=180.0, delay_frames=0.0)
-    identical = ev.evaluate_policy("B0_Identical", recall=1.0, alert_rate_per_hr=180.0, delay_frames=0.0, baseline_result=b0)
-
-    for prof, score in identical.sqi.profile_scores.items():
-        assert abs(score) < 1e-6, f"SQI for identical baseline policy should be 0.0, got {score} in {prof}"
+def test_malformed_profile_rejected_with_message(tmp_path):
+    cfg = tmp_path / "sqi.yaml"
+    cfg.write_text("profiles:\n  bad:\n    weights: {w_M: 0.5, w_E: 0.5, w_C: 0.0}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="exactly w_M"):
+        load_profiles(cfg)
 
 
-def test_monotonic_sqi_response():
-    engine = SQIEngine(config_path=CONFIG_PATH)
-    # Higher savings should strictly increase SQI
-    eval_low = engine.evaluate(
-        delta_m=1.0, m_baseline_loss=10.0,
-        delta_e=1.0, e_baseline_total=10.0,
-        delta_c=1.0, c_baseline_total=10.0,
-        delta_h=1.0, h_baseline_hours=10.0,
-    )
-    eval_high = engine.evaluate(
-        delta_m=5.0, m_baseline_loss=10.0,
-        delta_e=5.0, e_baseline_total=10.0,
-        delta_c=5.0, c_baseline_total=10.0,
-        delta_h=5.0, h_baseline_hours=10.0,
-    )
-    for prof in engine.profiles:
-        assert eval_high.profile_scores[prof] > eval_low.profile_scores[prof]
+def test_bounded_indicator_range_and_identity(rng):
+    b, q = rng.uniform(0, 10, 10000), rng.uniform(0, 10, 10000)
+    b[:100] = 0.0  # include exact zeros on either side
+    q[100:200] = 0.0
+    s = bounded_indicator(b, q)
+    assert (s >= -1).all() and (s <= 1).all()
+    with pytest.raises(ValueError, match="non-negative"):
+        bounded_indicator(1.0, -1.0)
+    assert float(bounded_indicator(0.0, 0.0)) == 0.0
+    assert float(bounded_indicator(5.0, 5.0)) == 0.0
+    assert float(bounded_indicator(4.0, 0.0)) == 1.0
+
+
+def test_sqi_monotone_in_improvement():
+    base = {k: 10.0 for k in DIMENSIONS}
+    lo = evaluate_sqi(base, {k: 9.0 for k in DIMENSIONS})
+    hi = evaluate_sqi(base, {k: 5.0 for k in DIMENSIONS})
+    for prof in lo.scores:
+        assert hi.scores[prof] > lo.scores[prof]
+
+
+def test_weight_robustness():
+    assert weight_robustness({k: 0.5 for k in DIMENSIONS}) == 1.0
+    assert weight_robustness({k: -0.5 for k in DIMENSIONS}) == 0.0
+    mixed = weight_robustness({"M": 0.5, "E": -0.5, "C": 0.5, "H": -0.5})
+    assert 0.4 < mixed < 0.6

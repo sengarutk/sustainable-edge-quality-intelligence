@@ -1,38 +1,68 @@
-parameter,symbol,scenario,low,central,high,unit,source_type,citation_key,classification,notes
-edge_active_power,P_active,all,12.0,18.5,28.0,W,hardware_measurement,this_study,Measured by this study,RTX 4050 laptop GPU active compute power over baseline idle
-edge_frame_energy,e_frame,all,0.120,0.171,0.250,Wh/frame,hardware_measurement,this_study,Measured by this study,Continuous active edge inspection cell energy per frame at 30 FPS (616.6 J/frame)
-review_workstation_power,P_station,all,65.0,85.0,120.0,W,hardware_measurement,this_study,Measured by this study,Industrial inspection workstation display and host power
-baseline_false_alert_rate,lambda_B0,all,150.0,180.0,220.0,alerts/hr,derived_paper_a,paper_a_2026,Derived from Paper A,Raw uncalibrated threshold false alert arrival rate
-cascade_false_alert_rate,lambda_B4,all,8.0,12.0,18.0,alerts/hr,derived_paper_a,paper_a_2026,Derived from Paper A,Full 7-stage cascade sustained alert rate
-policy_detection_delay,d,all,2.0,3.0,5.0,frames,derived_paper_a,paper_a_2026,Derived from Paper A,Temporal persistence window detection delay
-review_service_rate,mu,all,45.0,60.0,75.0,reviews/hr,derived_paper_a,paper_a_2026,Derived from Paper A,Single operator manual verification service capacity
-actionable_defect_recall,r_p,all,0.92,0.99,1.00,fraction,benchmark_derived,flagship1_2026,Benchmark-derived,Actionable recall for PatchCore under CCT threshold
-cost_calibrated_threshold,cct_cwe_r10,all,0.05,0.18,0.35,score,benchmark_derived,flagship1_2026,Benchmark-derived,Cost-weighted error operating threshold at r10
-model_forward_latency,t_model,all,8.5,10.94,14.0,ms,benchmark_derived,flagship1_2026,Benchmark-derived,P50 forward pass latency for ResNet-18 PatchCore
-part_mass,m,precision_component,0.010,0.015,0.020,kg,scenario_spec,industry_oem,Scenario assumption,Lightweight plastic and aluminum sensor housing
-part_mass,m,machined_metal,1.00,1.25,1.60,kg,scenario_spec,industry_oem,Scenario assumption,Structural CNC machined aluminum bracket
-part_mass,m,high_value_component,12.0,14.5,18.0,kg,scenario_spec,industry_oem,Scenario assumption,High-embodied energy power electronics battery module
-defect_prevalence,pi,precision_component,0.025,0.040,0.060,fraction,scenario_spec,iso_2859,Scenario assumption,Base defective parts ratio per 1000 inspected units
-defect_prevalence,pi,machined_metal,0.015,0.030,0.050,fraction,scenario_spec,iso_2859,Scenario assumption,Base defective parts ratio per 1000 inspected units
-defect_prevalence,pi,high_value_component,0.008,0.015,0.025,fraction,scenario_spec,iso_2859,Scenario assumption,Base defective parts ratio per 1000 inspected units
-material_carbon_factor,EF_mat,precision_component,2.8,3.5,4.5,kgCO2e/kg,ecoinvent,ecoinvent_v3,Literature-derived,Embodied carbon for polymer and light alloy blend
-material_carbon_factor,EF_mat,machined_metal,6.5,8.24,10.5,kgCO2e/kg,ecoinvent,ecoinvent_v3,Literature-derived,Embodied carbon for primary wrought aluminum billet
-material_carbon_factor,EF_mat,high_value_component,18.0,22.5,28.0,kgCO2e/kg,ecoinvent,ecoinvent_v3,Literature-derived,Embodied carbon for battery cell and copper busbar assembly
-material_recovery_fraction,eta,precision_component,0.30,0.40,0.50,fraction,circular_economy,ellen_macarthur_2023,Scenario assumption,Post-consumer scrap remelting and recycling efficiency
-material_recovery_fraction,eta,machined_metal,0.75,0.85,0.92,fraction,circular_economy,ellen_macarthur_2023,Scenario assumption,High-grade swarf circular recovery efficiency
-material_recovery_fraction,eta,high_value_component,0.45,0.60,0.75,fraction,circular_economy,ellen_macarthur_2023,Scenario assumption,Complex multi-material module recycling yield
-rework_energy_per_unit,e_rw,precision_component,0.03,0.05,0.08,kWh/unit,lifecycle_data,gutowski_2017,Literature-derived,Thermal reflow and cleaning rework electrical energy
-rework_energy_per_unit,e_rw,machined_metal,1.20,1.80,2.50,kWh/unit,lifecycle_data,gutowski_2017,Literature-derived,CNC secondary re-pass and de-burring electrical energy
-rework_energy_per_unit,e_rw,high_value_component,3.80,5.50,7.50,kWh/unit,lifecycle_data,gutowski_2017,Literature-derived,Disassembly testing and cell re-bonding electrical energy
-escape_carbon_penalty,C_escape,precision_component,8.0,12.0,18.0,kgCO2e,lifecycle_data,wbcsh_ghg_2021,Literature-derived,Field failure return logistics and teardown penalty
-escape_carbon_penalty,C_escape,machined_metal,45.0,65.0,90.0,kgCO2e,lifecycle_data,wbcsh_ghg_2021,Literature-derived,Assembly rejection recall and freight carbon impact
-escape_carbon_penalty,C_escape,high_value_component,320.0,450.0,600.0,kgCO2e,lifecycle_data,wbcsh_ghg_2021,Literature-derived,Pack safety incident teardown and warranty replacement penalty
-grid_carbon_factor,gamma,all,0.350,0.417,0.520,kgCO2e/kWh,official_dataset,eea_eu27_2024,Official/public dataset,European Environment Agency EU-27 average electricity carbon intensity
-base_reworkability,q0,precision_component,0.80,0.90,0.95,fraction,domain_expert,quality_eng_2024,Scenario assumption,Initial rework success probability at zero delay
-base_reworkability,q0,machined_metal,0.75,0.85,0.92,fraction,domain_expert,quality_eng_2024,Scenario assumption,Initial rework success probability at zero delay
-base_reworkability,q0,high_value_component,0.60,0.70,0.80,fraction,domain_expert,quality_eng_2024,Scenario assumption,Initial rework success probability at zero delay
-reworkability_decay,beta,precision_component,0.10,0.15,0.22,s^-1,domain_expert,quality_eng_2024,Scenario assumption,Rework degradation coefficient per second of delay
-reworkability_decay,beta,machined_metal,0.12,0.20,0.28,s^-1,domain_expert,quality_eng_2024,Scenario assumption,Rework degradation coefficient per second of delay
-reworkability_decay,beta,high_value_component,0.18,0.25,0.35,s^-1,domain_expert,quality_eng_2024,Scenario assumption,Rework degradation coefficient per second of delay
-sampling_rate_fps,FPS,all,24.0,30.0,60.0,frames/s,vision_system,camera_specs,Scenario assumption,Optical edge sensor inspection frame capture rate
-review_duration_seconds,t_review,all,20.0,30.0,45.0,s,industrial_ergonomics,chaffin_2022,Literature-derived,Manual verification inspection time per candidate unit
+parameter,symbol,scope,low,central,high,unit,classification,citation_key,notes
+functional_unit,N,all,1000,1000,1000,parts,Scenario assumption,none,Functional unit: 1000 consecutively inspected parts
+camera_fps,f_cam,all,30,30,30,frames/s,Scenario assumption,none,Line camera capture rate; edge model runs continuously at this rate
+gpu_idle_power,P_idle,all,1.801,1.981,2.95,W,Measured by this study,this_study,NVML GPU idle power; median (min-max) across repeats (results/raw/energy_summary.json); written by scripts/03
+gpu_active_power,P_active,all,7.214,8.363,8.443,W,Measured by this study,this_study,NVML GPU power above idle for the full pipeline at 30 FPS; median (min-max) across repeats; written by scripts/03
+host_power,P_host,all,10,25,60,W,Scenario assumption,none,Host CPU/RAM/camera/lighting power attributable to the edge cell (not observable via NVML)
+edge_embodied_carbon,C_hw,all,150,300,600,kgCO2e,Scenario assumption,none,Cradle-to-gate embodied carbon of a laptop-class edge computer (order-of-magnitude assumption)
+edge_lifetime_hours,L_hw,all,20000,30000,45000,h,Scenario assumption,none,Operating hours over which edge hardware embodied carbon is amortised
+review_station_power,P_station,all,65,85,120,W,Scenario assumption,none,Operator review or manual-inspection workstation power (display + terminal + lighting)
+grid_carbon_factor,gamma,all,0.10,0.242,0.716,kgCO2e/kWh,Official/public dataset,ember2024;cea2024,Central: EU-27 2023 generation intensity (Ember 2024); high: India FY2022-23 weighted average (CEA v19); low: illustrative low-carbon grid (assumption)
+manual_inspection_recall,r_L0,all,0.70,0.75,0.80,fraction,Literature-derived,see2012visual,Human visual inspection typically misses 20-30% of defects (See 2012)
+collateral_multiplier,kappa,all,0.0,1.0,5.0,-,Scenario assumption,none,Extra system-level damage of a class-C (escape-sensitive) field escape as a multiple of the part's embodied carbon
+review_time,t_review,all,30,60,90,s,Derived from Paper A,sengar2026paperA,Operator time per alert; central from Paper A reviewer rate mu = 60 reviews/h; bounds are assumptions
+glare_burst_rate,g,all,10,30,60,bursts/h,Scenario assumption,sengar2026paperA,Rate of 1-3 frame glare bursts; central value is the rate assumed in Paper A; bounds are assumptions
+ai_recall,r_AI,all,0.95,0.99,1,fraction,Scenario assumption,none,Actionable recall of the edge detector shared by all alert tiers (Paper A measured 1.00 for every tier on simulated sustained defects)
+persistence_recall_loss,delta_r,all,0,0,0.02,fraction,Scenario assumption,sengar2026paperA,Recall lost by persistence filtering (B2 and B3); central 0 because Paper A measured no loss; upper bound is an assumption
+nominal_false_alarm_rate,lambda_B0,policy:B0_Raw,1933.31,3970.86,6299.11,alarms/h,Derived from Paper A,sengar2026paperA,False alerts per hour on good parts; Paper A mean and 95% bootstrap interval
+alerts_per_defect,a_B0,policy:B0_Raw,135.154,144.232,153.364,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
+detection_delay,d_B0,policy:B0_Raw,0.0119048,0.0416667,0.077381,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
+glare_alerts_per_burst,b_B0,policy:B0_Raw,2.54,2.54,2.54,alerts/burst,Derived from Paper A,sengar2026paperA,Alerts per 1-3 frame glare burst; Paper A mean (no interval reported)
+nominal_false_alarm_rate,lambda_B1,policy:B1_EMA,6.27143,60,123.443,alarms/h,Derived from Paper A,sengar2026paperA,False alerts per hour on good parts; Paper A mean and 95% bootstrap interval
+alerts_per_defect,a_B1,policy:B1_EMA,143.576,152.173,160.615,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
+detection_delay,d_B1,policy:B1_EMA,0.202381,0.363095,0.553571,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
+glare_alerts_per_burst,b_B1,policy:B1_EMA,4.42,4.42,4.42,alerts/burst,Derived from Paper A,sengar2026paperA,Alerts per 1-3 frame glare burst; Paper A mean (no interval reported)
+nominal_false_alarm_rate,lambda_B2,policy:B2_EMA_kofN,0,2.85714,8.57143,alarms/h,Derived from Paper A,sengar2026paperA,False alerts per hour on good parts; Paper A mean and 95% bootstrap interval
+alerts_per_defect,a_B2,policy:B2_EMA_kofN,146.635,155.208,163.662,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
+detection_delay,d_B2,policy:B2_EMA_kofN,3.20238,3.3631,3.55372,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
+glare_alerts_per_burst,b_B2,policy:B2_EMA_kofN,5.94,5.94,5.94,alerts/burst,Derived from Paper A,sengar2026paperA,Alerts per 1-3 frame glare burst; Paper A mean (no interval reported)
+nominal_false_alarm_rate,lambda_B3,policy:B3_Full_Policy,0,0.571429,1.71429,alarms/h,Derived from Paper A,sengar2026paperA,False alerts per hour on good parts; Paper A mean and 95% bootstrap interval
+alerts_per_defect,a_B3,policy:B3_Full_Policy,1,1.11905,1.25,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
+detection_delay,d_B3,policy:B3_Full_Policy,3.20238,3.3631,3.55372,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
+glare_alerts_per_burst,b_B3,policy:B3_Full_Policy,0.69,0.69,0.69,alerts/burst,Derived from Paper A,sengar2026paperA,Alerts per 1-3 frame glare burst; Paper A mean (no interval reported)
+line_throughput,Theta,precision_component,1200,1800,3600,parts/h,Scenario assumption,none,High-volume sensor housing line
+line_throughput,Theta,machined_metal,60,120,240,parts/h,Scenario assumption,none,CNC cell (30 s nominal cycle)
+line_throughput,Theta,high_value_component,15,30,60,parts/h,Scenario assumption,none,Battery / power module assembly (2 min nominal cycle)
+defect_prevalence,pi,precision_component,0.025,0.040,0.060,fraction,Scenario assumption,none,Defective fraction of inspected parts
+defect_prevalence,pi,machined_metal,0.015,0.030,0.050,fraction,Scenario assumption,none,Defective fraction of inspected parts
+defect_prevalence,pi,high_value_component,0.008,0.015,0.025,fraction,Scenario assumption,none,Defective fraction of inspected parts
+part_mass,m,precision_component,0.010,0.015,0.020,kg,Scenario assumption,none,Lightweight polymer / light-alloy sensor housing
+part_mass,m,machined_metal,1.00,1.25,1.60,kg,Scenario assumption,none,Machined aluminium bracket
+part_mass,m,high_value_component,12.0,14.5,18.0,kg,Scenario assumption,none,Battery / power electronics module
+material_carbon_factor,EF_mat,precision_component,2.8,3.5,4.5,kgCO2e/kg,Scenario assumption,ashby2012materials,Cradle-to-gate factor for a polymer / light-alloy blend (order of magnitude after Ashby 2012)
+material_carbon_factor,EF_mat,machined_metal,6.5,8.24,10.5,kgCO2e/kg,Scenario assumption,ashby2012materials,Cradle-to-gate factor for wrought aluminium (order of magnitude after Ashby 2012)
+material_carbon_factor,EF_mat,high_value_component,18.0,22.5,28.0,kgCO2e/kg,Scenario assumption,ashby2012materials,Cradle-to-gate factor for a cell / copper / electronics assembly (order of magnitude after Ashby 2012)
+material_recovery_fraction,eta,precision_component,0.30,0.40,0.50,fraction,Scenario assumption,allwood2011material,Mass fraction of scrap recovered for recycling
+material_recovery_fraction,eta,machined_metal,0.75,0.85,0.92,fraction,Scenario assumption,allwood2011material,Mass fraction of scrap recovered for recycling
+material_recovery_fraction,eta,high_value_component,0.45,0.60,0.75,fraction,Scenario assumption,allwood2011material,Mass fraction of scrap recovered for recycling
+recycling_burden,EF_rec,precision_component,0.3,0.5,1.0,kgCO2e/kg,Scenario assumption,none,Processing burden per kg of recovered scrap (collection + remelt / regranulation)
+recycling_burden,EF_rec,machined_metal,0.4,0.6,1.0,kgCO2e/kg,Scenario assumption,none,Processing burden per kg of recovered scrap (collection + remelt)
+recycling_burden,EF_rec,high_value_component,1.0,2.0,4.0,kgCO2e/kg,Scenario assumption,none,Processing burden per kg of recovered scrap (disassembly + hydro/pyrometallurgy)
+rework_energy,e_rw,precision_component,0.03,0.05,0.08,kWh/part,Scenario assumption,none,Electrical energy per rework cycle (reflow / cleaning)
+rework_energy,e_rw,machined_metal,1.20,1.80,2.50,kWh/part,Scenario assumption,none,Electrical energy per rework cycle (CNC re-pass / deburr)
+rework_energy,e_rw,high_value_component,3.80,5.50,7.50,kWh/part,Scenario assumption,none,Electrical energy per rework cycle (disassembly / test / re-bond)
+base_reworkability,q0,precision_component,0.80,0.90,0.95,fraction,Scenario assumption,none,Probability a class-A defect is reworkable if intercepted with zero delay
+base_reworkability,q0,machined_metal,0.75,0.85,0.92,fraction,Scenario assumption,none,Probability a class-A defect is reworkable if intercepted with zero delay
+base_reworkability,q0,high_value_component,0.60,0.70,0.80,fraction,Scenario assumption,none,Probability a class-A defect is reworkable if intercepted with zero delay
+reworkability_time_constant,tau_rw,precision_component,15,30,60,s,Scenario assumption,none,e-folding time of reworkability as the part advances to irreversible downstream steps
+reworkability_time_constant,tau_rw,machined_metal,30,60,120,s,Scenario assumption,none,e-folding time of reworkability as the part advances to irreversible downstream steps
+reworkability_time_constant,tau_rw,high_value_component,10,20,40,s,Scenario assumption,none,e-folding time of reworkability as the part advances to irreversible downstream steps
+manual_discovery_delay,d_L0,precision_component,30,60,120,s,Scenario assumption,none,Time from defect creation to end-of-line manual inspection
+manual_discovery_delay,d_L0,machined_metal,60,120,300,s,Scenario assumption,none,Time from defect creation to end-of-line manual inspection
+manual_discovery_delay,d_L0,high_value_component,300,600,1200,s,Scenario assumption,none,Time from defect creation to end-of-line manual inspection
+manual_inspection_time,t_L0,precision_component,1,2,4,s/part,Scenario assumption,none,Manual end-of-line inspection time per part
+manual_inspection_time,t_L0,machined_metal,5,10,20,s/part,Scenario assumption,none,Manual end-of-line inspection time per part
+manual_inspection_time,t_L0,high_value_component,15,30,60,s/part,Scenario assumption,none,Manual end-of-line inspection time per part
+return_logistics_carbon,c_ret,precision_component,0.05,0.2,1.0,kgCO2e/escape,Scenario assumption,none,Reverse logistics and handling per escaped defective part
+return_logistics_carbon,c_ret,machined_metal,0.5,2.0,5.0,kgCO2e/escape,Scenario assumption,none,Reverse logistics and handling per escaped defective part
+return_logistics_carbon,c_ret,high_value_component,5.0,20.0,60.0,kgCO2e/escape,Scenario assumption,none,Reverse logistics and handling per escaped defective part

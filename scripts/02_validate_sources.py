@@ -1,20 +1,38 @@
 #!/usr/bin/env python3
-"""
-Step 2: Validate authoritative source registry against strict Pydantic schema.
-"""
+"""Step 02: validate the source registry and its consistency with measured / imported evidence."""
 
+import json
+import sys
 from pathlib import Path
-from data.schemas.source_registry_schema import validate_registry_file
 
-REGISTRY_PATH = Path("/home/sengar/sustainable-edge-quality-intelligence/data/raw/source_registry.csv")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from src.experiments.energy_benchmark import measured_registry_bounds  # noqa: E402
+from src.imports.import_paper_a import snapshot_rows  # noqa: E402
+from src.paths import ENERGY_SUMMARY  # noqa: E402
+from src.validation.source_registry import load_registry, validate_registry_file  # noqa: E402
 
 
 def main():
-    print("=== Step 02: Auditing Parameter Source Registry ===")
-    count = validate_registry_file(REGISTRY_PATH)
-    print(f"Validated {count} parameters in source registry.")
-    print("Zero schema violations detected.")
-    print("Step 02 completed successfully.\n")
+    n = validate_registry_file()
+    recs = {r.key: r for r in load_registry()}
+
+    by_scope = {f"{r.parameter}@{r.scope}": r for r in load_registry()}
+    expected = snapshot_rows()
+    for key, values in expected.items():
+        r = by_scope.get(key)
+        if r is None or (r.low, r.central, r.high) != tuple(values):
+            raise SystemExit(f"Registry {key} disagrees with the Paper A snapshot {values}; run scripts/01 --update-registry")
+    for key, r in by_scope.items():
+        if r.classification.value == "Derived from Paper A" and key not in expected:
+            raise SystemExit(f"Registry {key} is labelled 'Derived from Paper A' but is not in the snapshot")
+
+    summary = json.loads(ENERGY_SUMMARY.read_text(encoding="utf-8"))
+    for key, expect in measured_registry_bounds(summary).items():
+        r = recs[key]
+        if (r.low, r.central, r.high) != expect:
+            raise SystemExit(f"Registry {key} {(r.low, r.central, r.high)} != energy summary {expect}; rerun scripts/03")
+    print(f"Validated {n} registry entries; Paper A and measured entries are consistent.")
 
 
 if __name__ == "__main__":

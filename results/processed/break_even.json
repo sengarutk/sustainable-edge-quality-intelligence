@@ -1,0 +1,218 @@
+{
+  "precision_component": {
+    "pi_star_vs_N0": {
+      "name": "pi_star_vs_N0",
+      "parameter": "defect_prevalence",
+      "comparison": "B3_Full_Policy_vs_N0_NoInspection",
+      "lower": 0.0,
+      "upper": 0.5,
+      "value": 6.190257432e-05,
+      "status": "root",
+      "unit": "fraction"
+    },
+    "pi_star_vs_L0": {
+      "name": "pi_star_vs_L0",
+      "parameter": "defect_prevalence",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 0.5,
+      "value": 4.505312141e-05,
+      "status": "root",
+      "unit": "fraction"
+    },
+    "host_power_star_vs_L0": {
+      "name": "host_power_star_vs_L0",
+      "parameter": "host_power",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 1000000.0,
+      "value": 19358.87334,
+      "status": "root",
+      "unit": "W"
+    },
+    "manual_recall_star": {
+      "name": "manual_recall_star",
+      "parameter": "manual_inspection_recall",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 1.0,
+      "value": null,
+      "status": "none_positive",
+      "unit": "fraction"
+    },
+    "manual_delay_star": {
+      "name": "manual_delay_star",
+      "parameter": "manual_discovery_delay",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 3600.0,
+      "value": null,
+      "status": "none_positive",
+      "unit": "s"
+    },
+    "gamma_star_vs_L0": {
+      "name": "gamma_star_vs_L0",
+      "parameter": "grid_carbon_factor",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 1.5,
+      "value": null,
+      "status": "none_positive",
+      "unit": "kgCO2e/kWh"
+    },
+    "recall_loss_star_B3_vs_B0": {
+      "name": "recall_loss_star_B3_vs_B0",
+      "parameter": "persistence_recall_loss",
+      "comparison": "B3_Full_Policy_vs_B0_Raw",
+      "lower": 0.0,
+      "upper": 0.99,
+      "value": 0.2889059845,
+      "status": "root",
+      "unit": "fraction"
+    }
+  },
+  "machined_metal": {
+    "pi_star_vs_N0": {
+      "name": "pi_star_vs_N0",
+      "parameter": "defect_prevalence",
+      "comparison": "B3_Full_Policy_vs_N0_NoInspection",
+      "lower": 0.0,
+      "upper": 0.5,
+      "value": 1.888292969e-05,
+      "status": "root",
+      "unit": "fraction"
+    },
+    "pi_star_vs_L0": {
+      "name": "pi_star_vs_L0",
+      "parameter": "defect_prevalence",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 0.5,
+      "value": 4.735888539e-05,
+      "status": "root",
+      "unit": "fraction"
+    },
+    "host_power_star_vs_L0": {
+      "name": "host_power_star_vs_L0",
+      "parameter": "host_power",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 1000000.0,
+      "value": 49652.62533,
+      "status": "root",
+      "unit": "W"
+    },
+    "manual_recall_star": {
+      "name": "manual_recall_star",
+      "parameter": "manual_inspection_recall",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 1.0,
+      "value": null,
+      "status": "none_positive",
+      "unit": "fraction"
+    },
+    "manual_delay_star": {
+      "name": "manual_delay_star",
+      "parameter": "manual_discovery_delay",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 3600.0,
+      "value": null,
+      "status": "none_positive",
+      "unit": "s"
+    },
+    "gamma_star_vs_L0": {
+      "name": "gamma_star_vs_L0",
+      "parameter": "grid_carbon_factor",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 1.5,
+      "value": null,
+      "status": "none_positive",
+      "unit": "kgCO2e/kWh"
+    },
+    "recall_loss_star_B3_vs_B0": {
+      "name": "recall_loss_star_B3_vs_B0",
+      "parameter": "persistence_recall_loss",
+      "comparison": "B3_Full_Policy_vs_B0_Raw",
+      "lower": 0.0,
+      "upper": 0.99,
+      "value": 0.03735050533,
+      "status": "root",
+      "unit": "fraction"
+    }
+  },
+  "high_value_component": {
+    "pi_star_vs_N0": {
+      "name": "pi_star_vs_N0",
+      "parameter": "defect_prevalence",
+      "comparison": "B3_Full_Policy_vs_N0_NoInspection",
+      "lower": 0.0,
+      "upper": 0.5,
+      "value": 2.858744284e-06,
+      "status": "root",
+      "unit": "fraction"
+    },
+    "pi_star_vs_L0": {
+      "name": "pi_star_vs_L0",
+      "parameter": "defect_prevalence",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 0.5,
+      "value": 6.657088575e-06,
+      "status": "root",
+      "unit": "fraction"
+    },
+    "host_power_star_vs_L0": {
+      "name": "host_power_star_vs_L0",
+      "parameter": "host_power",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 1000000.0,
+      "value": 192705.7858,
+      "status": "root",
+      "unit": "W"
+    },
+    "manual_recall_star": {
+      "name": "manual_recall_star",
+      "parameter": "manual_inspection_recall",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 1.0,
+      "value": null,
+      "status": "none_positive",
+      "unit": "fraction"
+    },
+    "manual_delay_star": {
+      "name": "manual_delay_star",
+      "parameter": "manual_discovery_delay",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 3600.0,
+      "value": null,
+      "status": "none_positive",
+      "unit": "s"
+    },
+    "gamma_star_vs_L0": {
+      "name": "gamma_star_vs_L0",
+      "parameter": "grid_carbon_factor",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 1.5,
+      "value": null,
+      "status": "none_positive",
+      "unit": "kgCO2e/kWh"
+    },
+    "recall_loss_star_B3_vs_B0": {
+      "name": "recall_loss_star_B3_vs_B0",
+      "parameter": "persistence_recall_loss",
+      "comparison": "B3_Full_Policy_vs_B0_Raw",
+      "lower": 0.0,
+      "upper": 0.99,
+      "value": 0.009498237653,
+      "status": "root",
+      "unit": "fraction"
+    }
+  }
+}

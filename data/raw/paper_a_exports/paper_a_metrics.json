@@ -1,0 +1,129 @@
+{
+  "source_repository": "edge-quality-intelligence",
+  "source_commit": "6c5e59135f0aea9867e7594ad9e29779982e949e",
+  "source_blobs": {
+    "results/ablation/ablation_summary.json": "0963f9f71429ea6c4d52b367b74e354befbabe16",
+    "paper/tables/ablation.tex": "dd8a90aa0841a381305aeee799737eda45ad37db",
+    "paper/generated_metrics.tex": "45b28e5ae1184eba780018afebb44e5f3da439d1"
+  },
+  "tier_policy": {
+    "B0_Raw": "BASELINE",
+    "B1_EMA": "EMA_ONLY",
+    "B2_EMA_kofN": "EMA_KOFN",
+    "B3_Full_Policy": "FULL_POLICY"
+  },
+  "sustained_defect_recall": {
+    "BASELINE": 1.0,
+    "EMA_ONLY": 1.0,
+    "EMA_KOFN": 1.0,
+    "FULL_POLICY": 1.0
+  },
+  "quoted_macros": {
+    "MuReviews": "60",
+    "GlareRateAssumed": "30",
+    "SustainedDelayFull": "3.4",
+    "NominalFABaseline": "3971",
+    "NominalFAFull": "0.6",
+    "AlertsPerEpisodeBaseline": "144.23",
+    "AlertsPerEpisodeFull": "1.12",
+    "GlarePerBurstBaseline": "2.54",
+    "GlarePerBurstEmaKofn": "5.94",
+    "GlarePerBurstFull": "0.69",
+    "LatGpuMean": "22.5",
+    "LatVisionMean": "12.2",
+    "MemoryBankSize": "13798",
+    "LoadCrossFull": "35"
+  },
+  "registry_rows": {
+    "alerts_per_defect@policy:B0_Raw": [
+      135.154,
+      144.232,
+      153.364
+    ],
+    "alerts_per_defect@policy:B1_EMA": [
+      143.576,
+      152.173,
+      160.615
+    ],
+    "alerts_per_defect@policy:B2_EMA_kofN": [
+      146.635,
+      155.208,
+      163.662
+    ],
+    "alerts_per_defect@policy:B3_Full_Policy": [
+      1.0,
+      1.11905,
+      1.25
+    ],
+    "detection_delay@policy:B0_Raw": [
+      0.0119048,
+      0.0416667,
+      0.077381
+    ],
+    "detection_delay@policy:B1_EMA": [
+      0.202381,
+      0.363095,
+      0.553571
+    ],
+    "detection_delay@policy:B2_EMA_kofN": [
+      3.20238,
+      3.3631,
+      3.55372
+    ],
+    "detection_delay@policy:B3_Full_Policy": [
+      3.20238,
+      3.3631,
+      3.55372
+    ],
+    "glare_alerts_per_burst@policy:B0_Raw": [
+      2.54,
+      2.54,
+      2.54
+    ],
+    "glare_alerts_per_burst@policy:B1_EMA": [
+      4.42,
+      4.42,
+      4.42
+    ],
+    "glare_alerts_per_burst@policy:B2_EMA_kofN": [
+      5.94,
+      5.94,
+      5.94
+    ],
+    "glare_alerts_per_burst@policy:B3_Full_Policy": [
+      0.69,
+      0.69,
+      0.69
+    ],
+    "glare_burst_rate@all": [
+      10.0,
+      30.0,
+      60.0
+    ],
+    "nominal_false_alarm_rate@policy:B0_Raw": [
+      1933.31,
+      3970.86,
+      6299.11
+    ],
+    "nominal_false_alarm_rate@policy:B1_EMA": [
+      6.27143,
+      60.0,
+      123.443
+    ],
+    "nominal_false_alarm_rate@policy:B2_EMA_kofN": [
+      0.0,
+      2.85714,
+      8.57143
+    ],
+    "nominal_false_alarm_rate@policy:B3_Full_Policy": [
+      0.0,
+      0.571429,
+      1.71429
+    ],
+    "review_time@all": [
+      30.0,
+      60.0,
+      90.0
+    ]
+  }
+}

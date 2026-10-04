@@ -1,117 +1,70 @@
 """
-Multi-Profile Sustainability Quality Index (SQI) Engine.
-Computes robust bounded normalized sub-indicators (S_M, S_E, S_C, S_H in [-1, +1])
-and stakeholder-weighted scalar scores.
+Multi-profile Sustainability Quality Index (SQI).
+
+For each dimension x in {M (unrecovered material), E (electricity), C (carbon),
+H (operator hours)} the bounded sub-indicator of policy p against baseline b is
+
+    S_x = (x_b - x_p) / max(x_b, x_p)      in [-1, 1]  for x_b, x_p >= 0
+
+(S_x = 0 when both are zero). SQI = sum_x w_x S_x with w >= 0, sum w = 1.
+Because the index depends on the weights, `weight_robustness` reports the
+share of the whole weight simplex (Dirichlet(1,1,1,1) samples) for which SQI > 0.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Dict
 from pathlib import Path
+from typing import Dict
+
+import numpy as np
 import yaml
 
+from src.paths import SQI_CONFIG
+
+DIMENSIONS = ("M", "E", "C", "H")
+
+
+def bounded_indicator(base, policy):
+    # The [-1, 1] bound holds only for non-negative quantities (x_b=1, x_p=-1 would give 2),
+    # so negative inputs are rejected rather than clipped into range.
+    base = np.asarray(base, dtype=float)
+    policy = np.asarray(policy, dtype=float)
+    if np.any(base < 0) or np.any(policy < 0):
+        raise ValueError("SQI dimensions must be non-negative")
+    denom = np.maximum(base, policy)
+    return np.where(denom > 0, (base - policy) / np.where(denom > 0, denom, 1.0), 0.0)
+
+
+def load_profiles(path: Path = SQI_CONFIG) -> Dict[str, Dict[str, float]]:
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    profiles = {}
+    for name, spec in data["profiles"].items():
+        if set(spec["weights"]) != {f"w_{k}" for k in DIMENSIONS}:
+            raise ValueError(f"profile {name}: weights must be exactly w_M, w_E, w_C, w_H")
+        w = {k: float(spec["weights"][f"w_{k}"]) for k in DIMENSIONS}
+        if any(v < 0 for v in w.values()) or abs(sum(w.values()) - 1.0) > 1e-9:
+            raise ValueError(f"profile {name}: weights must be non-negative and sum to 1")
+        profiles[name] = w
+    return profiles
+
 
 @dataclass(frozen=True)
-class SQISubIndicators:
-    s_m: float  # Material normalized savings in [-1, 1]
-    s_e: float  # Energy normalized savings in [-1, 1]
-    s_c: float  # Carbon normalized savings in [-1, 1]
-    s_h: float  # Workload normalized savings in [-1, 1]
+class SQIResult:
+    sub: Dict[str, np.ndarray]
+    scores: Dict[str, np.ndarray]
 
 
-@dataclass(frozen=True)
-class SQIEvaluation:
-    sub_indicators: SQISubIndicators
-    profile_scores: Dict[str, float]
+def evaluate_sqi(base: Dict[str, np.ndarray], policy: Dict[str, np.ndarray], profiles=None) -> SQIResult:
+    profiles = profiles or load_profiles()
+    sub = {k: bounded_indicator(base[k], policy[k]) for k in DIMENSIONS}
+    scores = {name: sum(w[k] * sub[k] for k in DIMENSIONS) for name, w in profiles.items()}
+    return SQIResult(sub=sub, scores=scores)
 
 
-DEFAULT_PROFILES = {
-    "balanced": {"w_M": 0.25, "w_E": 0.25, "w_C": 0.25, "w_H": 0.25},
-    "material_priority": {"w_M": 0.45, "w_E": 0.15, "w_C": 0.25, "w_H": 0.15},
-    "carbon_priority": {"w_M": 0.15, "w_E": 0.20, "w_C": 0.50, "w_H": 0.15},
-    "human_centered": {"w_M": 0.15, "w_E": 0.15, "w_C": 0.20, "w_H": 0.50},
-}
-
-
-def _bounded_relative_indicator(diff: float, val_base: float, val_current: float) -> float:
-    denom = max(abs(val_base), abs(val_current), 1e-6)
-    ratio = diff / denom
-    return float(max(-1.0, min(1.0, ratio)))
-
-
-class SQIEngine:
-    def __init__(self, config_path: Path = None):
-        self.profiles = dict(DEFAULT_PROFILES)
-        if config_path and config_path.exists():
-            with open(config_path, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f)
-                if data and "profiles" in data:
-                    self.profiles = {k: v["weights"] for k, v in data["profiles"].items()}
-
-        for prof, w in self.profiles.items():
-            tot = sum(w.values())
-            if abs(tot - 1.0) > 1e-4:
-                raise ValueError(f"Profile {prof} weights sum to {tot}, expected 1.0")
-
-    def compute_sub_indicators(
-        self,
-        delta_m: float,
-        m_baseline_loss: float,
-        delta_e: float,
-        e_baseline_total: float,
-        delta_c: float,
-        c_baseline_total: float,
-        delta_h: float,
-        h_baseline_hours: float,
-        m_current_loss: float = None,
-        e_current_total: float = None,
-        c_current_total: float = None,
-        h_current_hours: float = None,
-    ) -> SQISubIndicators:
-        curr_m = m_current_loss if m_current_loss is not None else (m_baseline_loss - delta_m)
-        curr_e = e_current_total if e_current_total is not None else (e_baseline_total - delta_e)
-        curr_c = c_current_total if c_current_total is not None else (c_baseline_total - delta_c)
-        curr_h = h_current_hours if h_current_hours is not None else (h_baseline_hours - delta_h)
-
-        s_m = _bounded_relative_indicator(delta_m, m_baseline_loss, curr_m)
-        s_e = _bounded_relative_indicator(delta_e, e_baseline_total, curr_e)
-        s_c = _bounded_relative_indicator(delta_c, c_baseline_total, curr_c)
-        s_h = _bounded_relative_indicator(delta_h, h_baseline_hours, curr_h)
-
-        return SQISubIndicators(s_m=s_m, s_e=s_e, s_c=s_c, s_h=s_h)
-
-    def evaluate(
-        self,
-        delta_m: float,
-        m_baseline_loss: float,
-        delta_e: float,
-        e_baseline_total: float,
-        delta_c: float,
-        c_baseline_total: float,
-        delta_h: float,
-        h_baseline_hours: float,
-        m_current_loss: float = None,
-        e_current_total: float = None,
-        c_current_total: float = None,
-        h_current_hours: float = None,
-    ) -> SQIEvaluation:
-        subs = self.compute_sub_indicators(
-            delta_m, m_baseline_loss,
-            delta_e, e_baseline_total,
-            delta_c, c_baseline_total,
-            delta_h, h_baseline_hours,
-            m_current_loss=m_current_loss,
-            e_current_total=e_current_total,
-            c_current_total=c_current_total,
-            h_current_hours=h_current_hours,
-        )
-        scores = {}
-        for prof, w in self.profiles.items():
-            score = (
-                w["w_M"] * subs.s_m
-                + w["w_E"] * subs.s_e
-                + w["w_C"] * subs.s_c
-                + w["w_H"] * subs.s_h
-            )
-            scores[prof] = round(score, 4)
-
-        return SQIEvaluation(sub_indicators=subs, profile_scores=scores)
+def weight_robustness(sub: Dict[str, float], n_samples: int = 20000, seed: int = 7) -> float:
+    """Fraction of uniformly sampled weight vectors on the simplex giving SQI > 0."""
+    rng = np.random.default_rng(seed)
+    w = rng.dirichlet(np.ones(len(DIMENSIONS)), size=n_samples)
+    s = np.array([float(sub[k]) for k in DIMENSIONS])
+    return float(np.mean(w @ s > 0))

@@ -1,41 +1,58 @@
-name: CI Regression & Governance Gate
+name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  regression-gate:
-    name: Pytest & Empirical Claims Verification
+  reproduce:
+    name: Tests and zero-drift reproduction
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version:  3.13
+          python-version: "3.13"
           cache: pip
 
-      - name: Install dependencies
+      - name: Install pinned dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-          pip install -e .
+          pip install -r requirements-lock.txt
+          pip install -e . --no-deps
 
-      - name: Execute pytest regression gate
-        run: |
-          pytest -v tests/ --maxfail=1
+      - name: Unit, invariant and reproducibility tests
+        run: pytest -v
 
-      - name: Verify empirical claims and numerical assertions (Script 11)
+      - name: Regenerate every result from the committed registry and measurements
         run: |
-          python scripts/11_validate_paper_claims.py
-
-      - name: Verify asset synchronization and zero-drift working tree
-        run: |
+          for s in 02_validate_sources 04_run_scenarios 05_run_sensitivity 06_run_monte_carlo \
+                   07_run_break_even 08_generate_figures 09_generate_tables 10_generate_macros; do
+            python scripts/$s.py
+          done
           python scripts/sync_paper_assets.py
-          git diff --exit-code
+
+      - name: Fail on any drift in data, results, tables or macros
+        # Figures are excluded: rasterisation can differ across FreeType builds.
+        run: |
+          git status --porcelain -- data results paper ':!results/figures' ':!paper/figures'
+          git diff --exit-code -- data results paper ':!results/figures' ':!paper/figures'
+          test -z "$(git status --porcelain -- data results paper ':!results/figures' ':!paper/figures')"
+
+  paper:
+    name: Compile manuscript
+    runs-on: ubuntu-latest
+    needs: reproduce
+    steps:
+      - uses: actions/checkout@v4
+      - uses: xu-cheng/latex-action@v3
+        with:
+          root_file: main.tex
+          working_directory: paper
+      - uses: actions/upload-artifact@v4
+        with:
+          name: paper-pdf
+          path: paper/main.pdf

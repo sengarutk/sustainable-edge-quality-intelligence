@@ -1,0 +1,45 @@
+\begin{table*}[!t]
+\centering
+\scriptsize
+\caption{Parameter ledger (generated from \texttt{data/raw/source\_registry.csv}). Values are central [low, high]; Monte Carlo draws are triangular on these bounds. Class: M measured, P derived from our alert-policy study~\cite{sengar2026paperA}, L literature, O official dataset, A scenario assumption.}
+\label{tab:parameters}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{0.94}
+\begin{tabular}{@{}llllllll@{}}
+\toprule
+Parameter & Sym. & Unit & A: Precision & B: Machined metal & C: High-value & Cl. & Source \\
+\midrule
+\multicolumn{8}{@{}l}{\emph{Global and edge-cell parameters}} \\
+functional unit & $N$ & parts & \multicolumn{3}{c}{1{,}000} & A & -- \\
+camera fps & $f_{cam}$ & frames/s & \multicolumn{3}{c}{30} & A & -- \\
+gpu idle power & $P_{idle}$ & W & \multicolumn{3}{c}{1.98 [1.8, 2.95]} & M & this study \\
+gpu active power & $P_{active}$ & W & \multicolumn{3}{c}{8.36 [7.21, 8.44]} & M & this study \\
+host power & $P_{host}$ & W & \multicolumn{3}{c}{25 [10, 60]} & A & -- \\
+edge embodied carbon & $C_{hw}$ & kgCO$_2$e & \multicolumn{3}{c}{300 [150, 600]} & A & -- \\
+edge lifetime hours & $L_{hw}$ & h & \multicolumn{3}{c}{30{,}000 [20{,}000, 45{,}000]} & A & -- \\
+review station power & $P_{station}$ & W & \multicolumn{3}{c}{85 [65, 120]} & A & -- \\
+grid carbon factor & $\gamma$ & kgCO$_2$e/kWh & \multicolumn{3}{c}{0.242 [0.1, 0.716]} & O & \cite{ember2024,cea2024} \\
+manual inspection recall & $r_{L0}$ & fraction & \multicolumn{3}{c}{0.750 [0.700, 0.800]} & L & \cite{see2012visual} \\
+collateral multiplier & $\kappa$ & -- & \multicolumn{3}{c}{1 [0, 5]} & A & -- \\
+review time & $t_{review}$ & s & \multicolumn{3}{c}{60 [30, 90]} & P & \cite{sengar2026paperA} \\
+glare burst rate & $g$ & bursts/h & \multicolumn{3}{c}{30 [10, 60]} & A & \cite{sengar2026paperA} \\
+ai recall & $r_{AI}$ & fraction & \multicolumn{3}{c}{0.990 [0.950, 1.00]} & A & -- \\
+persistence recall loss & $\delta_r$ & fraction & \multicolumn{3}{c}{0 [0, 0.0200]} & A & \cite{sengar2026paperA} \\
+\midrule
+\multicolumn{8}{@{}l}{\emph{Scenario parameters}} \\
+line throughput & $\Theta$ & parts/h & 1{,}800 [1{,}200, 3{,}600] & 120 [60, 240] & 30 [15, 60] & A & -- \\
+defect prevalence & $\pi$ & fraction & 0.0400 [0.0250, 0.0600] & 0.0300 [0.0150, 0.0500] & 0.0150 [0.00800, 0.0250] & A & -- \\
+part mass & $m$ & kg & 0.015 [0.01, 0.02] & 1.25 [1, 1.6] & 14.5 [12, 18] & A & -- \\
+material carbon factor & $EF_{mat}$ & kgCO$_2$e/kg & 3.5 [2.8, 4.5] & 8.24 [6.5, 10.5] & 22.5 [18, 28] & A & \cite{ashby2012materials} \\
+material recovery fraction & $\eta$ & fraction & 0.400 [0.300, 0.500] & 0.850 [0.750, 0.920] & 0.600 [0.450, 0.750] & A & \cite{allwood2011material} \\
+recycling burden & $EF_{rec}$ & kgCO$_2$e/kg & 0.5 [0.3, 1] & 0.6 [0.4, 1] & 2 [1, 4] & A & -- \\
+rework energy & $e_{rw}$ & kWh/part & 0.05 [0.03, 0.08] & 1.8 [1.2, 2.5] & 5.5 [3.8, 7.5] & A & -- \\
+base reworkability & $q_0$ & fraction & 0.900 [0.800, 0.950] & 0.850 [0.750, 0.920] & 0.700 [0.600, 0.800] & A & -- \\
+reworkability time constant & $\tau_{rw}$ & s & 30 [15, 60] & 60 [30, 120] & 20 [10, 40] & A & -- \\
+manual discovery delay & $d_{L0}$ & s & 60 [30, 120] & 120 [60, 300] & 600 [300, 1{,}200] & A & -- \\
+manual inspection time & $t_{L0}$ & s/part & 2 [1, 4] & 10 [5, 20] & 30 [15, 60] & A & -- \\
+return logistics carbon & $c_{ret}$ & kgCO$_2$e & 0.2 [0.05, 1] & 2 [0.5, 5] & 20 [5, 60] & A & -- \\
+defect class shares & $f_A{:}f_B{:}f_C$ & -- & 0.70:0.25:0.05 & 0.60:0.35:0.05 & 0.40:0.40:0.20 & A & -- \\
+\bottomrule
+\end{tabular}
+\end{table*}

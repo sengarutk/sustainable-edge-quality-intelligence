@@ -1,58 +1,50 @@
 """
-Human workload accounting: review arrivals, queue utilization, and operator fatigue modeling.
+Human workload: operator hours per functional unit and single-server utilisation.
+
+AI regimes: every alert reaches the operator queue (the load model of Paper A).
+  alerts = lambda_FA * T_FU + a * r * D       (false alerts + a alerts per detected defect)
+  lambda_FA = lambda_nominal + g * b          (good-part false alerts + glare bursts x alerts/burst)
+  H      = alerts * t_review / 3600           [h / FU]
+  rho    = (alerts / T_FU) / mu,  mu = 3600 / t_review  [per operator]
+Manual end-of-line regime: every part is inspected.
+  H = N * t_L0 / 3600,   rho = Theta * t_L0 / 3600
+where T_FU = N / Theta [h] is the production time of one functional unit.
 """
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 
+import numpy as np
+
 
 @dataclass(frozen=True)
-class WorkloadOutcomes:
-    alert_rate_per_hr: float
-    total_review_hours: float
-    queue_utilization_rho: float
-    is_overloaded: bool
-    avoided_hours: float = 0.0
+class WorkloadOutcome:
+    operator_hours: np.ndarray
+    utilisation_rho: np.ndarray
+    events: np.ndarray
 
 
-class WorkloadAccountingEngine:
-    def __init__(
-        self,
-        service_capacity_mu_per_hr: float = 60.0,
-        review_duration_seconds: float = 30.0,
-        sampling_rate_fps: float = 30.0,
-        functional_unit_units: int = 1000,
-    ):
-        self.mu = service_capacity_mu_per_hr
-        self.t_review = review_duration_seconds
-        self.fps = sampling_rate_fps
-        self.n_units = functional_unit_units
+def functional_unit_hours(n_units, throughput_per_h):
+    if np.any(np.asarray(throughput_per_h) <= 0):
+        raise ValueError("line throughput must be positive")
+    return np.asarray(n_units, dtype=float) / throughput_per_h
 
-    def evaluate(
-        self, alert_rate_per_hr: float, baseline_hours: float = None
-    ) -> WorkloadOutcomes:
-        # Throughput per hour = FPS * 3600
-        throughput_hr = self.fps * 3600.0
-        # Hours taken to inspect functional unit
-        inspection_time_hr = self.n_units / max(1.0, throughput_hr)
 
-        # Expected review alerts arriving per 1000 units
-        n_alerts = alert_rate_per_hr * inspection_time_hr
+def ai_review_workload(false_alarm_rate_per_h, true_detections, alerts_per_defect, t_fu_h, review_time_s) -> WorkloadOutcome:
+    events = np.asarray(false_alarm_rate_per_h, dtype=float) * t_fu_h + np.asarray(alerts_per_defect) * true_detections
+    hours = events * review_time_s / 3600.0
+    rho = (events / t_fu_h) * review_time_s / 3600.0
+    return WorkloadOutcome(operator_hours=hours, utilisation_rho=rho, events=events)
 
-        # Total review hours = n_alerts * (t_review / 3600.0)
-        review_hours = n_alerts * (self.t_review / 3600.0)
 
-        # Queue utilization rho = lambda / mu
-        rho = alert_rate_per_hr / max(1e-6, self.mu)
-        is_overloaded = bool(rho >= 1.0)
+def manual_inspection_workload(n_units, throughput_per_h, inspection_time_s) -> WorkloadOutcome:
+    events = np.asarray(n_units, dtype=float) * np.ones_like(np.asarray(inspection_time_s, dtype=float))
+    hours = events * inspection_time_s / 3600.0
+    rho = np.asarray(throughput_per_h, dtype=float) * inspection_time_s / 3600.0
+    return WorkloadOutcome(operator_hours=hours, utilisation_rho=rho, events=events)
 
-        avoided = 0.0
-        if baseline_hours is not None:
-            avoided = baseline_hours - review_hours
 
-        return WorkloadOutcomes(
-            alert_rate_per_hr=alert_rate_per_hr,
-            total_review_hours=review_hours,
-            queue_utilization_rho=rho,
-            is_overloaded=is_overloaded,
-            avoided_hours=avoided,
-        )
+def no_workload(like) -> WorkloadOutcome:
+    z = np.zeros_like(np.asarray(like, dtype=float))
+    return WorkloadOutcome(operator_hours=z, utilisation_rho=z, events=z)

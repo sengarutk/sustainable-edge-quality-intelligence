@@ -1,0 +1,30 @@
+# Inspection regimes compared in the study. All numerical operating points live in
+# data/raw/source_registry.csv; this file only defines structure.
+#
+# kind: none   -> no inspection; every defect escapes
+#       manual -> 100% manual end-of-line visual inspection (no edge AI)
+#       ai     -> continuous edge AI inspection with detect-and-divert
+# AI tiers are the alert policies measured in Paper A (BASELINE, EMA_ONLY, EMA_KOFN,
+# FULL_POLICY); their false-alert rates, alerts per defect, glare alerts and delays are
+# imported from Paper A. persistence: true -> the tier applies k-of-N persistence and is
+# charged the (assumed) persistence recall loss delta_r.
+baselines:
+  N0_NoInspection:
+    kind: none
+    label: "N0 no inspection"
+  L0_Manual:
+    kind: manual
+    label: "L0 manual EoL"
+ai_tiers:
+  B0_Raw:
+    label: "B0 single-frame threshold"
+    persistence: false
+  B1_EMA:
+    label: "B1 smoothing"
+    persistence: false
+  B2_EMA_kofN:
+    label: "B2 smoothing + k-of-N"
+    persistence: true
+  B3_Full_Policy:
+    label: "B3 full policy (latch)"
+    persistence: true

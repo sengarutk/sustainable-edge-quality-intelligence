@@ -1,10 +1,21 @@
 __pycache__/
 *.py[cod]
-*.class
 .pytest_cache/
 *.egg-info/
+.venv/
+dist/
+# LaTeX build products (the PDF is built by CI and scripts/package_release.py)
 paper/*.aux
 paper/*.bbl
 paper/*.blg
 paper/*.log
 paper/*.out
+paper/*.pdf
+# transient benchmark spool
+data/raw/energy_measurements/*/spool.db*
+# local material that is not part of this artifact
+PaperA content/
+runs/
+.claude/
+.mcp.json
+*:Zone.Identifier

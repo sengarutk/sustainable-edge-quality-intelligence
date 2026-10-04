@@ -1,209 +1,150 @@
-﻿"""
-Unified pipeline evaluator for edge quality inspection and sustainability accounting.
-Coordinates intervention, material, energy, workload, carbon, and SQI engines.
+"""
+Unified evaluator: one code path for every inspection regime (no inspection,
+manual end-of-line inspection, and the four edge-AI alert policies of Paper A).
+
+All inputs come from the source registry (via src.params) and configs/policies.yaml.
+Parameter values may be scalars or equally-shaped numpy arrays (Monte Carlo).
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, Optional
-from pathlib import Path
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Dict, Mapping, Optional
+
+import numpy as np
 import yaml
 
-from src.quality.intervention_model import QualityInterventionModel, InterventionOutcomes
-from src.sustainability.material_accounting import MaterialAccountingEngine, MaterialOutcomes
-from src.sustainability.workload_accounting import WorkloadAccountingEngine, WorkloadOutcomes
-from src.sustainability.energy_accounting import EnergyAccountingEngine, EnergyOutcomes
-from src.sustainability.carbon_accounting import CarbonAccountingEngine, CarbonOutcomes
-from src.sustainability.sqi import SQIEngine, SQIEvaluation
+from src.paths import POLICY_CONFIG
+from src.quality.intervention_model import RoutingOutcome, route_defects
+from src.sustainability.carbon_accounting import COMPONENTS, CarbonOutcome, carbon_flows
+from src.sustainability.energy_accounting import EnergyOutcome, energy_flows
+from src.sustainability.material_accounting import MaterialOutcome, material_flows
+from src.sustainability.sqi import SQIResult, evaluate_sqi
+from src.sustainability.workload_accounting import (
+    WorkloadOutcome, ai_review_workload, functional_unit_hours, manual_inspection_workload, no_workload,
+)
+
+AI_TIERS = ("B0_Raw", "B1_EMA", "B2_EMA_kofN", "B3_Full_Policy")
+PRIMARY_TIER = "B3_Full_Policy"
+BASELINES = ("N0_NoInspection", "L0_Manual")
 
 
 @dataclass(frozen=True)
-class PolicyEvaluationResult:
-    scenario: str
-    policy: str
-    intervention: InterventionOutcomes
-    material: MaterialOutcomes
-    workload: WorkloadOutcomes
-    energy: EnergyOutcomes
-    carbon: CarbonOutcomes
-    sqi: SQIEvaluation
-    waterfall: Dict[str, float] = field(default_factory=dict)
+class Regime:
+    id: str
+    label: str
+    kind: str                 # none | manual | ai
+    persistence: bool = False  # AI tiers with k-of-N persistence carry the recall loss delta_r
 
 
-class ScenarioPipelineEvaluator:
-    def __init__(self, scenario_config: Dict[str, Any], sqi_config_path: Path = None):
-        self.cfg = scenario_config
-        self.name = scenario_config["name"]
-        self.n_units = int(scenario_config.get("functional_unit_units", 1000))
-        self.n_f = float(scenario_config.get("frames_per_part", 1.0))
-        self.pi = float(scenario_config["defect_prevalence"])
-        self.total_defects = self.n_units * self.pi
+def load_regimes(path=POLICY_CONFIG) -> Dict[str, Regime]:
+    cfg = yaml.safe_load(path.read_text(encoding="utf-8"))
+    regimes: Dict[str, Regime] = {}
+    for rid, spec in cfg["baselines"].items():
+        regimes[rid] = Regime(id=rid, label=spec["label"], kind=spec["kind"])
+    for rid, spec in cfg["ai_tiers"].items():
+        if not isinstance(spec.get("persistence"), bool):
+            raise ValueError(f"{path}: {rid} needs a boolean 'persistence'")
+        regimes[rid] = Regime(id=rid, label=spec["label"], kind="ai", persistence=spec["persistence"])
+    if tuple(regimes) != BASELINES + AI_TIERS:
+        raise ValueError(f"{path}: expected regimes {BASELINES + AI_TIERS}, got {tuple(regimes)}")
+    for r in regimes.values():
+        if r.kind not in ("none", "manual", "ai"):
+            raise ValueError(f"{path}: invalid kind for {r.id}")
+    return regimes
 
-        self.m_kg = float(scenario_config["part_mass_kg"])
-        self.ef_mat = float(scenario_config["material_carbon_factor_kgco2e_per_kg"])
-        self.eta = float(scenario_config["material_recovery_fraction"])
-        self.e_rw = float(scenario_config["rework_energy_kwh_per_unit"])
-        self.c_esc = float(scenario_config["escape_carbon_penalty_kgco2e"])
-        self.q0 = float(scenario_config["base_reworkability"])
-        self.beta = float(scenario_config["reworkability_decay_per_sec"])
-        self.fps = float(scenario_config.get("sampling_rate_fps", 30.0))
-        self.q_field = float(scenario_config.get("q_field", 1.0))
 
-        # Calibrated default parameters
-        self.gamma = float(scenario_config.get("grid_carbon_factor", 0.417))
-        
-        # Harmonize energy scaling
-        if "edge_energy_kwh_per_1k" in scenario_config:
-            self.e_edge = float(scenario_config["edge_energy_kwh_per_1k"])
-            self.e_frame_wh = (self.e_edge * 1000.0) / (self.n_units * self.n_f)
-        elif "edge_energy_wh_per_frame" in scenario_config:
-            self.e_frame_wh = float(scenario_config["edge_energy_wh_per_frame"])
-            self.e_edge = (self.n_units * self.n_f * self.e_frame_wh) / 1000.0
-        else:
-            self.e_frame_wh = 0.171
-            self.e_edge = 0.171
+@dataclass(frozen=True)
+class RegimeResult:
+    regime: Regime
+    t_fu_h: np.ndarray
+    recall: np.ndarray
+    delay_s: np.ndarray
+    false_alarm_rate: np.ndarray
+    routing: RoutingOutcome
+    material: MaterialOutcome
+    workload: WorkloadOutcome
+    energy: EnergyOutcome
+    carbon: CarbonOutcome
 
-        self.p_station = float(scenario_config.get("workstation_power_w", 85.0))
-        self.mu = float(scenario_config.get("service_rate_mu", 60.0))
-        self.t_review = float(scenario_config.get("review_duration_seconds", 30.0))
-        self.defect_dist = scenario_config.get("defect_distribution", {
-            "class_a_reworkable": 0.70,
-            "class_b_scrap_prone": 0.25,
-            "class_c_escape_sensitive": 0.05,
-        })
-        self.class_decay_params = scenario_config.get("class_decay_params", None)
+    def dims(self) -> Dict[str, np.ndarray]:
+        """The four SQI dimensions (lower is better for all)."""
+        return {"M": self.material.net_loss_kg, "E": self.energy.total_kwh,
+                "C": self.carbon.total, "H": self.workload.operator_hours}
 
-        # Initialize engines
-        self.interv_engine = QualityInterventionModel(
-            base_reworkability=self.q0,
-            reworkability_decay_per_sec=self.beta,
-            sampling_rate_fps=self.fps,
-            q_field=self.q_field,
-            defect_distribution=self.defect_dist,
-            class_decay_params=self.class_decay_params,
-        )
-        self.mat_engine = MaterialAccountingEngine(
-            part_mass_kg=self.m_kg, recovery_fraction=self.eta
-        )
-        self.work_engine = WorkloadAccountingEngine(
-            service_capacity_mu_per_hr=self.mu,
-            review_duration_seconds=self.t_review,
-            sampling_rate_fps=self.fps,
-            functional_unit_units=self.n_units,
-        )
-        self.energy_engine = EnergyAccountingEngine(
-            edge_energy_kwh_per_1k=self.e_edge,
-            review_workstation_power_w=self.p_station,
-            rework_energy_kwh_per_unit=self.e_rw,
-            functional_unit_units=self.n_units,
-            frames_per_part=self.n_f,
-            edge_energy_wh_per_frame=self.e_frame_wh,
-        )
-        self.carbon_engine = CarbonAccountingEngine(
-            material_carbon_factor_kgco2e_per_kg=self.ef_mat,
-            grid_carbon_factor_kgco2e_per_kwh=self.gamma,
-            escape_carbon_penalty_kgco2e=self.c_esc,
-        )
-        self.sqi_engine = SQIEngine(config_path=sqi_config_path)
 
-    @classmethod
-    def from_yaml(cls, yaml_path: Path, sqi_config_path: Path = None) -> "ScenarioPipelineEvaluator":
-        with open(yaml_path, "r", encoding="utf-8") as f:
-            cfg = yaml.safe_load(f)
-        return cls(cfg, sqi_config_path)
+def ai_operating_point(p: Mapping[str, float], regime: Regime):
+    """Recall, interception delay [s], operator-facing false-alert rate [1/h] and alerts per
+    detected defect of an AI tier (rates and delays measured in Paper A)."""
+    t = regime.id
+    recall = np.maximum(0.0, p["ai_recall"] - (p["persistence_recall_loss"] if regime.persistence else 0.0))
+    delay_s = p[f"detection_delay@{t}"] / p["camera_fps"]
+    fa = p[f"nominal_false_alarm_rate@{t}"] + p["glare_burst_rate"] * p[f"glare_alerts_per_burst@{t}"]
+    return recall, delay_s, fa, p[f"alerts_per_defect@{t}"]
 
-    def evaluate_policy(
-        self,
-        policy_name: str,
-        recall: float,
-        alert_rate_per_hr: float,
-        delay_frames: float,
-        baseline_result: PolicyEvaluationResult = None,
-        edge_active: bool = True,
-        class_specific: bool = True,
-    ) -> PolicyEvaluationResult:
-        interv = self.interv_engine.evaluate(
-            total_defects=self.total_defects,
-            recall=recall,
-            delay_frames=delay_frames,
-            defect_distribution=self.defect_dist,
-            q_field=self.q_field,
-            class_specific=class_specific,
-        )
 
-        base_mat_loss = baseline_result.material.net_loss_kg if baseline_result else None
-        mat = self.mat_engine.evaluate(interv.n_scrap, baseline_loss_kg=base_mat_loss)
+def evaluate_regime(p: Mapping[str, float], class_shares, regime: Regime) -> RegimeResult:
+    n = p["functional_unit"]
+    t_fu = functional_unit_hours(n, p["line_throughput"])
+    defects = n * np.asarray(p["defect_prevalence"], dtype=float)
+    zero = 0.0 * defects
 
-        base_work_hrs = baseline_result.workload.total_review_hours if baseline_result else None
-        work = self.work_engine.evaluate(alert_rate_per_hr, baseline_hours=base_work_hrs)
+    if regime.kind == "none":
+        recall, delay_s, fa, per_defect = zero, zero, zero, zero
+    elif regime.kind == "manual":
+        recall, delay_s, fa, per_defect = p["manual_inspection_recall"] + zero, p["manual_discovery_delay"] + zero, zero, zero
+    else:
+        recall, delay_s, fa, per_defect = ai_operating_point(p, regime)
 
-        base_energy_tot = baseline_result.energy.total_energy_kwh if baseline_result else None
-        energy = self.energy_engine.evaluate(
-            review_hours=work.total_review_hours,
-            n_rework=interv.n_rework,
-            baseline_total_kwh=base_energy_tot,
-            edge_active=edge_active,
-            frames_per_part=self.n_f,
-        )
+    routing = route_defects(defects, recall, delay_s, p["base_reworkability"], p["reworkability_time_constant"], class_shares)
+    material = material_flows(routing.n_scrap, p["part_mass"], p["material_recovery_fraction"])
 
-        base_carbon_tot = baseline_result.carbon.total_carbon_kgco2e if baseline_result else None
-        base_rw_kwh = baseline_result.energy.rework_kwh if baseline_result else None
-        base_rev_kwh = baseline_result.energy.human_review_kwh if baseline_result else None
-        base_n_esc = baseline_result.intervention.n_escape if baseline_result else None
-        base_edge_kwh = baseline_result.energy.edge_compute_kwh if baseline_result else None
-        n_downstream = interv.class_counts.get("downstream_catch", 0.0)
-        base_n_down = (
-            baseline_result.carbon.n_downstream_catch if baseline_result else None
-        )
+    if regime.kind == "none":
+        work = no_workload(defects)
+    elif regime.kind == "manual":
+        work = manual_inspection_workload(n, p["line_throughput"], p["manual_inspection_time"])
+    else:
+        work = ai_review_workload(fa, routing.routed, per_defect, t_fu, p["review_time"])
 
-        carbon = self.carbon_engine.evaluate(
-            net_material_loss_kg=mat.net_loss_kg,
-            total_energy_kwh=energy.total_energy_kwh,
-            n_escape=interv.n_escape,
-            baseline_carbon_kgco2e=base_carbon_tot,
-            baseline_material_loss_kg=base_mat_loss,
-            baseline_rework_kwh=base_rw_kwh,
-            baseline_review_kwh=base_rev_kwh,
-            current_rework_kwh=energy.rework_kwh,
-            current_review_kwh=energy.human_review_kwh,
-            current_edge_kwh=energy.edge_compute_kwh,
-            baseline_n_escape=base_n_esc,
-            baseline_edge_kwh=base_edge_kwh,
-            class_counts=interv.class_counts,
-            n_downstream_catch=n_downstream,
-            baseline_n_downstream=base_n_down,
-        )
+    edge_active = regime.kind == "ai"
+    energy = energy_flows(edge_active, p["gpu_idle_power"], p["gpu_active_power"], p["host_power"], t_fu,
+                          work.operator_hours, p["review_station_power"], routing.n_rework, p["rework_energy"])
+    carbon = carbon_flows(material.net_loss_kg, material.recovered_kg, p["material_carbon_factor"], p["recycling_burden"],
+                          energy, p["grid_carbon_factor"], edge_active, p["edge_embodied_carbon"], t_fu,
+                          p["edge_lifetime_hours"], routing.n_escape, routing.n_escape_class_c, p["part_mass"],
+                          p["return_logistics_carbon"], p["collateral_multiplier"])
+    return RegimeResult(regime=regime, t_fu_h=t_fu + zero, recall=np.asarray(recall) + zero,
+                        delay_s=np.asarray(delay_s) + zero, false_alarm_rate=np.asarray(fa) + zero,
+                        routing=routing, material=material, workload=work, energy=energy, carbon=carbon)
 
-        if baseline_result:
-            sqi_res = self.sqi_engine.evaluate(
-                delta_m=mat.net_savings_kg,
-                m_baseline_loss=base_mat_loss,
-                delta_e=energy.net_energy_diff_kwh,
-                e_baseline_total=base_energy_tot,
-                delta_c=carbon.net_carbon_benefit_kgco2e,
-                c_baseline_total=base_carbon_tot,
-                delta_h=work.avoided_hours,
-                h_baseline_hours=base_work_hrs,
-            )
-        else:
-            sqi_res = self.sqi_engine.evaluate(
-                delta_m=0.0,
-                m_baseline_loss=mat.net_loss_kg,
-                delta_e=0.0,
-                e_baseline_total=energy.total_energy_kwh,
-                delta_c=0.0,
-                c_baseline_total=carbon.total_carbon_kgco2e,
-                delta_h=0.0,
-                h_baseline_hours=work.total_review_hours,
-            )
 
-        return PolicyEvaluationResult(
-            scenario=self.name,
-            policy=policy_name,
-            intervention=interv,
-            material=mat,
-            workload=work,
-            energy=energy,
-            carbon=carbon,
-            sqi=sqi_res,
-            waterfall=carbon.waterfall_components,
-        )
+@dataclass(frozen=True)
+class Comparison:
+    """Savings of `policy` relative to `baseline` (positive = improvement)."""
+    baseline: RegimeResult
+    policy: RegimeResult
+    delta: Dict[str, np.ndarray]        # M, E, C, H
+    waterfall: Dict[str, np.ndarray]    # carbon components; sum == delta['C']
+    sqi: SQIResult
+
+
+def compare(baseline: RegimeResult, policy: RegimeResult, profiles=None) -> Comparison:
+    base_dims, policy_dims = baseline.dims(), policy.dims()
+    delta = {k: base_dims[k] - policy_dims[k] for k in base_dims}
+    waterfall = baseline.carbon.delta_components(policy.carbon)
+    closure = np.max(np.abs(sum(waterfall[c] for c in COMPONENTS) - delta["C"]))
+    if closure > 1e-9 * max(1.0, float(np.max(np.abs(base_dims["C"])))):
+        raise ArithmeticError(f"carbon waterfall does not close (residual {closure})")
+    return Comparison(baseline=baseline, policy=policy, delta=delta, waterfall=waterfall,
+                      sqi=evaluate_sqi(base_dims, policy_dims, profiles))
+
+
+def evaluate_all(p: Mapping[str, float], class_shares, regimes: Optional[Dict[str, Regime]] = None) -> Dict[str, RegimeResult]:
+    regimes = regimes or load_regimes()
+    return {rid: evaluate_regime(p, class_shares, r) for rid, r in regimes.items()}
+
+
+def delta_carbon(p: Mapping[str, float], class_shares, base: str, policy: str) -> float:
+    """Scalar Delta C [kgCO2e/FU] of `policy` relative to `base` for one parameter set."""
+    res = evaluate_all(p, class_shares)
+    return float(compare(res[base], res[policy]).delta["C"])
