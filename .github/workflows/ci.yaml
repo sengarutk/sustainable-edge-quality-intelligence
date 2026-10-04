@@ -38,9 +38,15 @@ jobs:
       - name: Fail on any drift in data, results, tables or macros
         # Figures are excluded: rasterisation can differ across FreeType builds.
         run: |
-          git status --porcelain -- data results paper ':!results/figures' ':!paper/figures'
-          git diff --exit-code -- data results paper ':!results/figures' ':!paper/figures'
-          test -z "$(git status --porcelain -- data results paper ':!results/figures' ':!paper/figures')"
+          changed="$(git status --porcelain -- data results paper ':!results/figures' ':!paper/figures')"
+          if [ -n "$changed" ]; then
+            # Report every drifted file, with its first differing line, as a public annotation.
+            git status --porcelain -- data results paper ':!results/figures' ':!paper/figures' | while read -r st f; do
+              first="$(git diff -U0 -- "$f" | grep -E '^[-+][^-+]' | head -2 | cut -c1-180 | tr '\n' ' ')"
+              echo "::error file=$f::drift ($st) $(git diff --numstat -- "$f" | cut -f1,2 | tr '\t' '/') lines: $first"
+            done
+            exit 1
+          fi
 
   paper:
     name: Compile manuscript
