@@ -16,7 +16,7 @@ import yaml
 
 from src.paths import POLICY_CONFIG
 from src.quality.intervention_model import RoutingOutcome, route_defects
-from src.sustainability.carbon_accounting import COMPONENTS, CarbonOutcome, carbon_flows
+from src.sustainability.carbon_accounting import COMPONENTS, CarbonOutcome, carbon_flows, return_freight_carbon
 from src.sustainability.energy_accounting import EnergyOutcome, energy_flows
 from src.sustainability.material_accounting import MaterialOutcome, material_flows
 from src.sustainability.sqi import SQIResult, evaluate_sqi
@@ -112,7 +112,8 @@ def evaluate_regime(p: Mapping[str, float], class_shares, regime: Regime) -> Reg
     carbon = carbon_flows(material.net_loss_kg, material.recovered_kg, p["material_carbon_factor"], p["recycling_burden"],
                           energy, p["grid_carbon_factor"], edge_active, p["edge_embodied_carbon"], t_fu,
                           p["edge_lifetime_hours"], routing.n_escape, routing.n_escape_class_c, p["part_mass"],
-                          p["return_logistics_carbon"], p["collateral_multiplier"])
+                          return_freight_carbon(p["part_mass"], p["return_distance"], p["freight_carbon_intensity"]),
+                          p["collateral_multiplier"])
     return RegimeResult(regime=regime, t_fu_h=t_fu + zero, recall=np.asarray(recall) + zero,
                         delay_s=np.asarray(delay_s) + zero, false_alarm_rate=np.asarray(fa) + zero,
                         routing=routing, material=material, workload=work, energy=energy, carbon=carbon)

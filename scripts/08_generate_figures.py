@@ -52,7 +52,7 @@ PARAM_LABEL = {
     "material_recovery_fraction": r"recovery $\eta$", "recycling_burden": r"$EF_{rec}$", "rework_energy": r"$e_{rw}$",
     "base_reworkability": r"$q_0$", "reworkability_time_constant": r"$\tau_{rw}$",
     "manual_discovery_delay": r"manual delay $d_{L0}$", "manual_inspection_time": r"$t_{L0}$",
-    "manual_inspection_recall": r"manual recall $r_{L0}$", "return_logistics_carbon": r"$c_{ret}$",
+    "manual_inspection_recall": r"manual recall $r_{L0}$", "return_distance": r"return distance $d_{ret}$", "freight_carbon_intensity": r"freight $EF_{fr}$",
     "collateral_multiplier": r"collateral $\kappa$", "grid_carbon_factor": r"grid $\gamma$", "host_power": r"$P_{host}$",
     "gpu_idle_power": r"$P_{idle}$", "gpu_active_power": r"$P_{active}$", "edge_embodied_carbon": r"$C_{hw}$",
     "edge_lifetime_hours": r"$L_{hw}$", "review_station_power": r"$P_{station}$", "review_time": r"$t_{review}$",
@@ -272,7 +272,8 @@ def fig7_uncertainty_tradeoff():
         dc = compare(res["B0_Raw"], res["B3_Full_Policy"]).delta["C"]
         a2.plot(100 * losses, dc, color=SC_COLOR[sc], lw=1.6, label=SC_LABEL[sc])
         star = be[sc]["recall_loss_star_B3_vs_B0"]["value"]
-        a2.plot(100 * star, 0.0, marker="o", ms=5, color=SC_COLOR[sc], mec=SURFACE, mew=1.0)
+        if star is not None:  # no marker when B3 stays ahead of B0 for every recall loss
+            a2.plot(100 * star, 0.0, marker="o", ms=5, color=SC_COLOR[sc], mec=SURFACE, mew=1.0)
     a2.set_xscale("log")
     a2.set_yscale("symlog", linthresh=1.0)
     a2.axhline(0, color=INK2, lw=0.8)

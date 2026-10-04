@@ -8,6 +8,7 @@ Carbon accounting per functional unit [kgCO2e/FU], as additive components:
   edge     = E_edge * gamma                          edge-cell electricity
   hardware = C_hw * T_FU / L_hw                      amortised embodied carbon of edge hardware
   escape   = N_esc * (m * EF_mat + c_ret) + N_esc,C * kappa * m * EF_mat
+  c_ret    = 2 * (m / 1000) * d_ret * EF_fr               return + replacement road freight
 
 An escaped part is replaced (its full embodied material is lost) and returned
 (c_ret); class-C escapes add collateral system damage kappa * m * EF_mat.
@@ -40,6 +41,11 @@ class CarbonOutcome:
     def delta_components(self, other: "CarbonOutcome"):
         """Savings of `other` relative to `self` (baseline): positive = other emits less."""
         return {c: getattr(self, c) - getattr(other, c) for c in COMPONENTS}
+
+
+def return_freight_carbon(part_mass_kg, distance_km, intensity_kg_per_tkm):
+    """Road freight of the returned part and of its replacement [kgCO2e per escape] (GLEC t-km basis)."""
+    return 2.0 * (np.asarray(part_mass_kg) / 1000.0) * distance_km * intensity_kg_per_tkm
 
 
 def escape_unit_penalty(part_mass_kg, ef_mat, c_ret):

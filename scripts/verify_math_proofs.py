@@ -32,7 +32,7 @@ from src.models.pipeline_evaluator import AI_TIERS, BASELINES, evaluate_all, loa
 from src.params import load_scenario  # noqa: E402
 from src.paths import (ENERGY_SUMMARY, PAPER_DIR, PROCESSED_DIR, RESULTS_MACROS, SCENARIOS,  # noqa: E402
                        SQI_CONFIG)
-from src.sustainability.carbon_accounting import COMPONENTS  # noqa: E402
+from src.sustainability.carbon_accounting import COMPONENTS, return_freight_carbon  # noqa: E402
 from src.validation.source_registry import load_registry  # noqa: E402
 
 RESULTS = []
@@ -230,6 +230,10 @@ def part_b_dimensions():
     check(S, "1 W * 1 h = 1/1000 kWh (E_edge, E_rev)",
           u.convert_to(u.watt * u.hour, u.joule) / u.convert_to(1000 * u.watt * u.hour, u.joule) == sp.Rational(1, 1000))
     check(S, "1 s = 1/3600 h (H, rho)", sp.simplify(u.convert_to(u.second, u.hour) / u.hour) == sp.Rational(1, 3600))
+    Lk, Mt = sp.symbols("LENGTH TONNE", positive=True)
+    check(S, "c_ret = 2 (m/1000) d EF_fr is carbon: [t] [km] [CO2e/(t km)]",
+          sp.simplify((Mt * Lk) * (Cc / (Mt * Lk)) - Cc) == 0 and float(return_freight_carbon(1000.0, 1.0, 1.0)) == 2.0,
+          "m/1000 converts kg to t; factor 2 = return + replacement shipment")
     check(S, "E_frame [J] = P [W] / f [1/s]", sp.simplify(u.convert_to(u.watt / (1 / u.second), u.joule) / u.joule) == 1)
 
 
@@ -254,7 +258,7 @@ def part_c_implementation():
                   P_idle: p["gpu_idle_power"], P_act: p["gpu_active_power"], P_host: p["host_power"],
                   P_st: p["review_station_power"], e_rw: p["rework_energy"], gamma: p["grid_carbon_factor"],
                   EF_mat: p["material_carbon_factor"], EF_rec: p["recycling_burden"], C_hw: p["edge_embodied_carbon"],
-                  L_hw: p["edge_lifetime_hours"], c_ret: p["return_logistics_carbon"], kappa: p["collateral_multiplier"],
+                  L_hw: p["edge_lifetime_hours"], c_ret: return_freight_carbon(p["part_mass"], p["return_distance"], p["freight_carbon_intensity"]), kappa: p["collateral_multiplier"],
                   rL0: p["manual_inspection_recall"], dL0: p["manual_discovery_delay"]}
         if rid in BASELINES:
             return exprs[rid], common
@@ -294,7 +298,7 @@ def part_d_break_even(b4, ref, sym):
                 t_rev: p["review_time"], t_L0: p["manual_inspection_time"], P_idle: p["gpu_idle_power"],
                 P_act: p["gpu_active_power"], P_host: p["host_power"], P_st: p["review_station_power"], e_rw: p["rework_energy"],
                 gamma: p["grid_carbon_factor"], EF_mat: p["material_carbon_factor"], EF_rec: p["recycling_burden"],
-                C_hw: p["edge_embodied_carbon"], L_hw: p["edge_lifetime_hours"], c_ret: p["return_logistics_carbon"],
+                C_hw: p["edge_embodied_carbon"], L_hw: p["edge_lifetime_hours"], c_ret: return_freight_carbon(p["part_mass"], p["return_distance"], p["freight_carbon_intensity"]),
                 kappa: p["collateral_multiplier"], sym["manual_inspection_recall"]: p["manual_inspection_recall"],
                 sym["manual_discovery_delay"]: p["manual_discovery_delay"], f_cam: p["camera_fps"],
                 r_AI: p["ai_recall"], delta_r: p["persistence_recall_loss"], g_rate: p["glare_burst_rate"],
@@ -371,7 +375,7 @@ def part_e_manuscript():
     # Every macro used in the manuscript and generated tables must be defined.
     defined = set(macros) | set(re.findall(r"\\newcommand\{\\(\w+)\}", tex))
     used = set(re.findall(r"\\([A-Z][A-Za-z]+)\b", tex))
-    latex_builtin = {"IEEEPARstart", "IEEEkeywords", "Big", "Delta", "Theta", "Gamma", "Lambda", "Sigma", "Omega", "Pi", "Phi"}
+    latex_builtin = {"IEEEPARstart", "IEEEkeywords", "Big", "UrlBreaks", "Delta", "Theta", "Gamma", "Lambda", "Sigma", "Omega", "Pi", "Phi"}
     undefined = sorted(used - defined - latex_builtin)
     check(S, "every macro used in main.tex is defined", not undefined, ", ".join(undefined))
     unused = sorted(defined - used - {"kgce"})
@@ -385,7 +389,7 @@ def part_e_manuscript():
     ledger = {tables.symbol(r).strip("$") for r in load_registry()}
     derived = {"T_{FU}", "N_{rw}", "N_{sc}", "N_{esc}", "q_{rw}", "M_{gr}", "M_{rec}", "M_{loss}", "n_{ev}", "E_{edge}",
                "E_{rev}", "E_{rw}", "S_X", "w_X", "X_b", "X_p", r"\lambda_{FA}", "f_A", "f_B", "f_C", r"\lambda_t", "a_t", "b_t", "d_t",
-               "S_E", "S_H", "P^\\star_{cell}", "q_0", r"\sum_X"}
+               "S_E", "S_H", "c_{ret}", "P^\\star_{cell}", "q_0", r"\sum_X"}
     math = " ".join(re.findall(r"\$([^$]+)\$", tex) + re.findall(r"\\begin\{(?:align|equation)\}(.*?)\\end", tex, re.S))
     tokens = set(re.findall(r"(\\?[A-Za-z]+_\{[^{}]+\}|\\?[A-Za-z]+_[A-Za-z0-9])", math))
     unknown = sorted(t for t in tokens if t not in ledger and t not in derived)

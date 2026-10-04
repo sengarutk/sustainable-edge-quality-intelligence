@@ -127,7 +127,7 @@ def main():
     claim(abs(central["review_time"] - 3600.0 / float(qa["MuReviews"])) < 1e-9, "review time matches Paper A's reviewer rate")
 
     PRIMARY = "B3_Full_Policy"
-    shares, esc_shares, headrooms, b12 = [], [], [], []
+    shares, esc_shares, headrooms, b12, ebf = [], [], [], [], []
     for sc in SCENARIOS:
         P = PREFIX[sc]
         r = reg[reg.scenario == sc].set_index("regime")
@@ -192,28 +192,40 @@ def main():
         headrooms.append(cell_star / cell_now_w)
         m[f"{P}CellPowerStar"] = sig(cell_star / 1000.0)
         m[f"{P}CellHeadroom"] = f"{headrooms[-1]:,.0f}".replace(",", "{,}")
-        m[f"{P}RecallLossStar"] = sig(100 * f["recall_loss_star_B3_vs_B0"]["value"], 3)
+        rl = f["recall_loss_star_B3_vs_B0"]
+        m[f"{P}RecallLossStar"] = sig(100 * rl["value"], 3) if rl["status"] == "root" else "none"
         top = prcc[prcc.scenario == sc].iloc[0]
         m[f"{P}TopPrcc"] = f"{top.prcc:+.2f}"
 
         # claims made in the manuscript
-        claim(edge_c / vL0.delta_C < 0.01, f"{sc}: edge-cell carbon < 1% of the carbon benefit vs L0")
+        ebf.append(edge_c / vL0.delta_C)
+        claim(edge_c / vL0.delta_C < 0.02, f"{sc}: edge-cell carbon < 2% of the carbon benefit vs L0")
         claim(share < 0.02, f"{sc}: edge-cell carbon < 2% of the B3 footprint")
         claim(mcL["p_delta_c_positive"] >= 0.95, f"{sc}: P(dC>0, B3 vs L0) >= 95%")
+        m[f"{P}McProbBThree"] = f"{100 * mcL['p_delta_c_positive']:.1f}"
         claim(vB0.delta_C > 0 and vB0.delta_H > 0 and vB0.delta_E > 0, f"{sc}: B3 saves hours, electricity and carbon vs B0")
         claim(r.loc["B0_Raw"].rho > 1, f"{sc}: raw thresholding overloads one reviewer")
         claim(vL0.delta_H < 0, f"{sc}: B3 needs more operator time than manual inspection")
-        claim(f["recall_loss_star_B3_vs_B0"]["status"] == "root", f"{sc}: recall-loss break-even exists")
-        claim(f["pi_star_vs_N0"]["status"] == "root" and f["pi_star_vs_N0"]["value"] < 1e-4, f"{sc}: pi* vs N0 < 100 ppm")
-        claim(f["gamma_star_vs_L0"]["status"] == "none_positive", f"{sc}: no grid break-even below 1.5 kg/kWh")
+        claim(rl["status"] == ("none_positive" if sc == "precision_component" else "root"),
+              f"{sc}: recall-loss break-even exists for B and C; for A, B3 stays ahead of B0 for any recall loss")
+        claim(f["pi_star_vs_N0"]["status"] == "root" and f["pi_star_vs_N0"]["value"] < 1e-3, f"{sc}: pi* vs N0 < 0.1%")
+        g = f["gamma_star_vs_L0"]
+        if sc == "precision_component":
+            claim(g["status"] == "root" and 0.716 < g["value"] < 1.5, "A: grid break-even lies above India's 0.716 and below 1.5")
+            m["PrecGammaStar"] = f"{g['value']:.2f}"
+        else:
+            claim(g["status"] == "none_positive", f"{sc}: no grid break-even below 1.5 kg/kWh")
         claim(f["manual_recall_star"]["status"] == "none_positive", f"{sc}: AI beats even perfect-recall manual inspection")
         claim(vL0.delta_E < 0, f"{sc}: B3 uses more electricity than L0 (rework)")
     prec = reg[reg.scenario == "precision_component"].set_index("regime")
     claim(prec.loc["B0_Raw"].carbon_total > prec.loc["L0_Manual"].carbon_total, "A: raw thresholding emits more than manual inspection")
     claim(prec.loc[PRIMARY].rho > 1 and all(reg[(reg.scenario == sc) & (reg.regime == PRIMARY)].rho.iloc[0] < 1 for sc in SCENARIOS[1:]),
           "B3 overloads one reviewer only in scenario A")
-    claim(comp[(comp.scenario == "high_value_component") & (comp.baseline == "B1_EMA") & (comp.policy == PRIMARY)].delta_C.iloc[0] < 0,
-          "C: smoothing alone (B1) emits slightly less than B3 (persistence delay costs reworkability)")
+    b3b1 = comp[(comp.baseline == "B1_EMA") & (comp.policy == PRIMARY)]
+    claim((b3b1.delta_C > 0).all(), "B3 emits less than smoothing alone (B1) in every scenario")
+    hv_b1 = b3b1[b3b1.scenario == "high_value_component"].iloc[0]
+    claim(hv_b1.delta_M < 0, "C: the persistence delay of B3 costs some material relative to B1")
+    m["HiValDelayMaterialCost"] = sig(-hv_b1.delta_M)
     reviewers_b0 = [int(m[f"{PREFIX[sc]}ReviewersBZero"]) for sc in SCENARIOS]
     claim(min(reviewers_b0) >= 10 and max(reviewers_b0) >= 100, "B0 needs tens to hundreds of reviewers")
     pol = {r.key: r.central for r in records if r.scope.startswith("policy:")}
@@ -227,8 +239,8 @@ def main():
     claim(p_prec["defect_prevalence"] * p_prec["line_throughput"] > float(qa["LoadCrossFull"]),
           "scenario A's defect rate exceeds Paper A's single-reviewer crossover")
     stars = {sc: be[sc]["recall_loss_star_B3_vs_B0"]["value"] for sc in SCENARIOS}
-    claim(stars["high_value_component"] < 0.015 and stars["precision_component"] > 0.1,
-          "recall margin is about one point for high-value parts and wide for lightweight parts")
+    claim(stars["precision_component"] is None and stars["high_value_component"] < 0.02 < 0.04 < stars["machined_metal"] < 0.05,
+          "recall margin: none needed for A, about 4 points for B, under 2 points for C")
     m["BOneBTwoHoursDiffMax"] = f"{100 * max(b12):.0f}"
 
     # measured detector operating points (MVTec AD)
@@ -292,7 +304,10 @@ def main():
     claim((((pop.psi > 1) == (pop.dc_N0 > 0)) | (pop.beta <= 0)).all(), "decision rule psi > 1 <=> Delta C > 0 for every product")
     claim(max(b12) < 0.05, "B1 and B2 operator hours differ by < 5%")
     draws = pd.read_csv(PROCESSED_DIR / "monte_carlo_draws.csv")
-    claim((draws.B3_vs_L0_delta_C > 0).all(), "B3 beats L0 in every Monte Carlo draw")
+    claim(all(mc[sc]["comparisons"]["B3_vs_L0"]["p_delta_c_positive"] >= 0.99 for sc in SCENARIOS)
+          and all((draws[draws.scenario == sc].B3_vs_L0_delta_C > 0).all() for sc in SCENARIOS[1:]),
+          "B3 beats L0 in >= 99% of draws (A) and in every draw (B, C)")
+    m["EdgeOfBenefitMax"] = sig(100 * max(ebf), 2)
     claim((draws.B3_vs_B0_delta_H > 0).all(), "B3 saves operator hours vs B0 in every draw")
     edge_keys = ["gpu_idle_power", "gpu_active_power", "host_power", "edge_embodied_carbon", "edge_lifetime_hours"]
     edge_prcc = prcc[prcc.parameter.isin(edge_keys)].prcc.abs().max()

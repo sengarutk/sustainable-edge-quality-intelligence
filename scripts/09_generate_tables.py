@@ -17,17 +17,31 @@ from src.validation.source_registry import load_registry  # noqa: E402
 CLASS_SHORT = {"Measured by this study": "M", "Derived from Paper A": "P", "Literature-derived": "L",
                "Official/public dataset": "O", "Scenario assumption": "A"}
 UNIT_TEX = {"kgCO2e": r"kgCO$_2$e", "kgCO2e/kg": r"kgCO$_2$e/kg", "kgCO2e/kWh": r"kgCO$_2$e/kWh",
-            "kgCO2e/escape": r"kgCO$_2$e", "s^-1": r"s$^{-1}$", "-": "--"}
+            "kgCO2e/escape": r"kgCO$_2$e", "kgCO2e/t-km": r"kgCO$_2$e/t-km", "s^-1": r"s$^{-1}$", "-": "--"}
 SYMBOL_TEX = {
     "N": "N", "f_cam": "f_{cam}", "P_idle": "P_{idle}", "P_active": "P_{active}", "P_host": "P_{host}", "C_hw": "C_{hw}",
     "L_hw": "L_{hw}", "P_station": "P_{station}", "t_review": "t_{review}", "gamma": r"\gamma", "r_L0": "r_{L0}",
     "g": "g", "r_AI": "r_{AI}", "delta_r": r"\delta_r", "Theta": r"\Theta", "pi": r"\pi", "m": "m", "EF_mat": "EF_{mat}",
     "eta": r"\eta", "EF_rec": "EF_{rec}", "e_rw": "e_{rw}", "q0": "q_0", "tau_rw": r"\tau_{rw}", "d_L0": "d_{L0}",
-    "t_L0": "t_{L0}", "c_ret": "c_{ret}", "kappa": r"\kappa",
+    "t_L0": "t_{L0}", "kappa": r"\kappa", "EF_fr": "EF_{fr}", "d_ret": "d_{ret}",
 }
-CITE = {"this_study": "this study", "none": "--", "see2012visual": r"\cite{see2012visual}", "sengar2026paperA": r"\cite{sengar2026paperA}",
-        "ember2024;cea2024": r"\cite{ember2024,cea2024}", "ashby2012materials": r"\cite{ashby2012materials}",
-        "allwood2011material": r"\cite{allwood2011material}"}
+def merged_keys(records) -> str:
+    """Union of the citation keys of several records, in first-seen order ('none' if there are none)."""
+    keys = []
+    for r in records:
+        keys += [k for k in r.citation_key.split(";") if k != "none" and k not in keys]
+    return ";".join(keys) or "none"
+
+
+def cite_tex(key: str) -> str:
+    """'none' -> dash, 'this_study' -> text, otherwise a \\cite of the ';'-separated keys."""
+    if key == "none":
+        return "--"
+    keys = [k for k in key.split(";") if k != "this_study"]
+    text = ("this study" if "this_study" in key.split(";") else "")
+    return (text + (" " if text and keys else "") + (r"\cite{" + ",".join(keys) + "}" if keys else "")).strip()
+
+
 
 
 def num(x):
@@ -93,7 +107,7 @@ def table1_ledger():
     glob = [r for r in recs if r.scope == "all"]
     for r in glob:
         lines.append(rf"{r.parameter.replace('_', ' ')} & {symbol(r)} & {UNIT_TEX.get(r.unit, r.unit)} & "
-                     rf"\multicolumn{{3}}{{c}}{{{value_range(r)}}} & {CLASS_SHORT[r.classification.value]} & {CITE.get(r.citation_key, r.citation_key)} \\")
+                     rf"\multicolumn{{3}}{{c}}{{{value_range(r)}}} & {CLASS_SHORT[r.classification.value]} & {cite_tex(r.citation_key)} \\")
     lines += [r"\midrule", r"\multicolumn{8}{@{}l}{\emph{Scenario parameters}} \\"]
     per = {}
     for r in recs:
@@ -103,7 +117,7 @@ def table1_ledger():
         r0 = d[SCENARIOS[0]]
         cells = " & ".join(value_range(d[sc]) for sc in SCENARIOS)
         lines.append(rf"{name.replace('_', ' ')} & {symbol(r0)} & {UNIT_TEX.get(r0.unit, r0.unit)} & {cells} & "
-                     rf"{CLASS_SHORT[r0.classification.value]} & {CITE.get(r0.citation_key, r0.citation_key)} \\")
+                     rf"{CLASS_SHORT[r0.classification.value]} & {cite_tex(merged_keys(d.values()))} \\")
     shares = [load_scenario(sc).class_shares for sc in SCENARIOS]
     lines.append(r"defect class shares & $f_A{:}f_B{:}f_C$ & -- & " + " & ".join(":".join(f"{v:.2f}" for v in s) for s in shares) + r" & A & -- \\")
     lines += [r"\bottomrule", r"\end{tabular}", r"\end{table*}"]
