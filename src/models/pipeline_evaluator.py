@@ -96,6 +96,15 @@ def evaluate_regime(p: Mapping[str, float], class_shares, regime: Regime) -> Reg
     else:
         recall, delay_s, fa, per_defect = ai_operating_point(p, regime)
 
+    detected = defects * recall
+    if regime.kind == "ai":
+        # Cry-wolf effect: reviewers who have learned that most alerts are false release a share
+        # omega * (1 - PPV) of truly defective diverted parts back to the line, where they escape
+        # (probability matching; omega = 0 is full compliance).
+        true_alerts = per_defect * detected
+        alerts = true_alerts + fa * t_fu
+        ppv = np.divide(true_alerts, alerts, out=np.ones_like(alerts * 1.0), where=alerts > 0)
+        recall = recall * (1.0 - p["cry_wolf_strength"] * (1.0 - ppv))
     routing = route_defects(defects, recall, delay_s, p["base_reworkability"], p["reworkability_time_constant"], class_shares)
     material = material_flows(routing.n_scrap, p["part_mass"], p["material_recovery_fraction"])
 
@@ -104,10 +113,10 @@ def evaluate_regime(p: Mapping[str, float], class_shares, regime: Regime) -> Reg
     elif regime.kind == "manual":
         work = manual_inspection_workload(n, p["line_throughput"], p["manual_inspection_time"])
     else:
-        work = ai_review_workload(fa, routing.routed, per_defect, t_fu, p["review_time"])
+        work = ai_review_workload(fa, detected, per_defect, t_fu, p["review_time"])  # released parts are reviewed too
 
     edge_active = regime.kind == "ai"
-    energy = energy_flows(edge_active, p["gpu_idle_power"], p["gpu_active_power"], p["host_power"], t_fu,
+    energy = energy_flows(edge_active, p["edge_idle_power"], p["edge_active_power"], p["host_power"], t_fu,
                           work.operator_hours, p["review_station_power"], routing.n_rework, p["rework_energy"])
     carbon = carbon_flows(material.net_loss_kg, material.recovered_kg, p["material_carbon_factor"], p["recycling_burden"],
                           energy, p["grid_carbon_factor"], edge_active, p["edge_embodied_carbon"], t_fu,

@@ -17,7 +17,7 @@ if [[ "${1:-}" == "--measure" ]]; then
   "$PY" scripts/03b_measure_detector.py
 fi
 
-steps=(02_validate_sources 04_run_scenarios 05_run_sensitivity 06_run_monte_carlo
+steps=(03c_import_jetson 02_validate_sources 04_run_scenarios 05_run_sensitivity 06_run_monte_carlo
        07_run_break_even 07b_run_operating_points 08_generate_figures 09_generate_tables 10_generate_macros)
 for s in "${steps[@]}"; do
   echo "== $s"

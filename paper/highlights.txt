@@ -1,0 +1,5 @@
+Edge AI inspection power measured on an embedded module and on a workstation GPU
+Inference electricity is a negligible share of AI inspection's carbon balance
+Against human inspectors, detector recall decides whether edge AI saves carbon
+Exact rule: inspect when hourly defect carbon exceeds the cell's hourly emissions
+Reviewers who distrust mostly-false alerts can erase the benefit on slow lines

@@ -105,3 +105,29 @@ def evaluate_population(n: int = 20000, seed: int = 7) -> Dict[str, np.ndarray]:
         out["embodied_per_part"][i] = pi_["part_mass"] * pi_["material_carbon_factor"]
     out.update({k: np.asarray(p[k]) for k in ("defect_prevalence", "line_throughput", "part_mass", "material_carbon_factor")})
     return out
+
+
+def nomogram(n_mass: int = 121) -> "pd.DataFrame":
+    """Break-even defect rate of B3 against no inspection, D* = pi* x Theta [defects/h], as a function
+    of the embodied carbon per part m EF_mat. All fixed carbon of the cell accrues per hour, so pi*
+    scales exactly as 1/Theta and D* does not depend on throughput. The part mass is varied at the
+    machined-metal scenario's material factor, with rework energy per kg held constant; curves are
+    given for the low / central / high grid factor and for both edge platforms."""
+    import pandas as pd
+
+    from src.validation.source_registry import platform_records
+
+    s = load_scenario(SCENARIOS[1])
+    p0 = s.central()
+    grid = s.records["grid_carbon_factor"]
+    ws = {k: r.central for k, r in platform_records("workstation").items()}
+    variants = {"jetson_low_grid": {"grid_carbon_factor": grid.low}, "jetson_central": {},
+                "jetson_high_grid": {"grid_carbon_factor": grid.high}, "workstation_central": ws}
+    rows = []
+    for name, over in variants.items():
+        for mass in np.logspace(-3, 2.5, n_mass):
+            p = {**p0, **over, "part_mass": mass, "rework_energy": p0["rework_energy"] * mass / p0["part_mass"]}
+            ps = float(pi_star(p, s.class_shares, "N0_NoInspection"))
+            rows.append({"variant": name, "part_mass": mass, "embodied_per_part": mass * p0["material_carbon_factor"],
+                         "pi_star_at_central_throughput": ps, "defects_per_hour_star": ps * p["line_throughput"]})
+    return pd.DataFrame(rows)

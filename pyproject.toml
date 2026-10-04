@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sustainable-edge-quality-intelligence"
-version = "0.2.0"
+version = "0.3.0"
 description = "Measured edge-inference energy versus quality-driven carbon, material and workload effects of AI defect inspection"
 authors = [{ name = "Utkarsh Sengar", email = "cs23bt026@iitdh.ac.in" }]
 readme = "README.md"

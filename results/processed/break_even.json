@@ -6,7 +6,7 @@
       "comparison": "B3_Full_Policy_vs_N0_NoInspection",
       "lower": 0.0,
       "upper": 0.5,
-      "value": 0.000441542826,
+      "value": 0.0003507247998,
       "status": "root",
       "unit": "fraction"
     },
@@ -16,8 +16,8 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 0.5,
-      "value": 0.0003087792055,
-      "status": "root",
+      "value": null,
+      "status": "none_positive",
       "unit": "fraction"
     },
     "host_power_star_vs_L0": {
@@ -26,7 +26,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1000000.0,
-      "value": 6193.612139,
+      "value": 3632.846682,
       "status": "root",
       "unit": "W"
     },
@@ -56,7 +56,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1.5,
-      "value": 0.8623362074,
+      "value": 0.713528927,
       "status": "root",
       "unit": "kgCO2e/kWh"
     },
@@ -78,7 +78,7 @@
       "comparison": "B3_Full_Policy_vs_N0_NoInspection",
       "lower": 0.0,
       "upper": 0.5,
-      "value": 2.570746754e-05,
+      "value": 2.041986841e-05,
       "status": "root",
       "unit": "fraction"
     },
@@ -88,7 +88,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 0.5,
-      "value": 5.77622516e-05,
+      "value": 7.152340733e-05,
       "status": "root",
       "unit": "fraction"
     },
@@ -98,7 +98,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1000000.0,
-      "value": 51008.72796,
+      "value": 21989.3239,
       "status": "root",
       "unit": "W"
     },
@@ -108,8 +108,8 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1.0,
-      "value": null,
-      "status": "none_positive",
+      "value": 0.920351262,
+      "status": "root",
       "unit": "fraction"
     },
     "manual_delay_star": {
@@ -138,7 +138,7 @@
       "comparison": "B3_Full_Policy_vs_B0_Raw",
       "lower": 0.0,
       "upper": 0.99,
-      "value": 0.04252707314,
+      "value": 0.04164236117,
       "status": "root",
       "unit": "fraction"
     }
@@ -150,7 +150,7 @@
       "comparison": "B3_Full_Policy_vs_N0_NoInspection",
       "lower": 0.0,
       "upper": 0.5,
-      "value": 6.429263342e-06,
+      "value": 5.106870648e-06,
       "status": "root",
       "unit": "fraction"
     },
@@ -160,7 +160,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 0.5,
-      "value": 1.437469368e-05,
+      "value": 1.721329062e-05,
       "status": "root",
       "unit": "fraction"
     },
@@ -170,7 +170,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1000000.0,
-      "value": 562507.7876,
+      "value": 265543.8279,
       "status": "root",
       "unit": "W"
     },
@@ -180,8 +180,8 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1.0,
-      "value": null,
-      "status": "none_positive",
+      "value": 0.9599025587,
+      "status": "root",
       "unit": "fraction"
     },
     "manual_delay_star": {
@@ -210,7 +210,7 @@
       "comparison": "B3_Full_Policy_vs_B0_Raw",
       "lower": 0.0,
       "upper": 0.99,
-      "value": 0.003062186202,
+      "value": 0.00319137509,
       "status": "root",
       "unit": "fraction"
     }

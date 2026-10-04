@@ -255,7 +255,7 @@ def part_c_implementation():
         common = {N: p["functional_unit"], Theta: p["line_throughput"], pi_: p["defect_prevalence"],
                   q0: p["base_reworkability"], tau: p["reworkability_time_constant"], m: p["part_mass"],
                   eta: p["material_recovery_fraction"], t_rev: p["review_time"], t_L0: p["manual_inspection_time"],
-                  P_idle: p["gpu_idle_power"], P_act: p["gpu_active_power"], P_host: p["host_power"],
+                  P_idle: p["edge_idle_power"], P_act: p["edge_active_power"], P_host: p["host_power"],
                   P_st: p["review_station_power"], e_rw: p["rework_energy"], gamma: p["grid_carbon_factor"],
                   EF_mat: p["material_carbon_factor"], EF_rec: p["recycling_burden"], C_hw: p["edge_embodied_carbon"],
                   L_hw: p["edge_lifetime_hours"], c_ret: return_freight_carbon(p["part_mass"], p["return_distance"], p["freight_carbon_intensity"]), kappa: p["collateral_multiplier"],
@@ -295,8 +295,8 @@ def part_d_break_even(b4, ref, sym):
         p = s.central()
         vals = {N: p["functional_unit"], Theta: p["line_throughput"], pi_: p["defect_prevalence"], q0: p["base_reworkability"],
                 tau: p["reworkability_time_constant"], m: p["part_mass"], eta: p["material_recovery_fraction"],
-                t_rev: p["review_time"], t_L0: p["manual_inspection_time"], P_idle: p["gpu_idle_power"],
-                P_act: p["gpu_active_power"], P_host: p["host_power"], P_st: p["review_station_power"], e_rw: p["rework_energy"],
+                t_rev: p["review_time"], t_L0: p["manual_inspection_time"], P_idle: p["edge_idle_power"],
+                P_act: p["edge_active_power"], P_host: p["host_power"], P_st: p["review_station_power"], e_rw: p["rework_energy"],
                 gamma: p["grid_carbon_factor"], EF_mat: p["material_carbon_factor"], EF_rec: p["recycling_burden"],
                 C_hw: p["edge_embodied_carbon"], L_hw: p["edge_lifetime_hours"], c_ret: return_freight_carbon(p["part_mass"], p["return_distance"], p["freight_carbon_intensity"]),
                 kappa: p["collateral_multiplier"], sym["manual_inspection_recall"]: p["manual_inspection_recall"],
@@ -353,7 +353,7 @@ def part_e_manuscript():
          and summary["workload"].count(macro("PaperABank").replace("{,}", "")) == 1,
          "PatchCoreProxy memory bank == Paper A coreset size, and the committed run used it"),
         ("15~s idle window", summary["idle_window_s"] == 15, "run_meta idle_window_s"),
-        ("with NVML at 20~Hz", "sample_hz: float = 20.0" in (Path(__file__).parents[1] / "src/experiments/energy_benchmark.py").read_text(),
+        ("Power was sampled at 20~Hz", "sample_hz: float = 20.0" in (Path(__file__).parents[1] / "src/experiments/energy_benchmark.py").read_text(),
          "NvmlMeter default"),
         ("at least \\StageReadingsMin{} distinct sensor readings", macro("StageReadingsMin") == str(active.n_distinct_readings.min())
          and macro("IdleReadingsMin") == str(idle.n_distinct_readings.min()),
@@ -389,7 +389,7 @@ def part_e_manuscript():
     ledger = {tables.symbol(r).strip("$") for r in load_registry()}
     derived = {"T_{FU}", "N_{rw}", "N_{sc}", "N_{esc}", "q_{rw}", "M_{gr}", "M_{rec}", "M_{loss}", "n_{ev}", "E_{edge}",
                "E_{rev}", "E_{rw}", "S_X", "w_X", "X_b", "X_p", r"\lambda_{FA}", "f_A", "f_B", "f_C", r"\lambda_t", "a_t", "b_t", "d_t",
-               "S_E", "S_H", "c_{ret}", "P^\\star_{cell}", "q_0", r"\sum_X"}
+               "S_E", "S_H", "S_1", "S_T", "D_h", "c_{ret}", "P^\\star_{cell}", "q_0", r"\sum_X"}
     math = " ".join(re.findall(r"\$([^$]+)\$", tex) + re.findall(r"\\begin\{(?:align|equation)\}(.*?)\\end", tex, re.S))
     tokens = set(re.findall(r"(\\?[A-Za-z]+_\{[^{}]+\}|\\?[A-Za-z]+_[A-Za-z0-9])", math))
     unknown = sorted(t for t in tokens if t not in ledger and t not in derived)

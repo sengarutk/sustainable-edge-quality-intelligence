@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Step 03b (GPU recommended): measure PatchCore operating points on MVTec AD and write the
-measured detector-recall row of the registry.
+"""Step 03b (GPU recommended): measure PatchCore and PaDiM operating points on MVTec AD and VisA
+and write the measured detector-recall row of the registry.
 
-Requires the MVTec AD dataset (default: ../industrial-defect-anomaly-benchmark/data/mvtec_ad,
-override with --mvtec). Skipped by reproduce_all.sh unless --measure is given; the committed
+Requires MVTec AD (default ../datasets/mvtec/full, override with --mvtec) and VisA in its official
+1-class layout (default ../datasets/visa/VisA, override with --visa). Skipped by reproduce_all.sh unless --measure is given; the committed
 scores in data/raw/detector_scores are used otherwise.
 """
 
@@ -33,11 +33,12 @@ def update_registry():
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--mvtec", type=Path, default=None)
+    ap.add_argument("--visa", type=Path, default=None)
     ap.add_argument("--registry-only", action="store_true")
     args = ap.parse_args()
     if not args.registry_only:
         from src.experiments.detector_eval import run_detector_eval
-        run_detector_eval(args.mvtec)
+        run_detector_eval({"mvtec": args.mvtec, "visa": args.visa})
     update_registry()
 
 

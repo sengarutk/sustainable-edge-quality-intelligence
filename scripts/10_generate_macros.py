@@ -7,6 +7,7 @@ text to be revisited instead of silently going stale.
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -15,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from src.paths import ENERGY_SUMMARY, PROCESSED_DIR, REPO_ROOT, RESULTS_MACROS, SCENARIOS  # noqa: E402
+from src.paths import ENERGY_SUMMARY, JETSON_SUMMARY, PROCESSED_DIR, REPO_ROOT, RESULTS_MACROS, SCENARIOS  # noqa: E402
 from src.imports.import_paper_a import load_snapshot  # noqa: E402
 from src.validation.source_registry import load_registry  # noqa: E402
 
@@ -26,8 +27,15 @@ class ClaimError(AssertionError):
     pass
 
 
+FAILED_CLAIMS = []
+
+
 def claim(cond, msg):
+    """Raise if a manuscript claim no longer holds; with REPORT_ALL_CLAIMS=1 collect every failure first."""
     if not cond:
+        if os.environ.get("REPORT_ALL_CLAIMS"):
+            FAILED_CLAIMS.append(msg)
+            return
         raise ClaimError(f"Manuscript claim no longer holds: {msg}")
 
 
@@ -41,8 +49,16 @@ def sig(x, n=3):
     return s
 
 
+PARAM_WORDS = {"material_carbon_factor": "the material factor", "defect_prevalence": "defect prevalence",
+               "ai_recall": "detector recall", "part_mass": "part mass", "collateral_multiplier": "the collateral multiplier",
+               "grid_carbon_factor": "grid intensity"}
+
+
 def ppm(frac):
-    return sig(frac * 1e6, 2)
+    if frac is None:
+        return "none"
+    v = frac * 1e6
+    return f"{v:,.0f}".replace(",", "{,}") if v >= 100 else sig(v, 2)
 
 
 def main():
@@ -54,7 +70,7 @@ def main():
     prcc = pd.read_csv(PROCESSED_DIR / "prcc_sensitivity.csv")
     records = load_registry()
     central = {r.key: r.central for r in records}
-    gpu_w = central["gpu_idle_power"] + central["gpu_active_power"]
+    gpu_w = central["edge_idle_power"] + central["edge_active_power"]
     cell_now_w = gpu_w + central["host_power"]
 
     m = {}
@@ -95,6 +111,49 @@ def main():
     stage_medians = [st[k]["p_total_w"]["median"] for k in ("STAGE_MODEL_INFER", "STAGE_MODEL_THRESHOLD", "STAGE_MODEL_POLICY", "STAGE_FULL_PIPELINE")]
     m["StageSpreadW"] = f"{max(stage_medians) - min(stage_medians):.2f}"
     claim(max(stage_medians) - min(stage_medians) < 1.0, "pipeline stages differ by < 1 W at 30 FPS")
+
+    # embedded edge platform (primary) and platform comparison
+    js = json.loads(JETSON_SUMMARY.read_text(encoding="utf-8"))
+    jr = js["runs"]
+    prim = jr[js["primary"]]
+    jhw = prim["hardware"]
+    m["JetsonModel"] = jhw["device_model"].replace("NVIDIA ", "").replace(" Developer Kit", "")
+    m["JetsonPowerMode"] = jhw["nvpmodel"].split("Power Mode:")[1].split("|")[0].strip()
+    m["JetsonTensorRT"] = jhw["tensorrt"].rsplit(".", 2)[0]
+    m["JetsonLft"] = jhw["l4t_release"].split("(")[0].replace("#", "").strip()
+    def jfull(cfg):
+        return jr[cfg]["stages"]["STAGE_FULL_PIPELINE"]
+    m["JetsonIdlePower"] = f"{prim['stages']['BASELINE_IDLE']['p_total_w']['median']:.2f}"
+    m["JetsonFullTotalPower"] = f"{jfull(js['primary'])['p_total_w']['median']:.2f}"
+    m["JetsonFullActivePower"] = f"{jfull(js['primary'])['p_active_w']['median']:.2f}"
+    for cfg, name in (("patchcore_fp16", "PcHalf"), ("patchcore_fp32", "PcFull"), ("padim_fp16", "PdHalf"), ("padim_fp32", "PdFull")):
+        f = jfull(cfg)
+        m[f"Jetson{name}FrameMJ"] = f"{1000 * f['e_frame_active_j']['median']:.0f}"
+        m[f"Jetson{name}TotalPower"] = f"{f['p_total_w']['median']:.1f}"
+        m[f"Jetson{name}MaxFps"] = f"{f['unthrottled']['achieved_fps']:.0f}"
+        fid = jr[cfg]["workload_detail"]["fidelity_vs_fp32_reference"]
+        claim(fid["decision_agreement"] == 1.0, f"Jetson {cfg}: identical alert decisions to the FP32 reference")
+        m[f"Jetson{name}MaxRelErr"] = sig(100 * fid["max_rel_error"], 2)
+        claim(f["achieved_fps"]["min"] > 29.5, f"Jetson {cfg} sustains the 30 FPS line rate")
+    claim(js["primary"] == "patchcore_fp16", "the deployed Jetson configuration is PatchCore FP16")
+    ws_frame = st["STAGE_FULL_PIPELINE"]["e_frame_active_j"]["median"]
+    m["WorkstationFrameMJ"] = f"{1000 * ws_frame:.0f}"
+    m["FrameEnergyRatio"] = f"{ws_frame / jfull('patchcore_fp16')['e_frame_active_j']['median']:.0f}"
+    claim(ws_frame > 5 * jfull("patchcore_fp16")["e_frame_active_j"]["median"], "Jetson FP16 uses >5x less energy per frame")
+    plat = pd.read_csv(PROCESSED_DIR / "platform_comparison.csv")
+    jp = plat[plat.configuration == "jetson_patchcore_fp16"].set_index("scenario")
+    wp = plat[plat.configuration == "workstation_patchcore_fp32"].set_index("scenario")
+    ratio = (wp.edge_cell_carbon / jp.edge_cell_carbon)
+    m["PlatformCarbonRatioMin"] = f"{ratio.min():.1f}"
+    m["PlatformCarbonRatioMax"] = f"{ratio.max():.1f}"
+    m["WsEdgeShareMax"] = sig(100 * wp.edge_share_of_benefit.max(), 2)
+    m["JetsonCellPower"] = f"{jp.cell_power_w.iloc[0]:.0f}"
+    m["JetsonComputeShare"] = f"{100 * jp.compute_power_w.iloc[0] / jp.cell_power_w.iloc[0]:.0f}"
+    m["WsCellPower"] = f"{wp.cell_power_w.iloc[0]:.0f}"
+    claim(jp.compute_power_w.iloc[0] < 0.5 * jp.cell_power_w.iloc[0], "on the Jetson, camera/lighting/carrier outweigh compute")
+    pchange = plat.groupby("scenario").delta_C_vs_L0.agg(lambda x: (x.max() - x.min()) / x.max())
+    m["PlatformDeltaCMax"] = f"{100 * pchange.max():.1f}"
+    claim((pchange < 0.02).all(), "platform choice changes Delta C vs L0 by < 2%")
 
     m["RegistryEntries"] = str(len(records))
     for cls, name in (("Measured by this study", "Measured"), ("Derived from Paper A", "PaperA"),
@@ -203,7 +262,10 @@ def main():
         ebf.append(edge_c / vL0.delta_C)
         claim(edge_c / vL0.delta_C < 0.02, f"{sc}: edge-cell carbon < 2% of the carbon benefit vs L0")
         claim(share < 0.02, f"{sc}: edge-cell carbon < 2% of the B3 footprint")
-        claim(mcL["p_delta_c_positive"] >= 0.95, f"{sc}: P(dC>0, B3 vs L0) >= 95%")
+        mcN = mc[sc]["comparisons"]["B3_vs_N0"]
+        m[f"{P}McProbNZero"] = f"{100 * mcN['p_delta_c_positive']:.1f}"
+        claim(mcN["p_delta_c_positive"] >= 0.99, f"{sc}: P(dC>0, B3 vs N0) >= 99%")
+        claim(0.5 < mcL["p_delta_c_positive"] < 0.75, f"{sc}: B3 beats L0 in only 50-75% of draws")
         m[f"{P}McProbBThree"] = f"{100 * mcL['p_delta_c_positive']:.1f}"
         claim(vB0.delta_C > 0 and vB0.delta_H > 0 and vB0.delta_E > 0, f"{sc}: B3 saves hours, electricity and carbon vs B0")
         claim(r.loc["B0_Raw"].rho > 1, f"{sc}: raw thresholding overloads one reviewer")
@@ -213,11 +275,18 @@ def main():
         claim(f["pi_star_vs_N0"]["status"] == "root" and f["pi_star_vs_N0"]["value"] < 1e-3, f"{sc}: pi* vs N0 < 0.1%")
         g = f["gamma_star_vs_L0"]
         if sc == "precision_component":
-            claim(g["status"] == "root" and 0.716 < g["value"] < 1.5, "A: grid break-even lies above India's 0.716 and below 1.5")
+            claim(g["status"] == "root" and 0.5 < g["value"] < 0.82, "A: grid break-even lies between 0.5 and the 0.82 kg/kWh of coal power")
             m["PrecGammaStar"] = f"{g['value']:.2f}"
         else:
             claim(g["status"] == "none_positive", f"{sc}: no grid break-even below 1.5 kg/kWh")
-        claim(f["manual_recall_star"]["status"] == "none_positive", f"{sc}: AI beats even perfect-recall manual inspection")
+        mr = f["manual_recall_star"]
+        if sc == "precision_component":
+            claim(mr["status"] == "none_positive", "A: AI beats even perfect-recall manual inspection")
+            claim(f["pi_star_vs_L0"]["status"] == "none_positive", "A: B3 beats L0 at any prevalence")
+        else:
+            claim(mr["status"] == "root" and 0.80 < mr["value"] < 1.0, f"{sc}: manual inspection would need recall above the 0.70-0.80 literature range")
+            claim(f["pi_star_vs_L0"]["status"] == "root", f"{sc}: a prevalence break-even vs L0 exists")
+        m[f"{P}ManualRecallStar"] = f"{mr['value']:.2f}" if mr["status"] == "root" else "none"
         claim(vL0.delta_E < 0, f"{sc}: B3 uses more electricity than L0 (rework)")
     prec = reg[reg.scenario == "precision_component"].set_index("regime")
     claim(prec.loc["B0_Raw"].carbon_total > prec.loc["L0_Manual"].carbon_total, "A: raw thresholding emits more than manual inspection")
@@ -251,11 +320,18 @@ def main():
           "recall margin: none needed for A, about 4 points for B, under 2 points for C")
     m["BOneBTwoHoursDiffMax"] = f"{100 * max(b12):.0f}"
 
-    # measured detector operating points (MVTec AD)
-    ref = pd.read_csv(PROCESSED_DIR / "detector_reference_points.csv")
+    # measured detector operating points (two detectors x MVTec AD + VisA)
+    ref_all = pd.read_csv(PROCESSED_DIR / "detector_reference_points.csv")
+    ref = ref_all[ref_all.detector == "patchcore"]
     det_meta = json.loads((REPO_ROOT / "data" / "raw" / "detector_scores" / "run_meta.json").read_text(encoding="utf-8"))
     m["DetCategories"] = str(len(ref))
     m["DetSeeds"] = str(len(det_meta["seeds"]))
+    for ds, name in (("mvtec", "Mvtec"), ("visa", "Visa")):
+        m[f"Det{name}Categories"] = str((ref.dataset == ds).sum())
+        for det, dn in (("patchcore", "Pc"), ("padim", "Pd")):
+            sub = ref_all[(ref_all.dataset == ds) & (ref_all.detector == det)]
+            m[f"Det{dn}{name}AurocMedian"] = f"{sub.auroc.median():.3f}"
+            m[f"Det{dn}{name}RecallMedian"] = f"{sub.recall_q99.median():.2f}"
     m["DetAurocMin"] = f"{ref.auroc.min():.3f}"
     m["DetAurocMax"] = f"{ref.auroc.max():.3f}"
     m["DetRecallMin"] = f"{ref.recall_q99.min():.2f}"
@@ -264,11 +340,15 @@ def main():
     m["DetFprMin"] = f"{100 * ref.fpr_q99.min():.1f}"
     m["DetFprMax"] = f"{100 * ref.fpr_q99.max():.1f}"
     m["DetWorstCategory"] = ref.sort_values("recall_q99").category.iloc[0].replace("_", " ")
-    banks = [v["bank_size"] for v in det_meta["runs"].values()]
+    banks = [v["state_size"] for k, v in det_meta["runs"].items() if k.startswith("patchcore/")]
     m["DetBankMin"] = f"{min(banks):,}".replace(",", "{,}")
     m["DetBankMax"] = f"{max(banks):,}".replace(",", "{,}")
     m["DetGoodEvalMin"] = str(int(ref.n_good_eval.min()))
-    claim(ref.auroc.min() > 0.98, "PatchCore AUROC > 0.98 in every category")
+    pd_ref = ref_all[ref_all.detector == "padim"].set_index(["dataset", "category"])
+    pc_ref = ref.set_index(["dataset", "category"])
+    m["DetPcBeatsPdAuroc"] = str(int((pc_ref.auroc > pd_ref.auroc.reindex(pc_ref.index)).sum()))
+    claim((pc_ref.auroc >= pd_ref.auroc.reindex(pc_ref.index) - 0.02).all(), "PatchCore is at least as accurate as PaDiM in every category")
+    claim(ref[ref.dataset == "mvtec"].auroc.median() > ref[ref.dataset == "visa"].auroc.median(), "VisA is harder than MVTec AD")
     claim(central["ai_recall"] == round(ref.recall_q99.median(), 4), "registry detector recall is the measured median")
 
     # carbon-optimal thresholds
@@ -285,9 +365,15 @@ def main():
     m["BudgetFprMedian"] = f"{100 * opt.fpr_budget.median():.1f}"
     m["OptMorePermissive"] = str(int((opt.fpr_opt > opt.fpr_q99 + 1e-12).sum()))
     m["OptPairs"] = str(len(opt))
-    m["OptRecallWorstQ"] = f"{opt[opt.category == 'cable'].recall_q99.iloc[0]:.2f}"
-    m["OptRecallWorstOpt"] = f"{opt[opt.category == 'cable'].recall_opt.iloc[0]:.2f}"
-    m["OptFprWorst"] = f"{100 * opt[opt.category == 'cable'].fpr_opt.iloc[0]:.0f}"
+    m["OptCapRecallMedian"] = f"{opt.recall_cap.median():.2f}"
+    m["ManualRecallCentral"] = f"{central['manual_inspection_recall']:.2f}"
+    claim(opt.recall_cap.median() > 0.8, "capped carbon-optimal thresholds lift median recall above the human range")
+    worst = opt[opt.scenario == SCENARIOS[-1]].sort_values("recall_q99").iloc[0]
+    m["OptWorstCategory"] = worst.category.replace("_", " ")
+    m["OptWorstDataset"] = {"mvtec": "MVTec~AD", "visa": "VisA"}[worst.dataset]
+    m["OptRecallWorstQ"] = f"{worst.recall_q99:.2f}"
+    m["OptRecallWorstOpt"] = f"{worst.recall_opt:.2f}"
+    m["OptFprWorst"] = f"{100 * worst.fpr_opt:.0f}"
     for sc in ("machined_metal", "high_value_component"):
         o = opt[opt.scenario == sc]
         claim(o.saving_cap_vs_q99.sum() >= 0.95 * o.saving_vs_q99.sum(),
@@ -312,12 +398,26 @@ def main():
     claim((((pop.psi > 1) == (pop.dc_N0 > 0)) | (pop.beta <= 0)).all(), "decision rule psi > 1 <=> Delta C > 0 for every product")
     claim(max(b12) < 0.05, "B1 and B2 operator hours differ by < 5%")
     draws = pd.read_csv(PROCESSED_DIR / "monte_carlo_draws.csv")
-    claim(all(mc[sc]["comparisons"]["B3_vs_L0"]["p_delta_c_positive"] >= 0.99 for sc in SCENARIOS)
-          and all((draws[draws.scenario == sc].B3_vs_L0_delta_C > 0).all() for sc in SCENARIOS[1:]),
-          "B3 beats L0 in >= 99% of draws (A) and in every draw (B, C)")
+    claim(all(mc[sc]["comparisons"]["B3_vs_N0"]["p_delta_c_positive"] >= 0.99 for sc in SCENARIOS),
+          "B3 beats N0 in >= 99% of draws in every scenario")
+    claim(all((draws[draws.scenario == sc].B3_vs_N0_delta_C > 0).all() for sc in SCENARIOS), "B3 beats N0 in every draw")
+    claim(central["manual_inspection_recall"] < central["ai_recall"] < central["manual_inspection_recall"] + 0.1,
+          "median detector recall lies just above the manual recall")
+    claim(abs(be["precision_component"]["gamma_star_vs_L0"]["value"] - 0.716) < 0.05, "A: grid break-even is about India's average")
+    ref_pc = pd.read_csv(PROCESSED_DIR / "detector_reference_points.csv").query("detector == 'patchcore'")
+    star_max = max(be[sc]["manual_recall_star"]["value"] for sc in SCENARIOS[1:])
+    m["DetAboveManualStar"] = str(int((ref_pc.recall_q99 > star_max).sum()))
     m["EdgeOfBenefitMax"] = sig(100 * max(ebf), 2)
+    m["EdgeBenefitRatioMin"] = f"{1 / max(ebf):,.0f}".replace(",", "{,}")
+    m["EdgeBenefitRatioMax"] = f"{round(1 / min(ebf), -2):,.0f}".replace(",", "{,}")
+    pl = [mc[sc]["comparisons"]["B3_vs_L0"]["p_delta_c_positive"] for sc in SCENARIOS]
+    m["McProbLMin"] = f"{100 * min(pl):.0f}"
+    m["McProbLMax"] = f"{100 * max(pl):.0f}"
+    pb = {sc: mc[sc]["comparisons"]["B3_vs_B0"]["p_delta_c_positive"] for sc in SCENARIOS}
+    claim(pb["precision_component"] > 0.95 and pb["machined_metal"] > 0.95 and pb["high_value_component"] < 0.5,
+          "B3 beats B0 in >95% of draws in A and B but in under half in C (recall margin smaller than the assumed loss range)")
     claim((draws.B3_vs_B0_delta_H > 0).all(), "B3 saves operator hours vs B0 in every draw")
-    edge_keys = ["gpu_idle_power", "gpu_active_power", "host_power", "edge_embodied_carbon", "edge_lifetime_hours"]
+    edge_keys = ["edge_idle_power", "edge_active_power", "host_power", "edge_embodied_carbon", "edge_lifetime_hours"]
     edge_prcc = prcc[prcc.parameter.isin(edge_keys)].prcc.abs().max()
     claim(edge_prcc < 0.05, "edge-cell parameters have negligible PRCC")
     m["EdgePrccMax"] = f"{edge_prcc:.2f}"
@@ -328,6 +428,60 @@ def main():
     m["EscapeShareMin"] = f"{100 * min(esc_shares):.0f}"
     m["EscapeShareMax"] = f"{100 * max(esc_shares):.0f}"
 
+    # Sobol variance decomposition
+    sob = pd.read_csv(PROCESSED_DIR / "sobol_indices.csv")
+    inter = {sc: 1.0 - sob[sob.scenario == sc].S1.sum() for sc in SCENARIOS}
+    m["SobolBaseRows"] = f"{int(sob.n_base.iloc[0]):,}".replace(",", "{,}")
+    m["SobolInteractionMax"] = f"{100 * max(inter.values()):.0f}"
+    m["SobolInteractionMin"] = f"{100 * min(inter.values()):.0f}"
+    for sc in SCENARIOS:
+        top = sob[sob.scenario == sc].sort_values("ST", ascending=False).iloc[0]
+        m[f"{PREFIX[sc]}SobolTop"] = PARAM_WORDS.get(top.parameter, top.parameter.replace("_", " "))
+        m[f"{PREFIX[sc]}SobolTopST"] = f"{top.ST:.2f}"
+    rec = sob[sob.parameter == "ai_recall"]
+    m["RecallSobolMin"] = f"{rec.ST.min():.2f}"
+    m["RecallSobolMax"] = f"{rec.ST.max():.2f}"
+    claim(all(sob[sob.scenario == sc].sort_values("ST").parameter.iloc[-1] == "ai_recall" for sc in SCENARIOS)
+          and rec.ST.min() > 0.8, "detector recall explains most of the variance of Delta C vs L0 in every scenario")
+    edge_st = sob[sob.parameter.isin(edge_keys)].ST.max()
+    m["EdgeSobolMax"] = sig(edge_st, 1)
+    claim(edge_st < 0.01, "edge-cell parameters explain < 1% of the variance of Delta C")
+    claim(all(0 <= v < 0.25 for v in inter.values()), "interactions explain less than a quarter of the variance")
+
+    # cry-wolf (reviewer compliance)
+    cw = pd.read_csv(PROCESSED_DIR / "cry_wolf_summary.csv")
+    b3 = cw[cw.tier == PRIMARY].set_index("scenario")
+    for sc in SCENARIOS:
+        m[f"{PREFIX[sc]}PpvBThree"] = f"{100 * b3.loc[sc, 'ppv']:.0f}"
+        m[f"{PREFIX[sc]}OmegaStar"] = f"{b3.loc[sc, 'omega_star']:.2f}" if b3.loc[sc, "status"] == "root" else "none"
+    claim(b3.loc["precision_component", "status"] == "none_positive", "A: B3 stays ahead of L0 even under full probability matching")
+    claim(all(b3.loc[sc, "status"] == "root" for sc in SCENARIOS[1:]), "B, C: a cry-wolf break-even exists for B3")
+    claim(b3.loc["precision_component", "ppv"] > b3.loc[list(SCENARIOS[1:]), "ppv"].max(), "B3 alerts are most precise on the fast line")
+    ppv = cw.pivot(index="scenario", columns="tier", values="ppv")
+    claim(all(ppv.loc[sc, "B1_EMA"] > ppv.loc[sc, PRIMARY] > ppv.loc[sc, "B0_Raw"] and ppv.loc[sc, "B2_EMA_kofN"] > ppv.loc[sc, PRIMARY]
+              for sc in SCENARIOS), "PPV ordering: B1, B2 > B3 > B0 in every scenario")
+
+    # nomogram: break-even defect rate x embodied carbon per defect
+    nomo = pd.read_csv(PROCESSED_DIR / "nomogram.csv")
+    jc = nomo[(nomo.variant == "jetson_central") & np.isfinite(nomo.defects_per_hour_star)]
+    prod = jc.defects_per_hour_star * jc.embodied_per_part
+    m["NomogramGramsPerHour"] = f"{1000 * prod.median():.0f}"
+    claim(prod.iloc[len(prod) // 2:].std() / prod.iloc[len(prod) // 2:].mean() < 0.05,
+          "break-even defect rate is inversely proportional to embodied carbon per part (heavy parts)")
+    margins = []
+    for sc in SCENARIOS:
+        pc = load_records_central(sc)
+        x = pc["part_mass"] * pc["material_carbon_factor"]
+        star = np.exp(np.interp(np.log(x), np.log(jc.embodied_per_part), np.log(jc.defects_per_hour_star)))
+        margins.append(pc["defect_prevalence"] * pc["line_throughput"] / star)
+    claim(100 <= min(margins) and max(margins) <= 1e5, "scenarios lie two to five orders of magnitude above the break-even line")
+    cen = nomo[nomo.variant == "jetson_central"].defects_per_hour_star.values
+    for v in ("workstation_central", "jetson_high_grid"):
+        r = nomo[nomo.variant == v].defects_per_hour_star.values / cen
+        claim(np.nanmax(r[np.isfinite(r)]) < 3, f"{v} shifts the break-even line by less than 3x")
+
+    if FAILED_CLAIMS:
+        raise ClaimError("Manuscript claims no longer hold:\n  - " + "\n  - ".join(FAILED_CLAIMS))
     lines = ["% Auto-generated by scripts/10_generate_macros.py -- DO NOT EDIT.",
              "% Every number quoted in paper/main.tex is defined here."]
     for k in sorted(m):

@@ -1,0 +1,13 @@
+scenario,tier,ppv,delta_C_omega0,delta_C_omega1,omega_star,status
+precision_component,B0_Raw,0.7003387167,-2.065541426,-2.497543451,,none_negative
+precision_component,B1_EMA,0.9810651867,-1.430779111,-1.458072675,,none_negative
+precision_component,B2_EMA_kofN,0.9825221351,-1.46821755,-1.49338077,,none_negative
+precision_component,B3_Full_Policy,0.7752765858,0.4868027205,0.1632640764,,none_positive
+machined_metal,B0_Raw,0.09224027234,31.72532048,-185.8083351,0.1458409753,root
+machined_metal,B1_EMA,0.692565868,42.66567897,-31.00506595,0.579140051,root
+machined_metal,B2_EMA_kofN,0.7096517803,42.60927218,-26.94838425,0.6125748677,root
+machined_metal,B3_Full_Policy,0.1304319747,44.32093652,-163.998281,0.2127549107,root
+high_value_component,B0_Raw,0.06098675172,2102.484294,-7104.889379,0.2283478838,root
+high_value_component,B1_EMA,0.5901420069,2145.443834,-1872.987724,0.5339008025,root
+high_value_component,B2_EMA_kofN,0.6097123851,2136.92171,-1686.280191,0.5589350929,root
+high_value_component,B3_Full_Policy,0.08748519142,2141.956745,-6796.908383,0.2396228956,root

@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.experiments.energy_benchmark import measured_registry_bounds  # noqa: E402
 from src.experiments.operating_points import recall_ledger_values, reference_points  # noqa: E402
 from src.imports.import_paper_a import snapshot_rows  # noqa: E402
-from src.paths import ENERGY_SUMMARY  # noqa: E402
+from src.paths import ENERGY_SUMMARY, JETSON_SUMMARY  # noqa: E402
 from src.validation.source_registry import load_registry, validate_registry_file  # noqa: E402
 
 
@@ -28,11 +28,14 @@ def main():
         if r.classification.value == "Derived from Paper A" and key not in expected:
             raise SystemExit(f"Registry {key} is labelled 'Derived from Paper A' but is not in the snapshot")
 
-    summary = json.loads(ENERGY_SUMMARY.read_text(encoding="utf-8"))
-    for key, expect in measured_registry_bounds(summary).items():
-        r = recs[key]
-        if (r.low, r.central, r.high) != expect:
-            raise SystemExit(f"Registry {key} {(r.low, r.central, r.high)} != energy summary {expect}; rerun scripts/03")
+    jetson = json.loads(JETSON_SUMMARY.read_text(encoding="utf-8"))
+    workstation = json.loads(ENERGY_SUMMARY.read_text(encoding="utf-8"))
+    for scope, summary, step in (("all", jetson["runs"][jetson["primary"]], "03c --update-registry"),
+                                 ("platform:workstation", workstation, "03 --registry-only")):
+        for key, expect in measured_registry_bounds(summary).items():
+            r = by_scope[f"{key}@{scope}"]
+            if (r.low, r.central, r.high) != expect or r.classification.value != "Measured by this study":
+                raise SystemExit(f"Registry {key}@{scope} {(r.low, r.central, r.high)} != measurement {expect}; rerun scripts/{step}")
     expect = tuple(round(v, 4) for v in recall_ledger_values(reference_points()))
     r = recs["ai_recall"]
     if (r.low, r.central, r.high) != expect or r.classification.value != "Measured by this study":

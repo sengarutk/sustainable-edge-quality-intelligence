@@ -29,7 +29,7 @@ jobs:
 
       - name: Regenerate every result from the committed registry and measurements
         run: |
-          for s in 02_validate_sources 04_run_scenarios 05_run_sensitivity 06_run_monte_carlo \
+          for s in 03c_import_jetson 02_validate_sources 04_run_scenarios 05_run_sensitivity 06_run_monte_carlo \
                    07_run_break_even 07b_run_operating_points 08_generate_figures 09_generate_tables 10_generate_macros; do
             python scripts/$s.py
           done

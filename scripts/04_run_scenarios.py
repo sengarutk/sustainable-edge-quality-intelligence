@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pandas as pd  # noqa: E402
 
 from src.io_utils import write_csv  # noqa: E402
+from src.experiments.platforms import platform_comparison  # noqa: E402
 from src.models.pipeline_evaluator import AI_TIERS, compare, evaluate_all  # noqa: E402
 from src.params import load_scenario  # noqa: E402
 from src.paths import PROCESSED_DIR, SCENARIOS  # noqa: E402
@@ -55,6 +56,7 @@ def main():
                 })
     write_csv(pd.DataFrame(regime_rows), out_dir / "regime_outcomes.csv")
     write_csv(pd.DataFrame(comp_rows), out_dir / "comparisons.csv")
+    write_csv(platform_comparison(), out_dir / "platform_comparison.csv")
     print(f"Wrote {len(regime_rows)} regime rows and {len(comp_rows)} comparisons to {out_dir}")
 
 

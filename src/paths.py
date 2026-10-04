@@ -13,12 +13,14 @@ DATA_DIR = REPO_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 SOURCE_REGISTRY = RAW_DATA_DIR / "source_registry.csv"
 ENERGY_TRACE_DIR = RAW_DATA_DIR / "energy_measurements"
+JETSON_TRACE_DIR = RAW_DATA_DIR / "energy_measurements_jetson"
 FLAGSHIP1_EXPORT_DIR = RAW_DATA_DIR / "flagship1_exports"
 PAPER_A_EXPORT_DIR = RAW_DATA_DIR / "paper_a_exports"
 
 RESULTS_DIR = REPO_ROOT / "results"
 RESULTS_RAW_DIR = RESULTS_DIR / "raw"
-ENERGY_SUMMARY = RESULTS_RAW_DIR / "energy_summary.json"
+ENERGY_SUMMARY = RESULTS_RAW_DIR / "energy_summary.json"  # workstation GPU (NVML)
+JETSON_SUMMARY = RESULTS_RAW_DIR / "energy_summary_jetson.json"  # embedded module (INA3221), primary platform
 PROCESSED_DIR = RESULTS_DIR / "processed"
 RESULTS_FIG_DIR = RESULTS_DIR / "figures"
 RESULTS_TABLE_DIR = RESULTS_DIR / "tables"

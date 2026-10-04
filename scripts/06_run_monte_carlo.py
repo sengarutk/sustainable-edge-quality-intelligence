@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Step 06: Monte Carlo propagation (10,000 draws, seed 42) and PRCC global sensitivity."""
+"""Step 06: Monte Carlo propagation (10,000 draws, seed 42), PRCC and Sobol global sensitivity."""
 
 import sys
 from pathlib import Path
@@ -9,11 +9,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pandas as pd  # noqa: E402
 
 from src.experiments.monte_carlo import run_monte_carlo  # noqa: E402
+from src.experiments.sobol import sobol_indices  # noqa: E402
 from src.io_utils import write_csv, write_json  # noqa: E402
 from src.params import load_scenario  # noqa: E402
 from src.paths import PROCESSED_DIR, SCENARIOS  # noqa: E402
 
 N_DRAWS, SEED = 10000, 42
+SOBOL_LOG2_N = 14  # 16,384 base rows per matrix
 
 
 def main():
@@ -28,6 +30,9 @@ def main():
     write_json(summaries, PROCESSED_DIR / "monte_carlo_summary.json")
     write_csv(pd.concat(draws, ignore_index=True), PROCESSED_DIR / "monte_carlo_draws.csv")
     write_csv(pd.concat(prcc, ignore_index=True), PROCESSED_DIR / "prcc_sensitivity.csv")
+    sob = pd.concat([sobol_indices(load_scenario(sc), m=SOBOL_LOG2_N, seed=SEED) for sc in SCENARIOS], ignore_index=True)
+    write_csv(sob, PROCESSED_DIR / "sobol_indices.csv")
+    print(sob.groupby("scenario").S1.sum().rename("sum of first-order indices"))
 
 
 if __name__ == "__main__":

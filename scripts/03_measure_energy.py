@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Step 03 (GPU only): measure edge inference power and write the measured registry rows.
+"""Step 03 (GPU only): measure workstation-GPU inference power and write the measured registry rows of
+the alternative 'workstation' platform (the primary platform is the Jetson, step 03c).
 
 Requires an NVIDIA GPU with NVML. Skipped by reproduce_all.sh unless --measure is given;
 the committed measurement (results/raw/energy_summary.json) is used otherwise.
@@ -24,9 +25,9 @@ def update_registry_from_summary():
     bounds = measured_registry_bounds(json.loads(ENERGY_SUMMARY.read_text(encoding="utf-8")))
     df = pd.read_csv(SOURCE_REGISTRY, dtype=str, keep_default_na=False)
     for key, values in bounds.items():
-        mask = df["parameter"] == key
+        mask = (df["parameter"] == key) & (df["scope"] == "platform:workstation")
         if mask.sum() != 1:
-            raise SystemExit(f"registry must contain exactly one '{key}' row")
+            raise SystemExit(f"registry must contain exactly one '{key}' row with scope 'platform:workstation'")
         df.loc[mask, ["low", "central", "high"]] = [repr(v) for v in values]
     df.to_csv(SOURCE_REGISTRY, index=False, lineterminator="\n")
     print(f"Updated measured rows in {SOURCE_REGISTRY}")

@@ -35,10 +35,10 @@ def test_unknown_scope_rejected():
                         classification="Scenario assumption", citation_key="none", notes="n")
 
 
-def test_measured_rows_match_energy_summary():
+def test_workstation_rows_match_energy_summary():
     recs = {r.key: r for r in load_registry()}
     for key, expect in measured_registry_bounds(json.loads(ENERGY_SUMMARY.read_text(encoding="utf-8"))).items():
-        r = recs[key]
+        r = recs[f"{key}@workstation"]
         assert (r.low, r.central, r.high) == expect
         assert r.classification.value == "Measured by this study"
 

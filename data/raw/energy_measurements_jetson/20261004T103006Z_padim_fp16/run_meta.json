@@ -1,0 +1,63 @@
+{
+  "run_id": "20261004T103006Z_padim_fp16",
+  "method": "Jetson INA3221 VDD_IN (module input power) sampled at 20 Hz, trapezoid-integrated over fixed windows at target FPS; shuffled stage order; idle reference per repeat; median [min, max] across repeats",
+  "target_fps": 30.0,
+  "repeats": 5,
+  "window_s": 30.0,
+  "idle_window_s": 15.0,
+  "seed": 2026,
+  "workload": "padim single-graph TensorRT engine (fp16), batch 1, 224x224, MVTec AD hazelnut frames; host-to-device copy per frame",
+  "workload_detail": {
+    "detector": "padim",
+    "precision": "fp16",
+    "category": "hazelnut",
+    "state_size": 3136,
+    "threshold": 18.55606986999512,
+    "onnx_sha256": "ba7b23400f07039f90c3c9f8d2d285ff5cf0cb547ce148de6251454bb533a7f1",
+    "engine_sha256": "3dd0ba2235fc6a78ab6720fb2f290758b5c0dc16a26f0d4b42398e82672dfedf",
+    "fidelity_vs_fp32_reference": {
+      "max_rel_error": 0.0047637731750926286,
+      "spearman": 0.999936884340554,
+      "decision_agreement": 1.0
+    }
+  },
+  "hardware": {
+    "device_model": "NVIDIA Jetson Orin Nano Developer Kit",
+    "l4t_release": "# R39 (release), REVISION: 2.0, GCID: 45755727, BOARD: generic, EABI: aarch64, DATE: Mon Jun  1 09:28:48 PM UTC 2026",
+    "nvpmodel": "NV Power Mode: 15W | 0",
+    "power_sensor": "INA3221 (/sys/devices/platform/bus@0/c240000.i2c/i2c-1/1-0040/hwmon/hwmon2), rails VDD_IN, VDD_CPU_GPU_CV, VDD_SOC; reported: VDD_IN",
+    "tensorrt": "10.16.2.10",
+    "kernel": "6.8.12-1021-tegra",
+    "python": "3.12.3"
+  },
+  "unthrottled": {
+    "STAGE_MODEL_INFER": {
+      "frames": 555,
+      "wall_s": 5.0013240950029285,
+      "achieved_fps": 110.97061287320453,
+      "latency_ms_p50": 8.973228999821004,
+      "latency_ms_p95": 9.201923599539441
+    },
+    "STAGE_MODEL_THRESHOLD": {
+      "frames": 560,
+      "wall_s": 5.007657353002287,
+      "achieved_fps": 111.82873757611591,
+      "latency_ms_p50": 8.934685998610803,
+      "latency_ms_p95": 8.988830851558305
+    },
+    "STAGE_MODEL_POLICY": {
+      "frames": 556,
+      "wall_s": 5.007225658999232,
+      "achieved_fps": 111.03953323947553,
+      "latency_ms_p50": 8.947962498496054,
+      "latency_ms_p95": 9.227927999745589
+    },
+    "STAGE_FULL_PIPELINE": {
+      "frames": 539,
+      "wall_s": 5.014514827998937,
+      "achieved_fps": 107.48796613192789,
+      "latency_ms_p50": 9.022641999763437,
+      "latency_ms_p95": 9.596317598698079
+    }
+  }
+}

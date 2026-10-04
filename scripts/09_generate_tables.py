@@ -159,20 +159,26 @@ def table_policies():
 def table_detector():
     ref = pd.read_csv(PROCESSED_DIR / "detector_reference_points.csv")
     opt = pd.read_csv(PROCESSED_DIR / "carbon_optimal_thresholds.csv")
-    hv = opt[opt.scenario == SCENARIOS[-1]].set_index("category")
+    hv = opt[opt.scenario == SCENARIOS[-1]].set_index(["dataset", "category"])
+    pc = ref[ref.detector == "patchcore"].set_index(["dataset", "category"])
+    pdm = ref[ref.detector == "padim"].set_index(["dataset", "category"])
     lines = [
         r"\begin{table}[!t]", r"\centering", r"\scriptsize",
-        r"\caption{Measured PatchCore operating points on MVTec~AD (mean over three splits). Recall and false-positive "
-        r"rate (FPR) at the 99th percentile of the calibration scores (q99), and the carbon-optimal FPR and recall "
-        r"of a one-shot station for scenario~C.}",
-        r"\label{tab:detector}", r"\setlength{\tabcolsep}{3pt}",
-        r"\begin{tabular}{@{}lccccc@{}}", r"\toprule",
-        r"Category & AUROC & Recall (q99) & FPR (q99) & FPR$^\star$ (C) & Recall$^\star$ (C) \\", r"\midrule",
+        r"\caption{Measured detector operating points (mean over three splits): AUROC and per-part recall at the 99th "
+        r"percentile of the calibration scores (q99) for PatchCore (PC) and PaDiM (PD), and the carbon-optimal FPR and "
+        r"recall of a one-shot PatchCore station for scenario~C.}",
+        r"\label{tab:detector}", r"\setlength{\tabcolsep}{2.6pt}",
+        r"\begin{tabular}{@{}lcccccc@{}}", r"\toprule",
+        r" & \multicolumn{2}{c}{AUROC} & \multicolumn{2}{c}{Recall (q99)} & \multicolumn{2}{c}{Optimum (C)} \\",
+        r"\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(l){6-7}",
+        r"Category & PC & PD & PC & PD & FPR$^\star$ & Recall$^\star$ \\", r"\midrule",
     ]
-    for _, r in ref.iterrows():
-        o = hv.loc[r.category]
-        lines.append(rf"{r.category.replace('_', ' ')} & {r.auroc:.3f} & {r.recall_q99:.3f} & {r.fpr_q99:.3f} & "
-                     rf"{o.fpr_opt:.3f} & {o.recall_opt:.3f} \\")
+    for ds, title in (("mvtec", "MVTec AD"), ("visa", "VisA")):
+        lines.append(rf"\multicolumn{{7}}{{@{{}}l}}{{\emph{{{title}}}}} \\")
+        for (d, cat), r in pc.loc[[ds]].iterrows():
+            o, q = hv.loc[(d, cat)], pdm.loc[(d, cat)]
+            lines.append(rf"{cat.replace('_', ' ')} & {r.auroc:.3f} & {q.auroc:.3f} & {r.recall_q99:.2f} & {q.recall_q99:.2f} & "
+                         rf"{o.fpr_opt:.3f} & {o.recall_opt:.2f} \\")
     lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]
     save("\n".join(lines), "tab_detector.tex")
 
@@ -255,7 +261,7 @@ def table3_uncertainty():
     row(r"$\pi^\star$ vs N0", lambda sc: fmt_front(be[sc]["pi_star_vs_N0"]))
     row(r"$\pi^\star$ vs L0", lambda sc: fmt_front(be[sc]["pi_star_vs_L0"]))
     central = {r.key: r.central for r in load_registry()}
-    gpu = central["gpu_idle_power"] + central["gpu_active_power"]
+    gpu = central["edge_idle_power"] + central["edge_active_power"]
 
     def cell(sc):
         fr = dict(be[sc]["host_power_star_vs_L0"])

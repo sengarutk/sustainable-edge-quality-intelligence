@@ -23,9 +23,9 @@ from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import FancyBboxPatch  # noqa: E402
 
 from src.experiments.energy_benchmark import STAGES  # noqa: E402
-from src.models.pipeline_evaluator import compare, evaluate_all, load_regimes  # noqa: E402
+from src.models.pipeline_evaluator import AI_TIERS, PRIMARY_TIER, compare, evaluate_all, load_regimes  # noqa: E402
 from src.params import load_scenario  # noqa: E402
-from src.paths import ENERGY_SUMMARY, PROCESSED_DIR, RESULTS_FIG_DIR, SCENARIOS  # noqa: E402
+from src.paths import ENERGY_SUMMARY, JETSON_SUMMARY, PROCESSED_DIR, RESULTS_FIG_DIR, SCENARIOS  # noqa: E402
 from src.sustainability.carbon_accounting import COMPONENTS  # noqa: E402
 
 INK, INK2, GRID, SURFACE = "#0b0b0b", "#52514e", "#e2e1dc", "#ffffff"
@@ -54,7 +54,7 @@ PARAM_LABEL = {
     "manual_discovery_delay": r"manual delay $d_{L0}$", "manual_inspection_time": r"$t_{L0}$",
     "manual_inspection_recall": r"manual recall $r_{L0}$", "return_distance": r"return distance $d_{ret}$", "freight_carbon_intensity": r"freight $EF_{fr}$",
     "collateral_multiplier": r"collateral $\kappa$", "grid_carbon_factor": r"grid $\gamma$", "host_power": r"$P_{host}$",
-    "gpu_idle_power": r"$P_{idle}$", "gpu_active_power": r"$P_{active}$", "edge_embodied_carbon": r"$C_{hw}$",
+    "edge_idle_power": r"$P_{idle}$", "edge_active_power": r"$P_{active}$", "edge_embodied_carbon": r"$C_{hw}$",
     "edge_lifetime_hours": r"$L_{hw}$", "review_station_power": r"$P_{station}$", "review_time": r"$t_{review}$",
     "line_throughput": r"throughput $\Theta$", "ai_recall": r"AI recall $r_{AI}$", "persistence_recall_loss": r"recall loss $\delta_r$",
     "glare_burst_rate": r"glare rate $g$",
@@ -122,36 +122,58 @@ def fig1_system_boundary():
 
 def fig2_energy():
     s = json.loads(ENERGY_SUMMARY.read_text(encoding="utf-8"))
+    js = json.loads(JETSON_SUMMARY.read_text(encoding="utf-8"))
     stages = STAGES
-    labels = ["Model", "+ threshold", "+ temporal\npolicy", "Full pipeline\n(+ SQLite log)"]
-    idle = s["stages"]["BASELINE_IDLE"]["p_total_w"]
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(DOUBLE, 2.1), gridspec_kw={"width_ratios": [1.25, 1]})
+    labels = ["Model", "+ thresh.", "+ policy", "Full"]
+    fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(DOUBLE, 2.45), gridspec_kw={"width_ratios": [1.0, 1.15, 1.15]})
+
+    def stack(ax, x, idle, act, tot, idle_label, act_label):
+        ax.bar(x, idle, 0.6, color="#c9c8c2", edgecolor=SURFACE, linewidth=1.0, label=idle_label)
+        ax.bar(x, act, 0.6, bottom=idle, color="#2a78d6", edgecolor=SURFACE, linewidth=1.0, label=act_label)
+        ax.errorbar(x, [t["median"] for t in tot], yerr=[[t["median"] - t["min"] for t in tot], [t["max"] - t["median"] for t in tot]],
+                    fmt="none", ecolor=INK, elinewidth=0.8, capsize=2.5)
+        for xi, t in zip(x, tot):
+            ax.text(xi, t["max"] + 0.25, f"{t['median']:.1f}", ha="center", va="bottom", fontsize=6.5)
+        ax.grid(axis="x", visible=False)
+
+    # (a) workstation GPU, cumulative pipeline stages
     x = np.arange(len(stages))
-    act = [s["stages"][k]["p_active_w"] for k in stages]
-    a1.bar(x, [idle["median"]] * len(stages), 0.55, color="#c9c8c2", edgecolor=SURFACE, linewidth=1.0, label="GPU idle")
-    a1.bar(x, [a["median"] for a in act], 0.55, bottom=idle["median"], color="#2a78d6", edgecolor=SURFACE, linewidth=1.0,
-           label="active above idle")
+    idle = s["stages"]["BASELINE_IDLE"]["p_total_w"]["median"]
     tot = [s["stages"][k]["p_total_w"] for k in stages]
-    a1.errorbar(x, [t["median"] for t in tot], yerr=[[t["median"] - t["min"] for t in tot], [t["max"] - t["median"] for t in tot]],
+    stack(a1, x, [idle] * len(stages), [s["stages"][k]["p_active_w"]["median"] for k in stages], tot, "idle", "active")
+    a1.set_xticks(x, labels, rotation=30, ha="right")
+    a1.set_ylabel("Power at 30 FPS (W)")
+    a1.set_title("(a) Workstation GPU, stages", fontsize=7.5)
+    a1.set_ylim(0, 14)
+    a1.legend(loc="upper left", ncol=2, fontsize=6.5, handlelength=1.0, columnspacing=0.8)
+
+    # (b) full pipeline per edge configuration; (c) active energy per frame
+    order = ["patchcore_fp16", "patchcore_fp32", "padim_fp16", "padim_fp32"]
+    runs = [js["runs"][c] for c in order] + [s]
+    names = ["PatchCore FP16", "PatchCore FP32", "PaDiM FP16", "PaDiM FP32", "PatchCore FP32\n(workstation)"]
+    full = [r["stages"]["STAGE_FULL_PIPELINE"] for r in runs]
+    xi = np.arange(len(runs))
+    stack(a2, xi, [r["stages"]["BASELINE_IDLE"]["p_total_w"]["median"] for r in runs],
+          [f["p_active_w"]["median"] for f in full], [f["p_total_w"] for f in full], None, None)
+    a2.axvline(3.5, color=INK2, lw=0.6, ls=":")
+    a2.text(1.5, 13.2, "Jetson module (VDD_IN)", ha="center", fontsize=6.5, color=INK2)
+    a2.text(4.0, 13.2, "GPU", ha="center", fontsize=6.5, color=INK2)
+    a2.set_xticks(xi, names, fontsize=6.2, rotation=30, ha="right")
+    a2.set_ylim(0, 14)
+    a2.set_title("(b) Full pipeline per platform", fontsize=7.5)
+    ef = [f["e_frame_active_j"] for f in full]
+    a3.bar(xi, [1000 * e["median"] for e in ef], 0.6, color=["#2a78d6"] * 4 + ["#7a5195"], edgecolor=SURFACE)
+    a3.errorbar(xi, [1000 * e["median"] for e in ef],
+                yerr=[[1000 * (e["median"] - e["min"]) for e in ef], [1000 * (e["max"] - e["median"]) for e in ef]],
                 fmt="none", ecolor=INK, elinewidth=0.8, capsize=2.5)
-    for xi, t in zip(x, tot):
-        a1.text(xi + 0.08, t["median"] + 0.3, f"{t['median']:.1f} W", ha="left", va="bottom", fontsize=6.5)
-    a1.set_xticks(x, labels)
-    a1.set_ylabel("GPU power at 30 FPS (W)\nmedian, whiskers min-max")
-    a1.set_ylim(0, max(t["max"] for t in tot) * 1.45)
-    a1.legend(loc="upper left", ncol=2, bbox_to_anchor=(0.0, 1.02))
-    a1.grid(axis="x", visible=False)
-    ef = [s["stages"][k]["e_frame_active_j"] for k in stages]
-    a2.bar(x, [e["median"] for e in ef], 0.55, color="#2a78d6", edgecolor=SURFACE)
-    a2.errorbar(x, [e["median"] for e in ef], yerr=[[e["median"] - e["min"] for e in ef], [e["max"] - e["median"] for e in ef]],
-                fmt="none", ecolor=INK, elinewidth=0.8, capsize=2.5)
-    for xi, e in zip(x, ef):
-        a2.text(xi + 0.08, e["median"] + 0.01, f"{e['median']:.2f}", ha="left", va="bottom", fontsize=6.5)
-    a2.set_xticks(x, labels)
-    a2.set_ylabel("Active energy per frame (J)")
-    a2.set_ylim(0, max(e["max"] for e in ef) * 1.15)
-    a2.grid(axis="x", visible=False)
-    fig.tight_layout()
+    for x0, e in zip(xi, ef):
+        a3.text(x0, 1000 * e["max"] + 6, f"{1000 * e['median']:.0f}", ha="center", va="bottom", fontsize=6.5)
+    a3.set_xticks(xi, names, fontsize=6.2, rotation=30, ha="right")
+    a3.set_ylabel("Active energy per frame (mJ)")
+    a3.set_ylim(0, 1000 * max(e["max"] for e in ef) * 1.2)
+    a3.set_title("(c) Energy above idle", fontsize=7.5)
+    a3.grid(axis="x", visible=False)
+    fig.tight_layout(w_pad=0.6)
     save(fig, "fig2_measured_edge_energy")
 
 
@@ -213,13 +235,13 @@ def fig5_break_even_map():
         s = load_scenario(sc)
         p = s.central()
         P, PI = np.meshgrid(powers, pis)
-        host = P - p["gpu_idle_power"] - p["gpu_active_power"]
+        host = P - p["edge_idle_power"] - p["edge_active_power"]
         params = {**p, "defect_prevalence": PI.ravel(), "host_power": host.ravel()}
         res = evaluate_all(params, s.class_shares)
         for base, ls in (("N0_NoInspection", "-"), ("L0_Manual", "--")):
             dc = compare(res[base], res["B3_Full_Policy"]).delta["C"].reshape(PI.shape)
             ax.contour(PI, P, dc, levels=[0.0], colors=[SC_COLOR[sc]], linewidths=1.4, linestyles=ls)
-        measured_total = p["gpu_idle_power"] + p["gpu_active_power"] + p["host_power"]
+        measured_total = p["edge_idle_power"] + p["edge_active_power"] + p["host_power"]
         ax.plot(p["defect_prevalence"], measured_total, marker="o", ms=5, color=SC_COLOR[sc], mec=SURFACE, mew=1.0, ls="none")
     ax.axhline(measured_total, color=INK2, lw=0.6, ls=":")
     ax.text(1.5e-8, measured_total * 0.45, "edge cell today (GPU measured + host)", fontsize=6.0, color=INK2)
@@ -237,17 +259,23 @@ def fig5_break_even_map():
 
 
 def fig6_prcc():
-    df = pd.read_csv(PROCESSED_DIR / "prcc_sensitivity.csv")
-    fig, axes = plt.subplots(1, 3, figsize=(DOUBLE, 2.45))
+    prcc = pd.read_csv(PROCESSED_DIR / "prcc_sensitivity.csv")
+    sob = pd.read_csv(PROCESSED_DIR / "sobol_indices.csv")
+    fig, axes = plt.subplots(1, 3, figsize=(DOUBLE, 2.55))
     for ax, sc in zip(axes, SCENARIOS):
-        sub = df[df.scenario == sc].head(8).iloc[::-1]
-        ax.barh(np.arange(len(sub)), sub.prcc, 0.62, color=[POS if v >= 0 else NEG for v in sub.prcc], edgecolor=SURFACE)
-        ax.set_yticks(np.arange(len(sub)), [plabel(k) for k in sub.parameter])
-        ax.axvline(0, color=INK2, lw=0.8)
-        ax.set_xlim(-1, 1)
-        ax.set_xlabel(r"PRCC with $\Delta C$ (B3 vs L0)")
+        sub = sob[sob.scenario == sc].sort_values("ST", ascending=False).head(8).iloc[::-1]
+        sign = prcc[prcc.scenario == sc].set_index("parameter").prcc.reindex(sub.parameter).values
+        col = [POS if v >= 0 else NEG for v in sign]
+        y = np.arange(len(sub))
+        ax.barh(y, sub.ST, 0.7, color=col, alpha=0.35, edgecolor=SURFACE, label="total $S_T$")
+        ax.barh(y, sub.S1.clip(lower=0), 0.38, color=col, edgecolor=SURFACE, label="first order $S_1$")
+        ax.errorbar(sub.ST, y, xerr=[sub.ST - sub.ST_lo, sub.ST_hi - sub.ST], fmt="none", ecolor=INK2, elinewidth=0.7, capsize=1.5)
+        ax.set_yticks(y, [plabel(k) for k in sub.parameter])
+        ax.set_xlim(0, 1.0)
+        ax.set_xlabel(r"Sobol index of $\Delta C$ (B3 vs L0)")
         ax.set_title(SC_LABEL[sc], fontsize=7.5)
         ax.grid(axis="y", visible=False)
+    axes[0].legend(loc="lower right", fontsize=6.5, handlelength=1.2)
     fig.tight_layout()
     save(fig, "fig6_global_sensitivity")
 
@@ -305,7 +333,6 @@ def fig8_sqi():
     save(fig, "fig8_sqi_subindicators")
 
 
-CAT_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7"]
 
 
 def fig9_operating_points():
@@ -313,16 +340,23 @@ def fig9_operating_points():
     ref = pd.read_csv(PROCESSED_DIR / "detector_reference_points.csv")
     opt = pd.read_csv(PROCESSED_DIR / "carbon_optimal_thresholds.csv")
     fig, (a1, a2) = plt.subplots(1, 2, figsize=(DOUBLE, 2.5), gridspec_kw={"width_ratios": [1.15, 1]})
-    for color, (cat, sub) in zip(CAT_COLORS, cur.groupby("category", sort=False)):
+    ds_color = {"mvtec": "#2a78d6", "visa": "#eb6834"}
+    ds_name = {"mvtec": "MVTec AD", "visa": "VisA"}
+    cur = cur[cur.detector == "patchcore"]
+    ref = ref[ref.detector == "patchcore"]
+    for (ds, cat), sub in cur.groupby(["dataset", "category"], sort=False):
         sub = sub.sort_values("q")  # threshold order: averaged curves stay monotone
-        a1.plot(np.maximum(sub.fpr, 1e-3), sub.recall, color=color, lw=1.4, label=cat.replace("_", " "))
-        r = ref[ref.category == cat].iloc[0]
-        a1.plot(max(r.fpr_q99, 1e-3), r.recall_q99, marker="o", ms=4, color=color, mec=SURFACE, mew=0.8)
+        a1.plot(np.maximum(sub.fpr, 1e-3), sub.recall, color=ds_color[ds], lw=0.9, alpha=0.75)
+        r = ref[(ref.dataset == ds) & (ref.category == cat)].iloc[0]
+        a1.plot(max(r.fpr_q99, 1e-3), r.recall_q99, marker="o", ms=3, color=ds_color[ds], mec=SURFACE, mew=0.6)
+    from matplotlib.lines import Line2D
+    a1.legend(handles=[Line2D([], [], color=c, lw=1.4, label=f"{ds_name[d]} ({(ref.dataset == d).sum()} categories)")
+                       for d, c in ds_color.items()], loc="lower right", fontsize=6.3)
     a1.set_xscale("log")
     a1.set_xlim(1e-3, 1)
+    a1.set_ylim(0, 1.02)
     a1.set_xlabel("False-positive rate per good part")
-    a1.set_ylabel("Recall per defective part")
-    a1.legend(loc="lower right", fontsize=6, ncol=2)
+    a1.set_ylabel("Recall per defective part (PatchCore)")
     for i, sc in enumerate(SCENARIOS):
         sub = opt[opt.scenario == sc]
         x = np.full(len(sub), i) + np.linspace(-0.18, 0.18, len(sub))
@@ -335,7 +369,6 @@ def fig9_operating_points():
     a2.set_xticks(range(len(SCENARIOS)), [SC_LABEL[sc].replace(": ", ":\n") for sc in SCENARIOS])
     a2.set_ylabel("False-positive rate")
     a2.grid(axis="x", visible=False)
-    from matplotlib.lines import Line2D
     a2.legend(handles=[Line2D([], [], marker="o", ls="none", color=INK2, label="carbon-optimal (per category)"),
                        Line2D([], [], marker="_", ls="none", color=INK2, label="5 alarms / 1,000 parts")],
               loc="lower left", fontsize=6)
@@ -374,6 +407,65 @@ def fig10_decision_rule():
     save(fig, "fig10_decision_rule_population")
 
 
+def fig11_cry_wolf():
+    summ = pd.read_csv(PROCESSED_DIR / "cry_wolf_summary.csv")
+    cur = pd.read_csv(PROCESSED_DIR / "cry_wolf_curves.csv")
+    regimes = load_regimes()
+    tiers = list(AI_TIERS)
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(DOUBLE, 2.3), gridspec_kw={"width_ratios": [1, 1.25]})
+    w = 0.26
+    x = np.arange(len(tiers))
+    for i, sc in enumerate(SCENARIOS):
+        sub = summ[summ.scenario == sc].set_index("tier").loc[tiers]
+        a1.bar(x + (i - 1) * w, 100 * sub.ppv, w, color=SC_COLOR[sc], hatch=SC_HATCH[sc], edgecolor=SURFACE, label=SC_LABEL[sc])
+    a1.set_xticks(x, [regimes[t].label.split(" ", 1)[0] for t in tiers])
+    a1.set_ylabel("Alert precision PPV (%)")
+    a1.set_ylim(0, 115)
+    a1.legend(loc="upper center", ncol=3, fontsize=6.3, handlelength=1.2, columnspacing=0.8)
+    a1.grid(axis="x", visible=False)
+    for sc in SCENARIOS:
+        c = cur[(cur.scenario == sc) & (cur.tier == PRIMARY_TIER)]
+        a2.plot(c.omega, c.delta_C_vs_L0 / c.delta_C_vs_L0.iloc[0], color=SC_COLOR[sc], lw=1.6, label=SC_LABEL[sc])
+        st = summ[(summ.scenario == sc) & (summ.tier == PRIMARY_TIER)].iloc[0]
+        if st.status == "root":
+            a2.plot(st.omega_star, 0.0, marker="o", ms=5, color=SC_COLOR[sc], mec=SURFACE, mew=1.0)
+    a2.axhline(0, color=INK2, lw=0.8)
+    a2.set_xlabel(r"Cry-wolf strength $\omega$ (0: full compliance; 1: probability matching)", fontsize=6.8)
+    a2.set_ylabel(r"$\Delta C$ (B3 vs L0) / value at $\omega=0$")
+    a2.legend(loc="lower left", fontsize=6.5)
+    fig.tight_layout()
+    save(fig, "fig11_cry_wolf")
+
+
+def fig12_nomogram():
+    d = pd.read_csv(PROCESSED_DIR / "nomogram.csv")
+    fig, ax = plt.subplots(figsize=(SINGLE, 2.5))
+    style = {"jetson_central": ("#2a78d6", "-", "embedded, central grid"),
+             "jetson_low_grid": ("#2a78d6", ":", "embedded, low / high grid"),
+             "jetson_high_grid": ("#2a78d6", ":", None),
+             "workstation_central": ("#7a5195", "--", "workstation, central grid")}
+    for v, (c, ls, lab) in style.items():
+        sub = d[d.variant == v]
+        ax.plot(sub.embodied_per_part, sub.defects_per_hour_star, color=c, ls=ls, lw=1.4, label=lab)
+    cen = d[d.variant == "jetson_central"]
+    ax.fill_between(cen.embodied_per_part, cen.defects_per_hour_star, 1e4, color="#2a78d6", alpha=0.07, lw=0)
+    for sc in SCENARIOS:
+        p = load_scenario(sc).central()
+        x0, y0 = p["part_mass"] * p["material_carbon_factor"], p["defect_prevalence"] * p["line_throughput"]
+        ax.plot(x0, y0, marker="o", ms=5, color=SC_COLOR[sc], mec=SURFACE, mew=1.0, ls="none")
+        ax.annotate(SC_LABEL[sc].split(":")[0], (x0, y0), xytext=(4, 3), textcoords="offset points", fontsize=6.5, color=SC_COLOR[sc])
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlim(d.embodied_per_part.min(), d.embodied_per_part.max())
+    ax.set_ylim(1e-6, 1e3)
+    ax.text(0.97, 0.93, "edge inspection\npays back", transform=ax.transAxes, ha="right", va="top", fontsize=6.5, color=INK2)
+    ax.set_xlabel(r"Embodied carbon per part $m\,EF_{mat}$ (kgCO$_2$e)")
+    ax.set_ylabel("Break-even defects per hour")
+    ax.legend(loc="lower left", fontsize=5.8, handlelength=1.8, frameon=True, framealpha=0.9, edgecolor=GRID)
+    fig.tight_layout()
+    save(fig, "fig12_nomogram")
+
+
 def main():
     print("Step 08: generating figures")
     fig1_system_boundary()
@@ -386,6 +478,8 @@ def main():
     fig8_sqi()
     fig9_operating_points()
     fig10_decision_rule()
+    fig11_cry_wolf()
+    fig12_nomogram()
 
 
 if __name__ == "__main__":

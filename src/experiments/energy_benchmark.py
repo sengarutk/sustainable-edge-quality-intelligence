@@ -197,8 +197,6 @@ class StageRunner:
 
     def run(self, stage: str, duration_s: float, fps: float | None) -> Dict[str, float]:
         """Run a stage for duration_s; fps=None means unthrottled. Returns frame count and latencies."""
-        import torch
-
         if stage not in STAGES:
             raise ValueError(f"unknown stage '{stage}'")
         if duration_s <= 0:
@@ -212,29 +210,28 @@ class StageRunner:
         lat: List[float] = []
         t_start = time.perf_counter()
         i = 0
-        with torch.no_grad():
-            while True:
-                if fps is not None:
-                    target = t_start + i / fps
-                    now = time.perf_counter()
-                    if target > now:
-                        time.sleep(target - now)
-                t0 = time.perf_counter()
-                if t0 - t_start >= duration_s:
-                    break
-                score = self.model(i)  # returns a Python float: synchronises the device
-                if stage == "STAGE_MODEL_THRESHOLD":
-                    _ = score > self.threshold
-                elif stage == "STAGE_MODEL_POLICY":
-                    _ = policy.update(score, self.threshold)
-                elif stage == "STAGE_FULL_PIPELINE":
-                    esc = policy.update(score, self.threshold)
-                    conn.execute("INSERT INTO events VALUES (?, ?, ?, ?)", (i, score, int(esc), time.time()))
-                    _ = json.dumps({"frame": i, "score": score, "alert": bool(esc)})
-                    if i % 30 == 29:
-                        conn.commit()
-                lat.append((time.perf_counter() - t0) * 1000.0)
-                i += 1
+        while True:
+            if fps is not None:
+                target = t_start + i / fps
+                now = time.perf_counter()
+                if target > now:
+                    time.sleep(target - now)
+            t0 = time.perf_counter()
+            if t0 - t_start >= duration_s:
+                break
+            score = self.model(i)  # returns a Python float: synchronises the device
+            if stage == "STAGE_MODEL_THRESHOLD":
+                _ = score > self.threshold
+            elif stage == "STAGE_MODEL_POLICY":
+                _ = policy.update(score, self.threshold)
+            elif stage == "STAGE_FULL_PIPELINE":
+                esc = policy.update(score, self.threshold)
+                conn.execute("INSERT INTO events VALUES (?, ?, ?, ?)", (i, score, int(esc), time.time()))
+                _ = json.dumps({"frame": i, "score": score, "alert": bool(esc)})
+                if i % 30 == 29:
+                    conn.commit()
+            lat.append((time.perf_counter() - t0) * 1000.0)
+            i += 1
         if conn is not None:
             conn.commit()
             conn.close()
@@ -278,48 +275,18 @@ def summarize_run(trace_dir: Path) -> Dict:
 
 def measured_registry_bounds(summary: Dict) -> Dict[str, tuple]:
     """(low, central, high) = (min, median, max) across repeats, rounded as stored in the registry."""
-    stats = {"gpu_idle_power": summary["stages"]["BASELINE_IDLE"]["p_total_w"],
-             "gpu_active_power": summary["stages"]["STAGE_FULL_PIPELINE"]["p_active_w"]}
+    stats = {"edge_idle_power": summary["stages"]["BASELINE_IDLE"]["p_total_w"],
+             "edge_active_power": summary["stages"]["STAGE_FULL_PIPELINE"]["p_active_w"]}
     return {key: tuple(round(st[c], 3) for c in ("min", "median", "max")) for key, st in stats.items()}
 
 
-def run_benchmark(
-    repeats: int = 5,
-    window_s: float = 30.0,
-    idle_s: float = 15.0,
-    fps: float = 30.0,
-    throughput_window_s: float = 5.0,
-    warmup_frames: int = 100,
-    seed: int = 2026,
-    trace_root: Path = ENERGY_TRACE_DIR,
-    summary_path: Path = ENERGY_SUMMARY,
-    workload: str = "real",
-) -> Dict:
-    """Measure all stages; raw traces go to trace_root/<run_id>/ and the summary to summary_path.
-    trace_root must lie inside the repository (the summary stores it repository-relative)."""
-    import torch
-
-    if not torch.cuda.is_available():
-        raise RuntimeError("CUDA device required for the GPU energy benchmark.")
-    device = torch.device("cuda:0")
-    meter = NvmlMeter()
-    if workload == "real":
-        score_fn, threshold, workload_meta = build_real_detector(device)
-    elif workload == "proxy":
-        proxy = build_patchcore_proxy(device)
-        frame = torch.rand(1, 3, 224, 224, device=device)
-        score_fn, threshold, workload_meta = (lambda i: float(proxy(frame))), 0.5, {"category": "synthetic"}
-    else:
-        raise ValueError("workload must be 'real' or 'proxy'")
-
-    run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    trace_dir = trace_root / run_id
-    trace_dir.mkdir(parents=True, exist_ok=True)
-    runner = StageRunner(model=score_fn, device=device, db_path=trace_dir / "spool.db", threshold=threshold)
-
+def measure_stages(meter, runner: StageRunner, score_fn, repeats: int, window_s: float, idle_s: float, fps: float,
+                   throughput_window_s: float, warmup_frames: int, seed: int, sync=lambda: None):
+    """Shared protocol: warm-up, unthrottled throughput, then per repeat an idle window followed by
+    every stage at the line rate in a seeded shuffled order. Returns (throughput, records, traces)."""
     for i in range(warmup_frames):
         score_fn(i)
-    torch.cuda.synchronize()
+    sync()
 
     # Unthrottled throughput / latency (not used for energy).
     throughput = {st: runner.run(st, throughput_window_s, fps=None) for st in STAGES}
@@ -352,7 +319,51 @@ def run_benchmark(
                 "n_distinct_readings": len({p for _, p in tr}), "counter_diag_w": cw,
                 "latency_ms_p50": info["latency_ms_p50"], "latency_ms_p95": info["latency_ms_p95"],
             })
-            print(f"  rep {rep} {st:22s} P_total={p_total:6.2f} W  P_active={p_total - p_idle:6.2f} W  fps={info['achieved_fps']:.2f}")
+            print(f"  rep {rep} {st:22s} P_total={p_total:6.2f} W  P_active={p_total - p_idle:6.2f} W  fps={info['achieved_fps']:.2f}",
+                  flush=True)
+    return throughput, records, traces
+
+
+def run_benchmark(
+    repeats: int = 5,
+    window_s: float = 30.0,
+    idle_s: float = 15.0,
+    fps: float = 30.0,
+    throughput_window_s: float = 5.0,
+    warmup_frames: int = 100,
+    seed: int = 2026,
+    trace_root: Path = ENERGY_TRACE_DIR,
+    summary_path: Path = ENERGY_SUMMARY,
+    workload: str = "real",
+) -> Dict:
+    """Measure all stages; raw traces go to trace_root/<run_id>/ and the summary to summary_path.
+    trace_root must lie inside the repository (the summary stores it repository-relative)."""
+    import torch
+
+    if not torch.cuda.is_available():
+        raise RuntimeError("CUDA device required for the GPU energy benchmark.")
+    device = torch.device("cuda:0")
+    meter = NvmlMeter()
+    if workload == "real":
+        score_fn, threshold, workload_meta = build_real_detector(device)
+    elif workload == "proxy":
+        proxy = build_patchcore_proxy(device)
+        frame = torch.rand(1, 3, 224, 224, device=device)
+        def score_fn(i: int) -> float:
+            with torch.no_grad():
+                return float(proxy(frame))
+
+        threshold, workload_meta = 0.5, {"category": "synthetic"}
+    else:
+        raise ValueError("workload must be 'real' or 'proxy'")
+
+    run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    trace_dir = trace_root / run_id
+    trace_dir.mkdir(parents=True, exist_ok=True)
+    runner = StageRunner(model=score_fn, device=device, db_path=trace_dir / "spool.db", threshold=threshold)
+    throughput, records, traces = measure_stages(meter, runner, score_fn, repeats, window_s, idle_s, fps,
+                                                 throughput_window_s, warmup_frames, seed,
+                                                 sync=torch.cuda.synchronize)
 
     import pandas as pd
 

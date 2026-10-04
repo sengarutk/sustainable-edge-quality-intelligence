@@ -45,7 +45,7 @@ class ParameterRecord(BaseModel):
         if not (self.low <= self.central <= self.high):
             raise ValueError(f"{self.parameter}@{self.scope}: bounds violated ({self.low} <= {self.central} <= {self.high})")
         valid_scopes = {"all", *SCENARIOS}
-        if self.scope not in valid_scopes and not self.scope.startswith("policy:"):
+        if self.scope not in valid_scopes and not self.scope.startswith(("policy:", "platform:")):
             raise ValueError(f"{self.parameter}: unknown scope '{self.scope}'")
         if self.classification != SourceClassification.SCENARIO_ASSUMPTION and self.citation_key == "none":
             raise ValueError(f"{self.parameter}@{self.scope}: '{self.classification.value}' requires a citation key")
@@ -53,8 +53,8 @@ class ParameterRecord(BaseModel):
 
     @property
     def key(self) -> str:
-        """Flat parameter key: policy-scoped parameters are suffixed with '@<policy>'."""
-        if self.scope.startswith("policy:"):
+        """Flat parameter key: policy- and platform-scoped parameters are suffixed with '@<name>'."""
+        if self.scope.startswith(("policy:", "platform:")):
             return f"{self.parameter}@{self.scope.split(':', 1)[1]}"
         return self.parameter
 
@@ -82,7 +82,8 @@ def load_registry(path: Path = SOURCE_REGISTRY) -> List[ParameterRecord]:
 
 
 def scenario_records(scenario: str, path: Path = SOURCE_REGISTRY) -> Dict[str, ParameterRecord]:
-    """All records applicable to a scenario (global, policy-scoped and scenario-specific)."""
+    """All records applicable to a scenario (global, policy-scoped and scenario-specific). Platform-scoped
+    records describe an alternative edge computer and are applied only through platform_records()."""
     if scenario not in SCENARIOS:
         raise KeyError(f"Unknown scenario '{scenario}'")
     out: Dict[str, ParameterRecord] = {}
@@ -94,8 +95,27 @@ def scenario_records(scenario: str, path: Path = SOURCE_REGISTRY) -> Dict[str, P
     return out
 
 
+def platform_records(platform: str, path: Path = SOURCE_REGISTRY) -> Dict[str, ParameterRecord]:
+    """Records of an alternative edge platform, keyed by parameter name; they replace the global
+    ('all') entries of the same name, which describe the primary platform."""
+    out = {r.parameter: r for r in load_registry(path) if r.scope == f"platform:{platform}"}
+    if not out:
+        raise KeyError(f"no registry records for platform '{platform}'")
+    glob = {r.parameter for r in load_registry(path) if r.scope == "all"}
+    missing = set(out) - glob
+    if missing:
+        raise ValueError(f"platform '{platform}' overrides parameters without a primary entry: {sorted(missing)}")
+    return out
+
+
+def platforms(path: Path = SOURCE_REGISTRY) -> List[str]:
+    return sorted({r.scope.split(":", 1)[1] for r in load_registry(path) if r.scope.startswith("platform:")})
+
+
 def validate_registry_file(path: Path = SOURCE_REGISTRY) -> int:
     records = load_registry(path)
     for sc in SCENARIOS:
         scenario_records(sc, path)
+    for pf in platforms(path):
+        platform_records(pf, path)
     return len(records)
