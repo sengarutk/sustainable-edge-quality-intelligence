@@ -17,7 +17,7 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from src.paths import ENERGY_SUMMARY, JETSON_SUMMARY, PROCESSED_DIR, REPO_ROOT, RESULTS_MACROS, SCENARIOS  # noqa: E402
-from src.imports.import_paper_a import load_snapshot  # noqa: E402
+from src.imports.import_paper_a import load_snapshot, snapshot_rows  # noqa: E402
 from src.validation.source_registry import load_registry  # noqa: E402
 
 PREFIX = {"precision_component": "Prec", "machined_metal": "Metal", "high_value_component": "HiVal"}
@@ -173,6 +173,8 @@ def main():
     m["PaperADelay"] = qa["SustainedDelayFull"]
     m["PaperAFaRaw"] = f"{int(qa['NominalFABaseline']):,}".replace(",", "{,}")
     m["PaperAFaFull"] = qa["NominalFAFull"]
+    claim(float(qa["NominalFAFull"]) == 0.0 and snapshot_rows()["nominal_false_alarm_rate@policy:B3_Full_Policy"][2] == 0.0,
+          "Paper A: the full policy raised no false alert on good parts in any unit")
     m["PaperAPerDefectRaw"] = qa["AlertsPerEpisodeBaseline"]
     m["PaperAPerDefectFull"] = qa["AlertsPerEpisodeFull"]
     m["PaperAGlareRaw"] = qa["GlarePerBurstBaseline"]
@@ -182,6 +184,12 @@ def main():
     m["PaperAVisionLatency"] = qa["LatVisionMean"]
     m["PaperABank"] = f"{int(qa['MemoryBankSize']):,}".replace(",", "{,}")
     m["PaperALoadCross"] = qa["LoadCrossFull"]
+    m["PaperAShortK"], m["PaperAShortN"] = qa["ShortK"], qa["ShortN"]
+    sdr = snap["short_defect_recall"]
+    loss = {int(f): sdr["BASELINE"][f] - sdr["FULL_POLICY"][f] for f in sdr["FULL_POLICY"]}
+    m["PaperAShortRecallEight"] = f"{100 * sdr['FULL_POLICY']['8']:.0f}"
+    m["PaperAShortRecallOne"] = f"{100 * sdr['FULL_POLICY']['1']:.0f}"
+    m["PersistLossMax"] = f"{100 * max(0.0, loss[8]):.1f}"
     claim(all(v == 1.0 for v in snap["sustained_defect_recall"].values()), "Paper A: every tier has recall 1.00 on sustained defects")
     claim(abs(central["review_time"] - 3600.0 / float(qa["MuReviews"])) < 1e-9, "review time matches Paper A's reviewer rate")
 
@@ -253,6 +261,12 @@ def main():
         m[f"{P}CellHeadroom"] = f"{headrooms[-1]:,.0f}".replace(",", "{,}")
         rl = f["recall_loss_star_B3_vs_B0"]
         m[f"{P}RecallLossStar"] = sig(100 * rl["value"], 3) if rl["status"] == "root" else "none"
+        if rl["status"] == "root":
+            sdr = load_snapshot()["short_defect_recall"]
+            ok = sorted(int(f) for f in sdr["FULL_POLICY"] if sdr["BASELINE"][f] - sdr["FULL_POLICY"][f] < rl["value"])
+            frames_needed = next(f for f in ok if all(g in ok for g in sorted(map(int, sdr["FULL_POLICY"])) if g >= f))
+            m[f"{P}VisibleFrames"] = str(frames_needed)
+            m[f"{P}VisibleMs"] = f"{1000 * frames_needed / central['camera_fps']:.0f}"
         if sc == "high_value_component":
             claim(rl["status"] == "root" and rl["value"] < 0.01, "C: recall-loss margin is a fraction of a percentage point")
         top = prcc[prcc.scenario == sc].iloc[0]
@@ -306,8 +320,10 @@ def main():
     reviewers_b0 = [int(m[f"{PREFIX[sc]}ReviewersBZero"]) for sc in SCENARIOS]
     claim(min(reviewers_b0) >= 10 and max(reviewers_b0) >= 100, "B0 needs tens to hundreds of reviewers")
     pol = {r.key: r.central for r in records if r.scope.startswith("policy:")}
-    claim(all(140 <= pol[f"alerts_per_defect@{t}"] <= 160 for t in ("B0_Raw", "B1_EMA", "B2_EMA_kofN")),
-          "B0-B2 raise roughly 150 alerts per defect")
+    apd = [pol[f"alerts_per_defect@{t}"] for t in ("B0_Raw", "B1_EMA", "B2_EMA_kofN")]
+    m["AlertsPerDefectMin"] = f"{min(apd):.0f}"
+    m["AlertsPerDefectMax"] = f"{max(apd):.0f}"
+    claim(all(100 <= v <= 200 for v in apd), "B0-B2 raise well over a hundred alerts per defect")
     claim(pol["alerts_per_defect@B3_Full_Policy"] < 1.5, "the latch collapses repeat alerts to about one per defect")
     claim(pol["glare_alerts_per_burst@B1_EMA"] > pol["glare_alerts_per_burst@B0_Raw"]
           and pol["nominal_false_alarm_rate@B1_EMA"] < 0.05 * pol["nominal_false_alarm_rate@B0_Raw"],

@@ -13,7 +13,7 @@ collateral_multiplier,kappa,all,0.0,1.0,5.0,-,Scenario assumption,none,Extra sys
 review_time,t_review,all,30,60,90,s,Derived from Paper A,sengar2026paperA,Operator time per alert; central from Paper A reviewer rate mu = 60 reviews/h; bounds are assumptions
 glare_burst_rate,g,all,10,30,60,bursts/h,Scenario assumption,sengar2026paperA,Rate of 1-3 frame glare bursts; central value is the rate assumed in Paper A; bounds are assumptions
 ai_recall,r_AI,all,0.1367,0.792,1,fraction,Measured by this study,this_study,Per-part recall of PatchCore at the 99th-percentile calibration threshold on seven MVTec AD categories (median and min-max over categories); written by scripts/03b
-persistence_recall_loss,delta_r,all,0,0,0.02,fraction,Scenario assumption,sengar2026paperA,Recall lost by persistence filtering (B2 and B3); central 0 because Paper A measured no loss; upper bound is an assumption
+persistence_recall_loss,delta_r,all,0,0,0.0261905,fraction,Derived from Paper A,sengar2026paperA,Recall of single-frame thresholding minus that of the full policy (Paper A short-defect runs): central for parts in view >= 30 frames (1 s); upper bound for defects visible only 8 frames (267 ms)
 cry_wolf_strength,omega,all,0,0,0,-,Literature-derived,bliss1995probability;wickens2009false,"Share of the alert-reliability shortfall (1-PPV) with which reviewers release true defects: 0 = full compliance (ATC controllers; Wickens 2009), 1 = probability matching (Bliss 1995); fixed at 0 here and swept 0-1 in the cry-wolf analysis"
 freight_carbon_intensity,EF_fr,all,0.115,0.195,0.8,kgCO2e/t-km,Literature-derived,glec2023,GLEC Framework v3 Europe well-to-wheel starting points: HGV 0.115 / MGV 0.195 / van 0.800 kgCO2e per t-km
 return_distance,d_ret,all,97.5,142.3,593.5,km,Official/public dataset,eurostat2026road,EU road freight average distance per tonne (2025): national 97.5 / all 142.3 / international 593.5 km
@@ -22,22 +22,22 @@ edge_active_power,P_active,platform:workstation,7.149,8.464,9.015,W,Measured by 
 host_power,P_host,platform:workstation,10,25,60,W,Scenario assumption,none,Workstation platform: host CPU/RAM/camera/lighting power attributable to the edge cell (not observable via NVML)
 edge_embodied_carbon,C_hw,platform:workstation,178,237,600,kgCO2e,Literature-derived,dell2021optiplex,Workstation platform: Non-use share (manufacturing 58.5% + transport 3.3% + end-of-life 1.1%) of the 377 +/- 94 kgCO2e footprint of a Dell OptiPlex 3090 SFF; upper bound allows for a discrete GPU (assumption)
 edge_lifetime_hours,L_hw,platform:workstation,8000,16000,35040,h,Literature-derived,dell2021optiplex,Workstation platform: 4-year product lifetime (Dell PCF) x 2000 / 4000 / 8760 operating hours per year (one shift / two shifts / continuous; assumption)
-nominal_false_alarm_rate,lambda_B0,policy:B0_Raw,1933.31,3970.86,6299.11,alarms/h,Derived from Paper A,sengar2026paperA,False alerts per hour on good parts; Paper A mean and 95% bootstrap interval
-alerts_per_defect,a_B0,policy:B0_Raw,135.154,144.232,153.364,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
-detection_delay,d_B0,policy:B0_Raw,0.0119048,0.0416667,0.077381,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
-glare_alerts_per_burst,b_B0,policy:B0_Raw,2.54,2.54,2.54,alerts/burst,Derived from Paper A,sengar2026paperA,Alerts per 1-3 frame glare burst; Paper A mean (no interval reported)
-nominal_false_alarm_rate,lambda_B1,policy:B1_EMA,6.27143,60,123.443,alarms/h,Derived from Paper A,sengar2026paperA,False alerts per hour on good parts; Paper A mean and 95% bootstrap interval
-alerts_per_defect,a_B1,policy:B1_EMA,143.576,152.173,160.615,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
-detection_delay,d_B1,policy:B1_EMA,0.202381,0.363095,0.553571,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
-glare_alerts_per_burst,b_B1,policy:B1_EMA,4.42,4.42,4.42,alerts/burst,Derived from Paper A,sengar2026paperA,Alerts per 1-3 frame glare burst; Paper A mean (no interval reported)
-nominal_false_alarm_rate,lambda_B2,policy:B2_EMA_kofN,0,2.85714,8.57143,alarms/h,Derived from Paper A,sengar2026paperA,False alerts per hour on good parts; Paper A mean and 95% bootstrap interval
-alerts_per_defect,a_B2,policy:B2_EMA_kofN,146.635,155.208,163.662,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
-detection_delay,d_B2,policy:B2_EMA_kofN,3.20238,3.3631,3.55372,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
-glare_alerts_per_burst,b_B2,policy:B2_EMA_kofN,5.94,5.94,5.94,alerts/burst,Derived from Paper A,sengar2026paperA,Alerts per 1-3 frame glare burst; Paper A mean (no interval reported)
-nominal_false_alarm_rate,lambda_B3,policy:B3_Full_Policy,0,0.571429,1.71429,alarms/h,Derived from Paper A,sengar2026paperA,False alerts per hour on good parts; Paper A mean and 95% bootstrap interval
-alerts_per_defect,a_B3,policy:B3_Full_Policy,1,1.11905,1.25,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
-detection_delay,d_B3,policy:B3_Full_Policy,3.20238,3.3631,3.55372,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
-glare_alerts_per_burst,b_B3,policy:B3_Full_Policy,0.69,0.69,0.69,alerts/burst,Derived from Paper A,sengar2026paperA,Alerts per 1-3 frame glare burst; Paper A mean (no interval reported)
+nominal_false_alarm_rate,lambda_B0,policy:B0_Raw,2690.14,4616,6764.17,alarms/h,Derived from Paper A,sengar2026paperA,False alerts per hour on good parts; Paper A mean and 95% bootstrap interval
+alerts_per_defect,a_B0,policy:B0_Raw,127.283,137.643,148.078,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
+detection_delay,d_B0,policy:B0_Raw,0.0357143,0.10119,0.196429,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
+glare_alerts_per_burst,b_B0,policy:B0_Raw,2.63,2.63,2.63,alerts/burst,Derived from Paper A,sengar2026paperA,Alerts per 1-3 frame glare burst; Paper A mean (no interval reported)
+nominal_false_alarm_rate,lambda_B1,policy:B1_EMA,5.14286,40.5714,85.1429,alarms/h,Derived from Paper A,sengar2026paperA,False alerts per hour on good parts; Paper A mean and 95% bootstrap interval
+alerts_per_defect,a_B1,policy:B1_EMA,140.56,149.214,158.114,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
+detection_delay,d_B1,policy:B1_EMA,0.339286,0.583333,0.839286,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
+glare_alerts_per_burst,b_B1,policy:B1_EMA,4.27,4.27,4.27,alerts/burst,Derived from Paper A,sengar2026paperA,Alerts per 1-3 frame glare burst; Paper A mean (no interval reported)
+nominal_false_alarm_rate,lambda_B2,policy:B2_EMA_kofN,0,0,0,alarms/h,Derived from Paper A,sengar2026paperA,False alerts per hour on good parts; Paper A mean and 95% bootstrap interval
+alerts_per_defect,a_B2,policy:B2_EMA_kofN,145.291,153.952,162.372,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
+detection_delay,d_B2,policy:B2_EMA_kofN,3.36905,3.65476,3.96429,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
+glare_alerts_per_burst,b_B2,policy:B2_EMA_kofN,5.66,5.66,5.66,alerts/burst,Derived from Paper A,sengar2026paperA,Alerts per 1-3 frame glare burst; Paper A mean (no interval reported)
+nominal_false_alarm_rate,lambda_B3,policy:B3_Full_Policy,0,0,0,alarms/h,Derived from Paper A,sengar2026paperA,False alerts per hour on good parts; Paper A mean and 95% bootstrap interval
+alerts_per_defect,a_B3,policy:B3_Full_Policy,1,1.13095,1.27381,alerts/defect,Derived from Paper A,sengar2026paperA,Alerts per sustained-defect episode; Paper A mean and 95% bootstrap interval
+detection_delay,d_B3,policy:B3_Full_Policy,3.36905,3.65476,3.96429,frames,Derived from Paper A,sengar2026paperA,Mean detection delay on sustained defects; Paper A mean and 95% bootstrap interval
+glare_alerts_per_burst,b_B3,policy:B3_Full_Policy,0.66,0.66,0.66,alerts/burst,Derived from Paper A,sengar2026paperA,Alerts per 1-3 frame glare burst; Paper A mean (no interval reported)
 line_throughput,Theta,precision_component,1200,1800,3600,parts/h,Scenario definition,none,High-volume sensor housing line
 line_throughput,Theta,machined_metal,60,120,240,parts/h,Scenario definition,none,CNC cell (30 s nominal cycle)
 line_throughput,Theta,high_value_component,15,30,60,parts/h,Scenario definition,none,Battery / power module assembly (2 min nominal cycle)

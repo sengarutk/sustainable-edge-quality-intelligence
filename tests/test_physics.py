@@ -142,14 +142,16 @@ def test_ai_operating_point_uses_paper_a_measurements(scenario, tier, persistent
 
 def test_paper_a_policy_rates_reproduce_its_table():
     """The imported registry values must equal the means printed in the Paper A ablation table."""
+    from src.imports.import_paper_a import load_snapshot
     from src.validation.source_registry import load_registry
     c = {r.key: r.central for r in load_registry()}
-    assert round(c["nominal_false_alarm_rate@B0_Raw"]) == 3971
-    assert round(c["nominal_false_alarm_rate@B3_Full_Policy"], 1) == 0.6
-    assert round(c["alerts_per_defect@B0_Raw"], 2) == 144.23
-    assert round(c["alerts_per_defect@B3_Full_Policy"], 2) == 1.12
-    assert round(c["detection_delay@B3_Full_Policy"], 1) == 3.4
-    assert c["review_time"] == 60.0
+    q = load_snapshot()["quoted_macros"]  # values printed in Paper A at the pinned commit
+    assert round(c["nominal_false_alarm_rate@B0_Raw"]) == int(q["NominalFABaseline"])
+    assert round(c["nominal_false_alarm_rate@B3_Full_Policy"], 1) == float(q["NominalFAFull"])
+    assert round(c["alerts_per_defect@B0_Raw"], 2) == float(q["AlertsPerEpisodeBaseline"])
+    assert round(c["alerts_per_defect@B3_Full_Policy"], 2) == float(q["AlertsPerEpisodeFull"])
+    assert round(c["detection_delay@B3_Full_Policy"], 1) == float(q["SustainedDelayFull"])
+    assert c["review_time"] == 3600.0 / float(q["MuReviews"])
 
 
 def test_throughput_scales_edge_energy_linearly(scenario):

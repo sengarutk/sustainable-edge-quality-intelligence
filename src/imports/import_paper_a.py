@@ -9,7 +9,9 @@ never from a working copy:
   sustained-defect episode, the mean detection delay and the routing recall;
 * paper/tables/ablation.tex -- alerts per 1-3 frame glare burst (reported without
   intervals);
-* paper/generated_metrics.tex -- reviewer service rate and assumed glare rate.
+* paper/generated_metrics.tex -- reviewer service rate and assumed glare rate;
+* results/short_defect_recall.json -- recall of each policy for defects visible a fixed number of frames,
+  which bounds the recall that persistence filtering loses.
 
 The snapshot records the commit and blob hashes and the resulting registry rows.
 It is committed here, so the pipeline runs without the upstream repository;
@@ -29,6 +31,11 @@ from src.paths import PAPER_A_EXPORT_DIR
 SUMMARY_PATH = "results/ablation/ablation_summary.json"
 TABLE_PATH = "paper/tables/ablation.tex"
 METRICS_PATH = "paper/generated_metrics.tex"
+SHORT_PATH = "results/short_defect_recall.json"
+# Upper bound of the persistence recall loss: the shortest defect visibility (frames) at which the full
+# policy keeps a mean recall of at least 0.95 (Paper A); the central value is the loss for parts in view
+# for at least one second, i.e. the sustained episodes of the reference scenarios.
+SHORT_BOUND_FRAMES, SHORT_CENTRAL_FRAMES = 8, 30
 SNAPSHOT = PAPER_A_EXPORT_DIR / "paper_a_metrics.json"
 
 # Paper B alert tier -> Paper A policy
@@ -48,7 +55,7 @@ MEASURED = {
 # Paper A macros quoted verbatim in the Paper B text (recorded for provenance).
 QUOTED_MACROS = ("MuReviews", "GlareRateAssumed", "SustainedDelayFull", "NominalFABaseline", "NominalFAFull",
                  "AlertsPerEpisodeBaseline", "AlertsPerEpisodeFull", "GlarePerBurstBaseline", "GlarePerBurstEmaKofn",
-                 "GlarePerBurstFull", "LatGpuMean", "LatVisionMean", "MemoryBankSize", "LoadCrossFull")
+                 "GlarePerBurstFull", "LatGpuMean", "LatVisionMean", "MemoryBankSize", "LoadCrossFull", "ShortK", "ShortN")
 
 _MACRO = re.compile(r"\\(?:new|provide)command\{\\(\w+)\}\{(.*)\}\s*$")
 
@@ -83,7 +90,14 @@ def parse_glare_per_burst(table_tex: str) -> Dict[str, float]:
     return out
 
 
-def build_rows(summary: Dict, glare: Dict[str, float], macros: Dict[str, str]) -> Dict[str, Tuple[float, float, float]]:
+def persistence_loss(short: Dict, frames: int) -> float:
+    """Recall of single-frame thresholding minus that of the full policy for defects of `frames` frames."""
+    rec = {p: {x["length"]: x["recall"]["mean"] for x in short["policies"][p]["per_length"]} for p in ("BASELINE", "FULL_POLICY")}
+    return max(0.0, rec["BASELINE"][frames] - rec["FULL_POLICY"][frames])
+
+
+def build_rows(summary: Dict, glare: Dict[str, float], macros: Dict[str, str],
+               short: Dict | None = None) -> Dict[str, Tuple[float, float, float]]:
     """Registry rows keyed 'parameter@scope' -> (low, central, high)."""
     rows: Dict[str, Tuple[float, float, float]] = {}
     sc = summary["scenarios"]
@@ -100,6 +114,9 @@ def build_rows(summary: Dict, glare: Dict[str, float], macros: Dict[str, str]) -
     rows["review_time@all"] = (30.0, 3600.0 / mu, 90.0)  # central from Paper A; bounds are assumptions
     g_rate = float(macros["GlareRateAssumed"])
     rows["glare_burst_rate@all"] = (10.0, g_rate, 60.0)  # Paper A's assumption; bounds are assumptions
+    if short is not None:
+        rows["persistence_recall_loss@all"] = (0.0, _sig(persistence_loss(short, SHORT_CENTRAL_FRAMES)),
+                                               _sig(persistence_loss(short, SHORT_BOUND_FRAMES)))
     return rows
 
 
@@ -107,7 +124,7 @@ def import_paper_a(repo: Path, out: Path = SNAPSHOT, ref: str = "HEAD") -> Path:
     """Snapshot the Paper A measurements at commit `ref` (pass the snapshot's source_commit
     to reproduce the committed snapshot exactly)."""
     commit = _git(repo, "rev-parse", f"{ref}^{{commit}}").strip()
-    files = {p: _git(repo, "show", f"{commit}:{p}") for p in (SUMMARY_PATH, TABLE_PATH, METRICS_PATH)}
+    files = {p: _git(repo, "show", f"{commit}:{p}") for p in (SUMMARY_PATH, TABLE_PATH, METRICS_PATH, SHORT_PATH)}
     blobs = {p: _git(repo, "rev-parse", f"{commit}:{p}").strip() for p in files}
     summary = json.loads(files[SUMMARY_PATH])
     macros = parse_macros(files[METRICS_PATH])
@@ -115,7 +132,8 @@ def import_paper_a(repo: Path, out: Path = SNAPSHOT, ref: str = "HEAD") -> Path:
     missing = [p for p in TIER_POLICY.values() if p not in glare] + [m for m in QUOTED_MACROS if m not in macros]
     if missing:
         raise KeyError(f"Paper A revision {commit[:7]} lacks {missing}")
-    rows = build_rows(summary, glare, macros)
+    short = json.loads(files[SHORT_PATH])
+    rows = build_rows(summary, glare, macros, short)
     snapshot = {
         "source_repository": repo.name,
         "source_commit": commit,
@@ -124,6 +142,8 @@ def import_paper_a(repo: Path, out: Path = SNAPSHOT, ref: str = "HEAD") -> Path:
         "sustained_defect_recall": {pol: summary["scenarios"]["sustained_defects"][pol]["routing_recall"]["mean"]
                                     for pol in TIER_POLICY.values()},
         "quoted_macros": {m: macros[m] for m in QUOTED_MACROS},
+        "short_defect_recall": {p: {str(x["length"]): x["recall"]["mean"] for x in short["policies"][p]["per_length"]}
+                                for p in TIER_POLICY.values()},
         "registry_rows": {k: list(v) for k, v in sorted(rows.items())},
     }
     out.parent.mkdir(parents=True, exist_ok=True)
