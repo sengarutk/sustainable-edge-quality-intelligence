@@ -1,14 +1,14 @@
 {
   "source_repository": "edge-quality-intelligence",
-  "source_commit": "1be753de97a4d75c14a24f9c6e3b86db67479dfa",
+  "source_commit": "32a5540e92f1ff020346b82a84158e74a77b53f4",
   "source_object_hashes": {
-    "scripts/build_paper_assets.py": "ccbb1f63d925e8d8fb209a91ad4f565f674ebe79",
+    "scripts/build_paper_assets.py": "378403fc8c6470ad064a4629bc4c6e516a8f852b",
     "results/ablation": "4f396c67fcb31be7bf2a049a82895902506fcc59",
     "results/ablation_rho0.9": "c2f6454dc8a3e671db6e5143793c327a5c303135",
     "results/ablation_visa": "06e18086c861f072c3e54903b880c219a564dd24",
     "results/ablation_visa_rho0.9": "1417e71730005559357e73bf775f5cbedb85eb9c",
     "results/short_defect_recall.json": "2696a5f3e130b6d74e1992610de4a09573ac6d14",
-    "paper/generated_metrics.tex": "3cd5e8cb1201f355d37586eab03f522f42a407ff",
+    "paper/generated_metrics.tex": "bd2eac09a3b856710d0f1994903f684301560c2c",
     "paper/tables/ablation.tex": "294292b10a75c8f764621301c7d64158b630ee4d",
     "paper/tables/ablation_rho.tex": "6c81f2ca5fea1fa477941689bb3a8b4fb9092934",
     "paper/tables/ablation_visa.tex": "19cfca194a03ea38bffcae579d381f83e05e761d"
