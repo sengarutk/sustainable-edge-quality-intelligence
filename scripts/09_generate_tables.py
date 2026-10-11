@@ -9,7 +9,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pandas as pd  # noqa: E402
 
-from src.models.pipeline_evaluator import load_regimes  # noqa: E402
+from src.imports.import_paper_a import load_snapshot  # noqa: E402
+from src.models.pipeline_evaluator import AI_TIERS, EXTERNAL_TIERS, core_regimes, load_regimes  # noqa: E402
 from src.params import load_scenario  # noqa: E402
 from src.paths import PROCESSED_DIR, RESULTS_TABLE_DIR, SCENARIOS  # noqa: E402
 from src.validation.source_registry import load_registry  # noqa: E402
@@ -24,7 +25,7 @@ SYMBOL_TEX = {
     "L_hw": "L_{hw}", "P_station": "P_{station}", "t_review": "t_{review}", "gamma": r"\gamma", "r_L0": "r_{L0}",
     "g": "g", "r_AI": "r_{AI}", "delta_r": r"\delta_r", "Theta": r"\Theta", "pi": r"\pi", "m": "m", "EF_mat": "EF_{mat}",
     "eta": r"\eta", "EF_rec": "EF_{rec}", "e_rw": "e_{rw}", "q0": "q_0", "tau_rw": r"\tau_{rw}", "d_L0": "d_{L0}",
-    "t_L0": "t_{L0}", "kappa": r"\kappa", "EF_fr": "EF_{fr}", "d_ret": "d_{ret}",
+    "t_L0": "t_{L0}", "kappa": r"\kappa", "EF_fr": "EF_{fr}", "d_ret": "d_{ret}", "omega": r"\omega", "s": "s",
 }
 def merged_keys(records) -> str:
     """Union of the citation keys of several records, in first-seen order ('none' if there are none)."""
@@ -82,8 +83,8 @@ def value_range(r):
 def symbol(r):
     s = SYMBOL_TEX.get(r.symbol, r.symbol.replace("_", r"\_"))
     base, _, tier = r.symbol.partition("_")
-    if base in ("lambda", "a", "d", "b") and tier.startswith("B"):
-        s = (r"\lambda" if base == "lambda" else base) + "_{" + tier + "}"
+    if base in ("lambda", "a", "d", "b", "delta") and tier[:1] in ("B", "E"):
+        s = {"lambda": r"\lambda", "delta": r"\delta"}.get(base, base) + "_{" + tier + "}"
     return f"${s}$"
 
 
@@ -99,13 +100,14 @@ def table1_ledger():
         r"\begin{table*}[!t]", r"\centering", r"\scriptsize",
         r"\caption{Parameter ledger (generated from \texttt{data/raw/source\_registry.csv}). Values are central [low, high]; "
         r"Monte Carlo draws are triangular on these bounds. Class: M measured, P derived from our alert-policy study~\cite{sengar2026paperA}, L literature, "
-        r"O official dataset, D scenario definition (defines the reference product), A scenario assumption.}",
+        r"O official dataset, D scenario definition (defines the reference product or a structural model choice), A scenario assumption; "
+        r"where the class differs between scenarios it is given per scenario (A, B, C). The alert-policy parameters are in Table~\ref{tab:policies}.}",
         r"\label{tab:parameters}", r"\setlength{\tabcolsep}{3pt}", r"\renewcommand{\arraystretch}{0.94}",
         r"\begin{tabular}{@{}llllllll@{}}", r"\toprule",
         r"Parameter & Sym. & Unit & A: Precision & B: Machined metal & C: High-value & Cl. & Source \\", r"\midrule",
         r"\multicolumn{8}{@{}l}{\emph{Global and edge-cell parameters}} \\",
     ]
-    glob = [r for r in recs if r.scope == "all"]
+    glob = [r for r in recs if r.scope == "all" and r.variant is None]
     for r in glob:
         lines.append(rf"{r.parameter.replace('_', ' ')} & {symbol(r)} & {UNIT_TEX.get(r.unit, r.unit)} & "
                      rf"\multicolumn{{3}}{{c}}{{{value_range(r)}}} & {CLASS_SHORT[r.classification.value]} & {cite_tex(r.citation_key)} \\")
@@ -117,8 +119,10 @@ def table1_ledger():
     for name, d in per.items():
         r0 = d[SCENARIOS[0]]
         cells = " & ".join(value_range(d[sc]) for sc in SCENARIOS)
+        classes = [CLASS_SHORT[d[sc].classification.value] for sc in SCENARIOS]
+        cls = classes[0] if len(set(classes)) == 1 else "/".join(classes)
         lines.append(rf"{name.replace('_', ' ')} & {symbol(r0)} & {UNIT_TEX.get(r0.unit, r0.unit)} & {cells} & "
-                     rf"{CLASS_SHORT[r0.classification.value]} & {cite_tex(merged_keys(d.values()))} \\")
+                     rf"{cls} & {cite_tex(merged_keys(d.values()))} \\")
     shares = [load_scenario(sc).class_shares for sc in SCENARIOS]
     lines.append(r"defect class shares & $f_A{:}f_B{:}f_C$ & -- & " + " & ".join(":".join(f"{v:.2f}" for v in s) for s in shares) + r" & A & -- \\")
     lines += [r"\bottomrule", r"\end{tabular}", r"\end{table*}"]
@@ -126,35 +130,149 @@ def table1_ledger():
 
 
 POLICY_ROWS = [
-    ("nominal_false_alarm_rate", r"False alerts on good parts $\lambda_t$", "1/h"),
-    ("glare_alerts_per_burst", r"Alerts per 1--3 frame glare burst $b_t$", "--"),
-    ("alerts_per_defect", r"Alerts per defect episode $a_t$", "--"),
-    ("detection_delay", r"Mean detection delay $d_t$", "frames"),
+    ("nominal_false_alarm_rate", r"False alerts on good parts $\lambda_t$ (1/h)"),
+    ("glare_alerts_per_burst", r"Alerts per 1--3 frame glare burst $b_t$"),
+    ("alerts_per_defect", r"Alerts per defect episode $a_t$"),
+    ("detection_delay", r"Mean detection delay $d_t$ (frames)"),
+    ("recall_loss", r"Recall loss $\delta_t$"),
 ]
 
 
 def table_policies():
-    recs = [r for r in load_registry() if r.scope.startswith("policy:")]
+    recs = load_registry()
     regimes = load_regimes()
-    tiers = [rid for rid, reg in regimes.items() if reg.kind == "ai"]
+    tiers = list(AI_TIERS + EXTERNAL_TIERS)
+    snap = load_snapshot()
     lines = [
-        r"\begin{table}[!t]", r"\centering", r"\scriptsize",
-        r"\caption{Alert policies, as measured in~\cite{sengar2026paperA} on PatchCore scores of seven MVTec~AD categories "
-        r"(21 paired units; mean [95\% bootstrap interval]). B0 thresholds every frame, B1 adds exponential smoothing, "
-        r"B2 adds $k$-of-$N$ persistence, and B3 adds the incident latch, machine-state gating and divergence triage. "
-        r"All four detected every sustained defect.}",
-        r"\label{tab:policies}", r"\setlength{\tabcolsep}{2.5pt}",
+        r"\begin{table*}[!t]", r"\centering", r"\scriptsize",
+        r"\caption{Alert policies of the companion study~\cite{sengar2026paperA} (revision \texttt{" + snap["source_commit"][:7] + r"}), "
+        r"measured on PatchCore scores of " + f"{snap['units']['mvtec_independent']['categories']} MVTec~AD categories and, with the policy frozen, "
+        + f"{snap['units']['visa_independent']['categories']} held-out VisA categories: mean over "
+        + f"{snap['units']['mvtec_independent']['units']} (MVTec~AD) or {snap['units']['visa_independent']['units']} (VisA) "
+        r"(category, replicate) units [95\% bootstrap interval "
+        r"over categories], recomputed from its per-run results and checked against its printed values. B0 thresholds every frame, "
+        r"B1 adds exponential smoothing, B2 adds $k$-of-$N$ persistence and B3 is the full policy (incident latch, machine-state gating, "
+        r"divergence triage); E1--E3 are textbook alarm baselines (on-delay timer, EMA with hysteresis, decision-level fusion). "
+        r"$\delta_t$ is the share of the sustained defects flagged by single-frame thresholding that policy $t$ does not flag within "
+        r"15 frames of onset; for MVTec~AD with independent scores its upper bound also covers parts visible for only 8 frames. "
+        r"Correlated: AR(1) frame scores with $\rho=0.9$.}",
+        r"\label{tab:policies}", r"\setlength{\tabcolsep}{3pt}", r"\renewcommand{\arraystretch}{0.82}",
         r"\begin{tabular}{@{}l" + "c" * len(tiers) + r"@{}}", r"\toprule",
         "Quantity & " + " & ".join(regimes[t].label.split(" ", 1)[0] for t in tiers) + r" \\", r"\midrule",
     ]
-    for key, label, unit in POLICY_ROWS:
-        cells = []
-        for t in tiers:
-            r = next(x for x in recs if x.parameter == key and x.scope == f"policy:{t}")
-            cells.append(g3(r.central) if r.low == r.high else rf"\shortstack{{{g3(r.central)}\\[-1pt]{{\tiny[{g3(r.low)}, {g3(r.high)}]}}}}")
-        lines.append(f"{label} ({unit}) & " + " & ".join(cells) + r" \\")
-    lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]
+
+    def cell(r):
+        return g3(r.central) if r.low == r.high else rf"\shortstack{{{g3(r.central)}\\[-1pt]{{\tiny[{g3(r.low)}, {g3(r.high)}]}}}}"
+
+    for block, variant in ((r"\emph{MVTec~AD, independent frame scores (primary)}", None),
+                           (r"\emph{MVTec~AD, correlated frame scores ($\rho=0.9$)}", "correlated_scores"),
+                           (r"\emph{VisA (held out), independent frame scores}", "visa_scores"),
+                           (r"\emph{VisA (held out), correlated frame scores ($\rho=0.9$)}", "visa_correlated_scores")):
+        lines.append(rf"\multicolumn{{{len(tiers) + 1}}}{{@{{}}l}}{{{block}}} \\")
+        for key, label in POLICY_ROWS:
+            row = [cell(next(x for x in recs if x.parameter == key and x.variant == variant and x.key == f"{key}@{t}")) for t in tiers]
+            lines.append(f"{label} & " + " & ".join(row) + r" \\")
+    lines += [r"\bottomrule", r"\end{tabular}", r"\end{table*}"]
     save("\n".join(lines), "tab_policies.tex")
+
+
+ALERT_SETS = [("independent", None, "MVTec AD, independent"), ("correlated", "correlated_scores", r"MVTec AD, correlated ($\rho=0.9$)"),
+              ("visa_independent", "visa_scores", "VisA, independent"), ("visa_correlated", "visa_correlated_scores", r"VisA, correlated ($\rho=0.9$)")]
+
+
+def table_alert_sets():
+    """The full policy under the four alert-measurement sets of Paper A."""
+    ad = pd.read_csv(PROCESSED_DIR / "alarm_designs.csv")
+    lines = [
+        r"\begin{table*}[!t]", r"\centering", r"\footnotesize",
+        r"\caption{The full policy B3 with each of the companion study's alert-measurement sets: MVTec~AD (the primary values) and the "
+        r"held-out VisA categories, each with independent and with temporally correlated frame scores. $\delta_{B3}$: share of the "
+        r"defects flagged by single-frame thresholding that B3 does not flag within 15 frames; $\rho$: single-reviewer utilisation; "
+        r"PPV: alert precision; $\Delta C$: carbon saving against manual inspection at central values (kgCO$_2$e per 1{,}000 parts); "
+        r"$P$: share of Monte Carlo draws with $\Delta C>0$; $\omega^\star$: reviewer distrust at which the saving vanishes.}",
+        r"\label{tab:alertsets}", r"\setlength{\tabcolsep}{4pt}",
+        r"\begin{tabular}{@{}llrrrrrr@{}}", r"\toprule",
+        r"Alert measurements & Scenario & $\delta_{B3}$ & $\rho$ & PPV & $\Delta C$ & $P$ & $\omega^\star$ \\", r"\midrule",
+    ]
+    recs = load_registry()
+    for model, variant, title in ALERT_SETS:
+        name = "monte_carlo_summary.json" if variant is None else f"monte_carlo_summary_{variant}.json"
+        mc = json.loads((PROCESSED_DIR / name).read_text(encoding="utf-8"))
+        delta = next(r.central for r in recs if r.key == "recall_loss@B3_Full_Policy" and r.variant == variant)
+        for i, sc in enumerate(SCENARIOS):
+            a = ad[(ad.scenario == sc) & (ad.regime == "B3_Full_Policy") & (ad.score_model == model)].iloc[0]
+            om = f"{a.omega_star:.2f}" if a.omega_status == "root" else ("none" if a.omega_status == "none_positive" else r"$<0$ at 0")
+            p = 100 * mc[sc]["comparisons"]["B3_vs_L0"]["p_delta_c_positive"]
+            lines.append(rf"{title if i == 0 else ''} & {load_scenario(sc).label} & {100 * delta:.1f}\% & {a.rho:.2f} & "
+                         rf"{100 * a.ppv:.2g}\% & {g3(a.delta_C_vs_L0)} & {p:.1f}\% & {om} \\")
+        lines.append(r"\midrule")
+    lines[-1] = r"\bottomrule"
+    lines += [r"\end{tabular}", r"\end{table*}"]
+    save("\n".join(lines), "tab_alert_sets.tex")
+
+
+def table_alarm_designs():
+    ad = pd.read_csv(PROCESSED_DIR / "alarm_designs.csv")
+    regimes = load_regimes()
+    show = ["B3_Full_Policy", "E1_Delay_Timer", "E2_EMA_Hysteresis", "E3_Decision_Fusion"]
+    lines = [
+        r"\begin{table*}[!t]", r"\centering", r"\footnotesize",
+        r"\caption{Alarm designs at central parameter values, with Paper A's alert measurements under independent and under temporally "
+        r"correlated ($\rho=0.9$) frame scores: single-reviewer utilisation $\rho$, alert precision (PPV), carbon saving against manual "
+        r"inspection $\Delta C$ (kgCO$_2$e per 1{,}000 parts, full reviewer compliance) and the reviewer distrust $\omega^\star$ at which "
+        r"that saving vanishes (``none'': the regime stays ahead even at $\omega=1$).}",
+        r"\label{tab:alarms}", r"\setlength{\tabcolsep}{4pt}",
+        r"\begin{tabular}{@{}llrrrrrrrr@{}}", r"\toprule",
+        r" & & \multicolumn{4}{c}{Independent scores} & \multicolumn{4}{c}{Correlated scores ($\rho=0.9$)} \\",
+        r"\cmidrule(lr){3-6}\cmidrule(l){7-10}",
+        r"Scenario & Alarm & $\rho$ & PPV & $\Delta C$ & $\omega^\star$ & $\rho$ & PPV & $\Delta C$ & $\omega^\star$ \\", r"\midrule",
+    ]
+
+    def om(r):
+        if r.omega_status == "root":
+            return f"{r.omega_star:.2f}"
+        return "none" if r.omega_status == "none_positive" else r"$<0$ at 0"
+
+    for sc in SCENARIOS:
+        for i, t in enumerate(show):
+            a = ad[(ad.scenario == sc) & (ad.regime == t) & (ad.score_model == "independent")].iloc[0]
+            b = ad[(ad.scenario == sc) & (ad.regime == t) & (ad.score_model == "correlated")].iloc[0]
+            name = load_scenario(sc).label if i == 0 else ""
+            lines.append(rf"{name} & {regimes[t].label} & {a.rho:.2f} & {100 * a.ppv:.0f}\% & {g3(a.delta_C_vs_L0)} & {om(a)} & "
+                         rf"{b.rho:.2f} & {100 * b.ppv:.0f}\% & {g3(b.delta_C_vs_L0)} & {om(b)} \\")
+        lines.append(r"\midrule")
+    lines[-1] = r"\bottomrule"
+    lines += [r"\end{tabular}", r"\end{table*}"]
+    save("\n".join(lines), "tab_alarm_designs.tex")
+
+
+EVIDENCE_ORDER = ["Measured by this study", "Derived from Paper A", "Literature-derived", "Official/public dataset",
+                  "Scenario definition", "Scenario assumption"]
+EVIDENCE_LABEL = {"Measured by this study": "Measured (M)", "Derived from Paper A": r"Imported from~\cite{sengar2026paperA} (P)",
+                  "Literature-derived": "Literature (L)", "Official/public dataset": "Official data (O)",
+                  "Scenario definition": "Scenario definition (D)", "Scenario assumption": "Scenario assumption (A)"}
+
+
+def table_evidence():
+    """Master table: every ledger entry by provenance class, with the parameters it covers."""
+    recs = load_registry()
+    lines = [
+        r"\begin{table}[!t]", r"\centering", r"\scriptsize",
+        r"\caption{Evidence behind the ledger: entries per provenance class (primary analysis; the correlated-score variant adds "
+        r"the entries in brackets) and the parameters they cover. A parameter appears under several classes when its class differs "
+        r"between scenarios.}",
+        r"\label{tab:evidence}", r"\setlength{\tabcolsep}{3pt}",
+        r"\begin{tabular}{@{}lr>{\raggedright\arraybackslash}p{0.52\columnwidth}@{}}", r"\toprule",
+        r"Class & Entries & Parameters \\", r"\midrule",
+    ]
+    for cls in EVIDENCE_ORDER:
+        prim = [r for r in recs if r.classification.value == cls and r.variant is None]
+        var = [r for r in recs if r.classification.value == cls and r.variant is not None]
+        names = sorted({r.parameter.replace("_", " ") for r in prim})
+        count = str(len(prim)) + (f" [+{len(var)}]" if var else "")
+        lines.append(rf"{EVIDENCE_LABEL[cls]} & {count} & {', '.join(names)} \\")
+    lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]
+    save("\n".join(lines), "tab_evidence.tex")
 
 
 def table_detector():
@@ -166,7 +284,7 @@ def table_detector():
     lines = [
         r"\begin{table}[!t]", r"\centering", r"\scriptsize",
         r"\caption{Measured detector operating points (mean over three splits): AUROC and per-part recall at the 99th "
-        r"percentile of the calibration scores (q99) for PatchCore (PC) and PaDiM (PD), and the carbon-optimal FPR and "
+        r"percentile of the calibration scores (q99) for PatchCore (PC) and PaDiM (PD), and the in-sample carbon-optimal FPR and "
         r"recall of a one-shot PatchCore station for scenario~C.}",
         r"\label{tab:detector}", r"\setlength{\tabcolsep}{2.6pt}",
         r"\begin{tabular}{@{}lcccccc@{}}", r"\toprule",
@@ -186,7 +304,7 @@ def table_detector():
 
 def table2_regimes():
     df = pd.read_csv(PROCESSED_DIR / "regime_outcomes.csv")
-    regimes = load_regimes()
+    regimes = core_regimes()
     lines = [
         r"\begin{table*}[!t]", r"\centering", r"\scriptsize",
         r"\caption{Outcomes per functional unit (1{,}000 parts) at central parameter values. $\rho$ is single-operator "
@@ -225,6 +343,7 @@ def fmt_front(fr):
 
 def table3_uncertainty():
     mc = json.loads((PROCESSED_DIR / "monte_carlo_summary.json").read_text(encoding="utf-8"))
+    mcc = json.loads((PROCESSED_DIR / "monte_carlo_summary_correlated_scores.json").read_text(encoding="utf-8"))
     be = json.loads((PROCESSED_DIR / "break_even.json").read_text(encoding="utf-8"))
     n_draws = {mc[sc]["n_draws"] for sc in SCENARIOS}
     if len(n_draws) != 1:
@@ -253,6 +372,7 @@ def table3_uncertainty():
 
     row(r"$\Delta C$ B3 vs L0", dc("B3_vs_L0"))
     row(r"$P(\Delta C>0)$ B3 vs L0", pp("B3_vs_L0"))
+    row(r"$P(\Delta C>0)$ B3 vs L0, correlated scores", lambda sc: f"{100 * mcc[sc]['comparisons']['B3_vs_L0']['p_delta_c_positive']:.1f}\\%")
     row(r"$\Delta C$ B3 vs N0", dc("B3_vs_N0"))
     row(r"$\Delta C$ B3 vs B0", dc("B3_vs_B0"))
     row(r"$P(\Delta C>0)$ B3 vs B0", pp("B3_vs_B0"))
@@ -261,7 +381,7 @@ def table3_uncertainty():
     lines.append(r"\midrule")
     row(r"$\pi^\star$ vs N0", lambda sc: fmt_front(be[sc]["pi_star_vs_N0"]))
     row(r"$\pi^\star$ vs L0", lambda sc: fmt_front(be[sc]["pi_star_vs_L0"]))
-    central = {r.key: r.central for r in load_registry()}
+    central = {r.key: r.central for r in load_registry() if r.variant is None}
     gpu = central["edge_idle_power"] + central["edge_active_power"]
 
     def cell(sc):
@@ -273,7 +393,14 @@ def table3_uncertainty():
     row(r"$P^\star_{cell}$ vs L0", cell)
     row(r"$r^\star_{L0}$ (manual recall)", lambda sc: fmt_front(be[sc]["manual_recall_star"]))
     row(r"$\gamma^\star$ in [0, 1.5]", lambda sc: fmt_front(be[sc]["gamma_star_vs_L0"]))
-    row(r"$\delta_r^\star$ (recall loss, B3 vs B0)", lambda sc: fmt_front(be[sc]["recall_loss_star_B3_vs_B0"]).replace("\\%", " pp"))
+    chw = central["edge_embodied_carbon"]
+
+    def hw(sc):
+        fr = be[sc]["hardware_carbon_star_vs_L0"]
+        return (f"{fr['value'] / chw:,.0f}".replace(",", "{,}") + r"$\times$") if fr["status"] == "root" else fmt_front(fr)
+
+    row(r"$C_{hw}^\star$ vs L0 (multiple of central)", hw)
+    row(r"$\delta^\star$ (relative recall loss of B3, vs B0)", lambda sc: fmt_front(be[sc]["recall_loss_star_B3_vs_B0"]))
     lines += [r"\bottomrule", r"\end{tabular}", r"\end{table*}"]
     save("\n".join(lines), "tab3_uncertainty_break_even.tex")
 
@@ -281,7 +408,10 @@ def table3_uncertainty():
 def main():
     print("Step 09: generating tables")
     table1_ledger()
+    table_evidence()
     table_policies()
+    table_alarm_designs()
+    table_alert_sets()
     table_detector()
     table2_regimes()
     table3_uncertainty()

@@ -3,7 +3,7 @@ Single-graph ONNX export of the measured detectors for embedded (TensorRT) deplo
 
 The whole per-frame scoring path runs inside one graph, so an edge device executes it as one
 TensorRT engine: ResNet-18 features, the detector head (PatchCore 1-NN distance to the memory
-bank, or PaDiM per-position Mahalanobis distance), bilinear upsampling to 224x224, a separable
+bank, or PaDiM per-position Mahalanobis distance), bilinear upsampling to the input resolution, a separable
 Gaussian filter (sigma 4, truncated at 4 sigma, symmetric boundary as in scipy.ndimage's
 'reflect' mode) and the max. `export_workload` fits both detectors on the same MVTec AD category
 and frames as the workstation benchmark (hazelnut, bank of 13,798 patches, 80/20 fit/calibration
@@ -109,7 +109,8 @@ def _sha256(path: Path) -> str:
 
 def _make(name: str, device, seed: int):
     """Edge configurations: the primary PatchCore with the companion study's bank size, and the detector
-    variants of Section V in the configuration in which their recall was measured."""
+    variants of Section V with the same architecture, resolution and coreset rule as in their recall
+    measurement (fitted here on 80 % of the hazelnut training images, so their banks are larger)."""
     if name == "patchcore":
         return PatchCore(device, seed=seed, bank_size=MEMORY_BANK_SIZE)
     return make_detector(name, device, seed)

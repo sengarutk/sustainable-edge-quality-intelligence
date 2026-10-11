@@ -1,5 +1,5 @@
 """
-One-way (tornado) sensitivity of Delta C (B4 vs L0 manual inspection).
+One-way (tornado) sensitivity of Delta C (B3 vs L0 manual inspection).
 Each uncertain registry parameter is moved to its registry low and high bound
 with all others at central values, so swings reflect documented uncertainty
 rather than an arbitrary common percentage.

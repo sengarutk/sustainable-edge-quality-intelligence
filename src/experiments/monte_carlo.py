@@ -24,6 +24,9 @@ COMPARISONS = {
     "B3_vs_L0": ("L0_Manual", "B3_Full_Policy"),
     "B3_vs_N0": ("N0_NoInspection", "B3_Full_Policy"),
     "B3_vs_B0": ("B0_Raw", "B3_Full_Policy"),
+    "E1_vs_L0": ("L0_Manual", "E1_Delay_Timer"),
+    "E2_vs_L0": ("L0_Manual", "E2_EMA_Hysteresis"),
+    "E3_vs_L0": ("L0_Manual", "E3_Decision_Fusion"),
 }
 
 

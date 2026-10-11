@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Step 05: one-way sensitivity of Delta C (B4 vs L0) over registry bounds."""
+"""Step 05: one-way sensitivity of Delta C (B3 vs L0) over registry bounds."""
 
 import sys
 from pathlib import Path

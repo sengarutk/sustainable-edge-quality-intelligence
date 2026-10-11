@@ -1,41 +1,1310 @@
 {
   "source_repository": "edge-quality-intelligence",
-  "source_commit": "5d23153b0de8bb7c18671052fde1d615dfb1edb0",
-  "source_blobs": {
-    "results/ablation/ablation_summary.json": "40759e2b96015456ca316a61d5547530369997f1",
-    "paper/tables/ablation.tex": "acf1b2e2b198ef95c68d84dae86dbfdc77cd3d60",
-    "paper/generated_metrics.tex": "84a0edab6cb235211f0bf288e5f04cd3e020a0df",
-    "results/short_defect_recall.json": "0d13f2c9986625c3c1ac4964b9a5b46d2db07120"
+  "source_commit": "1be753de97a4d75c14a24f9c6e3b86db67479dfa",
+  "source_object_hashes": {
+    "scripts/build_paper_assets.py": "ccbb1f63d925e8d8fb209a91ad4f565f674ebe79",
+    "results/ablation": "4f396c67fcb31be7bf2a049a82895902506fcc59",
+    "results/ablation_rho0.9": "c2f6454dc8a3e671db6e5143793c327a5c303135",
+    "results/ablation_visa": "06e18086c861f072c3e54903b880c219a564dd24",
+    "results/ablation_visa_rho0.9": "1417e71730005559357e73bf775f5cbedb85eb9c",
+    "results/short_defect_recall.json": "2696a5f3e130b6d74e1992610de4a09573ac6d14",
+    "paper/generated_metrics.tex": "3cd5e8cb1201f355d37586eab03f522f42a407ff",
+    "paper/tables/ablation.tex": "294292b10a75c8f764621301c7d64158b630ee4d",
+    "paper/tables/ablation_rho.tex": "6c81f2ca5fea1fa477941689bb3a8b4fb9092934",
+    "paper/tables/ablation_visa.tex": "19cfca194a03ea38bffcae579d381f83e05e761d"
+  },
+  "statistics": "means over (category, replicate) units (MVTec AD: 21, VisA: 36); 95% percentile bootstrap over categories, B = 2000 (recomputed with Paper A's scripts/build_paper_assets.py and checked against its printed values)",
+  "units": {
+    "mvtec_independent": {
+      "units": 21,
+      "categories": 7
+    },
+    "mvtec_correlated": {
+      "units": 21,
+      "categories": 7
+    },
+    "visa_independent": {
+      "units": 36,
+      "categories": 12
+    },
+    "visa_correlated": {
+      "units": 36,
+      "categories": 12
+    }
   },
   "tier_policy": {
     "B0_Raw": "BASELINE",
     "B1_EMA": "EMA_ONLY",
     "B2_EMA_kofN": "EMA_KOFN",
-    "B3_Full_Policy": "FULL_POLICY"
+    "B3_Full_Policy": "FULL_POLICY",
+    "E1_Delay_Timer": "DELAY_TIMER",
+    "E2_EMA_Hysteresis": "EMA_HYSTERESIS",
+    "E3_Decision_Fusion": "DECISION_FUSION"
   },
-  "sustained_defect_recall": {
-    "BASELINE": 1.0,
-    "EMA_ONLY": 1.0,
-    "EMA_KOFN": 1.0,
-    "FULL_POLICY": 1.0
+  "not_printed_in_paper_a": {
+    "mvtec_correlated/EMA_ONLY": "computed with Paper A's code; not printed in Paper A",
+    "visa_correlated/EMA_ONLY": "computed with Paper A's code; not printed in Paper A"
+  },
+  "policy_metrics": {
+    "mvtec_independent": {
+      "BASELINE": {
+        "nominal_false_alarm_rate": {
+          "mean": 4616.0,
+          "lo": 1557.3857142857144,
+          "hi": 8373.714285714286,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 2.6345238095238095,
+          "lo": 2.2415773809523816,
+          "hi": 3.136904761904762,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 137.64285714285714,
+          "lo": 125.14657738095238,
+          "hi": 149.5297619047619,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 0.10119047619047619,
+          "lo": 0.017857142857142856,
+          "hi": 0.22023809523809523,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 1.0,
+          "lo": 1.0,
+          "hi": 1.0,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      },
+      "EMA_ONLY": {
+        "nominal_false_alarm_rate": {
+          "mean": 40.57142857142857,
+          "lo": 0.0,
+          "hi": 113.71428571428571,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 4.267857142857143,
+          "lo": 3.1224702380952376,
+          "hi": 5.24172619047619,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 149.21428571428572,
+          "lo": 143.17261904761904,
+          "hi": 154.85119047619048,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 0.5833333333333334,
+          "lo": 0.20833333333333334,
+          "hi": 0.9880952380952381,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 1.0,
+          "lo": 1.0,
+          "hi": 1.0,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      },
+      "EMA_KOFN": {
+        "nominal_false_alarm_rate": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 5.663095238095238,
+          "lo": 3.6378869047619053,
+          "hi": 7.331428571428569,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 153.95238095238096,
+          "lo": 149.39285714285714,
+          "hi": 157.89315476190475,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 3.6547619047619047,
+          "lo": 3.2202380952380953,
+          "hi": 4.184523809523809,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 1.0,
+          "lo": 1.0,
+          "hi": 1.0,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      },
+      "FULL_POLICY": {
+        "nominal_false_alarm_rate": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.6642857142857143,
+          "lo": 0.43806547619047614,
+          "hi": 0.8321428571428572,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 1.0,
+          "lo": 1.0,
+          "hi": 1.0,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 3.6547619047619047,
+          "lo": 3.2202380952380953,
+          "hi": 4.184523809523809,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 1.0,
+          "lo": 1.0,
+          "hi": 1.0,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      },
+      "DELAY_TIMER": {
+        "nominal_false_alarm_rate": {
+          "mean": 5.142857142857143,
+          "lo": 0.0,
+          "hi": 15.428571428571429,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.02857142857142857,
+          "lo": 0.008333333333333335,
+          "hi": 0.048809523809523817,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 1.2261904761904763,
+          "lo": 1.0178571428571428,
+          "hi": 1.4702380952380953,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 3.9440476190476192,
+          "lo": 2.9166666666666665,
+          "hi": 5.171428571428572,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 0.9583333333333334,
+          "lo": 0.875,
+          "hi": 1.0,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 0.041666666666666664,
+          "lo": 0.0,
+          "hi": 0.125,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      },
+      "EMA_HYSTERESIS": {
+        "nominal_false_alarm_rate": {
+          "mean": 3.4285714285714284,
+          "lo": 0.0,
+          "hi": 6.857142857142857,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.5904761904761904,
+          "lo": 0.35357142857142854,
+          "hi": 0.8631845238095234,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 1.5833333333333333,
+          "lo": 0.5892857142857143,
+          "hi": 2.928720238095237,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 0.39285714285714285,
+          "lo": 0.07738095238095238,
+          "hi": 0.8037202380952373,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 1.0,
+          "lo": 1.0,
+          "hi": 1.0,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      },
+      "DECISION_FUSION": {
+        "nominal_false_alarm_rate": {
+          "mean": 5.142857142857143,
+          "lo": 0.0,
+          "hi": 15.428571428571429,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.02857142857142857,
+          "lo": 0.008333333333333335,
+          "hi": 0.048809523809523817,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 0.9821428571428571,
+          "lo": 0.9464285714285714,
+          "hi": 1.0,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 3.9440476190476192,
+          "lo": 2.9166666666666665,
+          "hi": 5.171428571428572,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 0.9583333333333334,
+          "lo": 0.875,
+          "hi": 1.0,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 0.041666666666666664,
+          "lo": 0.0,
+          "hi": 0.125,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      }
+    },
+    "mvtec_correlated": {
+      "BASELINE": {
+        "nominal_false_alarm_rate": {
+          "mean": 4615.428571428572,
+          "lo": 1556.2142857142858,
+          "hi": 8297.871428571429,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 2.6011904761904763,
+          "lo": 2.2095238095238097,
+          "hi": 3.092946428571428,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 136.26190476190476,
+          "lo": 121.33928571428571,
+          "hi": 149.48214285714286,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 0.18452380952380953,
+          "lo": 0.0,
+          "hi": 0.38095238095238093,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 0.9761904761904762,
+          "lo": 0.9404761904761905,
+          "hi": 1.0,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      },
+      "EMA_ONLY": {
+        "nominal_false_alarm_rate": {
+          "mean": 2096.5714285714284,
+          "lo": 435.42857142857144,
+          "hi": 3808.399999999998,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 4.619047619047619,
+          "lo": 3.498333333333333,
+          "hi": 5.605059523809523,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 140.64880952380952,
+          "lo": 126.49404761904762,
+          "hi": 152.10119047619048,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 0.7661564625850341,
+          "lo": 0.1367559523809524,
+          "hi": 1.5238095238095237,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 0.9642857142857143,
+          "lo": 0.9166666666666666,
+          "hi": 0.9940476190476191,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 0.012755102040816329,
+          "lo": 0.0,
+          "hi": 0.027210884353741506,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      },
+      "EMA_KOFN": {
+        "nominal_false_alarm_rate": {
+          "mean": 2438.285714285714,
+          "lo": 468.0,
+          "hi": 4504.199999999999,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 6.050000000000001,
+          "lo": 4.229702380952381,
+          "hi": 7.617857142857144,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 146.1904761904762,
+          "lo": 134.35,
+          "hi": 155.82738095238096,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 3.7491496598639458,
+          "lo": 3.0832908163265307,
+          "hi": 4.558673469387755,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 0.9523809523809523,
+          "lo": 0.8928571428571429,
+          "hi": 0.9940476190476191,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 0.025510204081632657,
+          "lo": 0.005952380952380952,
+          "hi": 0.05272108843537417,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      },
+      "FULL_POLICY": {
+        "nominal_false_alarm_rate": {
+          "mean": 188.57142857142858,
+          "lo": 41.714285714285715,
+          "hi": 342.3285714285712,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.6250000000000001,
+          "lo": 0.4583333333333334,
+          "hi": 0.7476190476190476,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 1.0654761904761905,
+          "lo": 0.9404761904761905,
+          "hi": 1.2261904761904763,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 3.7491496598639458,
+          "lo": 3.0832908163265307,
+          "hi": 4.558673469387755,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 0.9523809523809523,
+          "lo": 0.8928571428571429,
+          "hi": 0.9940476190476191,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 0.025510204081632657,
+          "lo": 0.005952380952380952,
+          "hi": 0.05272108843537417,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      },
+      "DELAY_TIMER": {
+        "nominal_false_alarm_rate": {
+          "mean": 300.0,
+          "lo": 103.34285714285716,
+          "hi": 525.7142857142857,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.06190476190476191,
+          "lo": 0.025,
+          "hi": 0.10241071428571413,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 1.5833333333333333,
+          "lo": 1.3153273809523809,
+          "hi": 1.9107142857142858,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 3.3798185941043086,
+          "lo": 2.7389243197278916,
+          "hi": 4.289115646258503,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 0.9523809523809523,
+          "lo": 0.8928571428571429,
+          "hi": 0.9940476190476191,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 0.025510204081632657,
+          "lo": 0.005952380952380952,
+          "hi": 0.05272108843537417,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      },
+      "EMA_HYSTERESIS": {
+        "nominal_false_alarm_rate": {
+          "mean": 105.14285714285714,
+          "lo": 12.0,
+          "hi": 214.28571428571428,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.6630952380952382,
+          "lo": 0.44642857142857145,
+          "hi": 0.9250297619047618,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 1.7916666666666667,
+          "lo": 1.1845238095238095,
+          "hi": 2.4702380952380953,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 0.6777210884353742,
+          "lo": 0.10119047619047619,
+          "hi": 1.420216836734693,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 0.9761904761904762,
+          "lo": 0.9285714285714286,
+          "hi": 1.0,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 5.28677630773884e-18,
+          "lo": -0.020408163265306114,
+          "hi": 0.020408163265306128,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      },
+      "DECISION_FUSION": {
+        "nominal_false_alarm_rate": {
+          "mean": 300.0,
+          "lo": 103.34285714285716,
+          "hi": 525.7142857142857,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.06190476190476191,
+          "lo": 0.025,
+          "hi": 0.10241071428571413,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "alerts_per_defect": {
+          "mean": 1.0416666666666667,
+          "lo": 0.9166666666666666,
+          "hi": 1.2202380952380953,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "detection_delay": {
+          "mean": 3.3798185941043086,
+          "lo": 2.7389243197278916,
+          "hi": 4.289115646258503,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "sustained_recall": {
+          "mean": 0.9523809523809523,
+          "lo": 0.8928571428571429,
+          "hi": 0.9940476190476191,
+          "n_units": 21,
+          "n_categories": 7
+        },
+        "relative_recall_loss": {
+          "mean": 0.025510204081632657,
+          "lo": 0.005952380952380952,
+          "hi": 0.05272108843537417,
+          "n_units": 21,
+          "n_categories": 7
+        }
+      }
+    },
+    "visa_independent": {
+      "BASELINE": {
+        "nominal_false_alarm_rate": {
+          "mean": 2029.0,
+          "lo": 1078.1416666666667,
+          "hi": 3093.3999999999996,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 2.275694444444445,
+          "lo": 2.120138888888889,
+          "hi": 2.4611458333333327,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 82.10416666666667,
+          "lo": 59.08177083333334,
+          "hi": 104.87309027777776,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 1.3024140211640214,
+          "lo": 0.5485243055555556,
+          "hi": 2.278629298941798,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "sustained_recall": {
+          "mean": 0.9895833333333334,
+          "lo": 0.96875,
+          "hi": 1.0,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      },
+      "EMA_ONLY": {
+        "nominal_false_alarm_rate": {
+          "mean": 192.0,
+          "lo": 0.0,
+          "hi": 551.0,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 3.632638888888889,
+          "lo": 2.90125,
+          "hi": 4.282708333333334,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 100.82986111111111,
+          "lo": 69.15451388888889,
+          "hi": 128.79600694444443,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 2.7316326530612245,
+          "lo": 1.5857514880952381,
+          "hi": 4.094962797619046,
+          "n_units": 35,
+          "n_categories": 12
+        },
+        "sustained_recall": {
+          "mean": 0.90625,
+          "lo": 0.75,
+          "hi": 1.0,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.09325396825396826,
+          "lo": 0.0,
+          "hi": 0.24851190476190477,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      },
+      "EMA_KOFN": {
+        "nominal_false_alarm_rate": {
+          "mean": 10.333333333333334,
+          "lo": 0.0,
+          "hi": 28.333333333333332,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 4.445138888888888,
+          "lo": 3.149270833333333,
+          "hi": 5.573107638888887,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 111.91666666666667,
+          "lo": 79.31579861111112,
+          "hi": 141.009375,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 5.746139971139971,
+          "lo": 4.579423701298701,
+          "hi": 7.075269660894661,
+          "n_units": 33,
+          "n_categories": 11
+        },
+        "sustained_recall": {
+          "mean": 0.7708333333333334,
+          "lo": 0.5693576388888889,
+          "hi": 0.9444444444444444,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.22916666666666666,
+          "lo": 0.05555555555555555,
+          "hi": 0.43064236111111065,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      },
+      "FULL_POLICY": {
+        "nominal_false_alarm_rate": {
+          "mean": 1.6666666666666667,
+          "lo": 0.0,
+          "hi": 4.666666666666667,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.5465277777777777,
+          "lo": 0.3923611111111111,
+          "hi": 0.6798784722222221,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 1.34375,
+          "lo": 0.9096354166666667,
+          "hi": 1.8020833333333333,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 5.746139971139971,
+          "lo": 4.579423701298701,
+          "hi": 7.075269660894661,
+          "n_units": 33,
+          "n_categories": 11
+        },
+        "sustained_recall": {
+          "mean": 0.7708333333333334,
+          "lo": 0.5693576388888889,
+          "hi": 0.9444444444444444,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.22916666666666666,
+          "lo": 0.05555555555555555,
+          "hi": 0.43064236111111065,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      },
+      "DELAY_TIMER": {
+        "nominal_false_alarm_rate": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.0076388888888888895,
+          "lo": 0.003472222222222222,
+          "hi": 0.012500000000000002,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 0.9236111111111112,
+          "lo": 0.6284722222222222,
+          "hi": 1.2118923611111108,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 6.129336734693878,
+          "lo": 5.080395923520924,
+          "hi": 7.336822222222217,
+          "n_units": 28,
+          "n_categories": 11
+        },
+        "sustained_recall": {
+          "mean": 0.5243055555555556,
+          "lo": 0.2847222222222222,
+          "hi": 0.7465277777777778,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.4756944444444444,
+          "lo": 0.2534722222222222,
+          "hi": 0.7152777777777778,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      },
+      "EMA_HYSTERESIS": {
+        "nominal_false_alarm_rate": {
+          "mean": 3.3333333333333335,
+          "lo": 0.0,
+          "hi": 8.666666666666666,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.7354166666666666,
+          "lo": 0.4680555555555556,
+          "hi": 0.9847395833333333,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 1.7395833333333333,
+          "lo": 0.6353298611111111,
+          "hi": 3.1180555555555554,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 1.9846938775510206,
+          "lo": 0.9200520833333333,
+          "hi": 3.3005739795918365,
+          "n_units": 35,
+          "n_categories": 12
+        },
+        "sustained_recall": {
+          "mean": 0.9131944444444444,
+          "lo": 0.7569444444444444,
+          "hi": 1.0,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.08630952380952381,
+          "lo": 0.0,
+          "hi": 0.24156746031746032,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      },
+      "DECISION_FUSION": {
+        "nominal_false_alarm_rate": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.0076388888888888895,
+          "lo": 0.003472222222222222,
+          "hi": 0.012500000000000002,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 0.7847222222222222,
+          "lo": 0.5867187500000001,
+          "hi": 0.9513888888888888,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 6.129336734693878,
+          "lo": 5.080395923520924,
+          "hi": 7.336822222222217,
+          "n_units": 28,
+          "n_categories": 11
+        },
+        "sustained_recall": {
+          "mean": 0.5243055555555556,
+          "lo": 0.2847222222222222,
+          "hi": 0.7465277777777778,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.4756944444444444,
+          "lo": 0.2534722222222222,
+          "hi": 0.7152777777777778,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      }
+    },
+    "visa_correlated": {
+      "BASELINE": {
+        "nominal_false_alarm_rate": {
+          "mean": 1854.0,
+          "lo": 974.1583333333334,
+          "hi": 2787.5666666666657,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 2.295833333333333,
+          "lo": 2.108975694444444,
+          "hi": 2.517413194444444,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 82.9375,
+          "lo": 60.398524305555554,
+          "hi": 105.0134548611111,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 2.4946428571428574,
+          "lo": 1.2287392526455025,
+          "hi": 3.8635069444444436,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "sustained_recall": {
+          "mean": 0.84375,
+          "lo": 0.7256944444444444,
+          "hi": 0.9409722222222222,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      },
+      "EMA_ONLY": {
+        "nominal_false_alarm_rate": {
+          "mean": 1155.3333333333333,
+          "lo": 456.625,
+          "hi": 2046.7416666666663,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 3.847916666666667,
+          "lo": 3.1506423611111107,
+          "hi": 4.485434027777778,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 87.65277777777777,
+          "lo": 63.76727430555556,
+          "hi": 110.82769097222221,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 3.565068027210885,
+          "lo": 2.3111669876283845,
+          "hi": 4.916672794117647,
+          "n_units": 35,
+          "n_categories": 12
+        },
+        "sustained_recall": {
+          "mean": 0.75,
+          "lo": 0.5868055555555556,
+          "hi": 0.8888888888888888,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.15720899470899471,
+          "lo": 0.05914517195767196,
+          "hi": 0.28308366402116397,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      },
+      "EMA_KOFN": {
+        "nominal_false_alarm_rate": {
+          "mean": 1335.6666666666667,
+          "lo": 506.9,
+          "hi": 2396.6666666666665,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 4.857638888888889,
+          "lo": 3.739548611111111,
+          "hi": 5.877847222222222,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 97.24652777777777,
+          "lo": 72.41918402777777,
+          "hi": 120.1892361111111,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 5.311274509803922,
+          "lo": 4.594647616859245,
+          "hi": 6.063671316964286,
+          "n_units": 34,
+          "n_categories": 12
+        },
+        "sustained_recall": {
+          "mean": 0.6423611111111112,
+          "lo": 0.4722222222222222,
+          "hi": 0.8055555555555556,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.29421296296296295,
+          "lo": 0.15729497354497357,
+          "hi": 0.45114500661375656,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      },
+      "FULL_POLICY": {
+        "nominal_false_alarm_rate": {
+          "mean": 111.0,
+          "lo": 46.333333333333336,
+          "hi": 189.33333333333334,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.545138888888889,
+          "lo": 0.4263888888888888,
+          "hi": 0.646545138888889,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 1.5972222222222223,
+          "lo": 1.3368055555555556,
+          "hi": 1.8298611111111112,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 5.311274509803922,
+          "lo": 4.594647616859245,
+          "hi": 6.063671316964286,
+          "n_units": 34,
+          "n_categories": 12
+        },
+        "sustained_recall": {
+          "mean": 0.6423611111111112,
+          "lo": 0.4722222222222222,
+          "hi": 0.8055555555555556,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.29421296296296295,
+          "lo": 0.15729497354497357,
+          "hi": 0.45114500661375656,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      },
+      "DELAY_TIMER": {
+        "nominal_false_alarm_rate": {
+          "mean": 125.66666666666667,
+          "lo": 65.0,
+          "hi": 192.33333333333334,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.03194444444444444,
+          "lo": 0.01734375,
+          "hi": 0.04722222222222223,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 2.1840277777777777,
+          "lo": 1.8020833333333333,
+          "hi": 2.513888888888889,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 4.74968487394958,
+          "lo": 4.006160386029412,
+          "hi": 5.594950086805556,
+          "n_units": 34,
+          "n_categories": 12
+        },
+        "sustained_recall": {
+          "mean": 0.6423611111111112,
+          "lo": 0.4722222222222222,
+          "hi": 0.8020833333333334,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.29345238095238096,
+          "lo": 0.15745949074074075,
+          "hi": 0.45088128306878283,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      },
+      "EMA_HYSTERESIS": {
+        "nominal_false_alarm_rate": {
+          "mean": 122.33333333333333,
+          "lo": 63.325,
+          "hi": 180.67499999999995,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.7937500000000001,
+          "lo": 0.5617708333333332,
+          "hi": 1.0167013888888887,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 2.0902777777777777,
+          "lo": 1.4235243055555555,
+          "hi": 2.6944444444444446,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 2.5944444444444446,
+          "lo": 1.3888888888888888,
+          "hi": 3.86300347222222,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "sustained_recall": {
+          "mean": 0.7881944444444444,
+          "lo": 0.6284722222222222,
+          "hi": 0.9236111111111112,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.09596560846560846,
+          "lo": -0.023749999999999997,
+          "hi": 0.214625496031746,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      },
+      "DECISION_FUSION": {
+        "nominal_false_alarm_rate": {
+          "mean": 125.66666666666667,
+          "lo": 65.0,
+          "hi": 192.33333333333334,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "glare_alerts_per_burst": {
+          "mean": 0.03194444444444444,
+          "lo": 0.01734375,
+          "hi": 0.04722222222222223,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "alerts_per_defect": {
+          "mean": 1.5,
+          "lo": 1.2603298611111111,
+          "hi": 1.7118055555555556,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "detection_delay": {
+          "mean": 4.74968487394958,
+          "lo": 4.006160386029412,
+          "hi": 5.594950086805556,
+          "n_units": 34,
+          "n_categories": 12
+        },
+        "sustained_recall": {
+          "mean": 0.6423611111111112,
+          "lo": 0.4722222222222222,
+          "hi": 0.8020833333333334,
+          "n_units": 36,
+          "n_categories": 12
+        },
+        "relative_recall_loss": {
+          "mean": 0.29345238095238096,
+          "lo": 0.15745949074074075,
+          "hi": 0.45088128306878283,
+          "n_units": 36,
+          "n_categories": 12
+        }
+      }
+    }
   },
   "quoted_macros": {
     "MuReviews": "60",
     "GlareRateAssumed": "30",
-    "SustainedDelayFull": "3.7",
-    "NominalFABaseline": "4616",
-    "NominalFAFull": "0.0",
-    "AlertsPerEpisodeBaseline": "137.64",
-    "AlertsPerEpisodeFull": "1.13",
-    "GlarePerBurstBaseline": "2.63",
-    "GlarePerBurstEmaKofn": "5.66",
-    "GlarePerBurstFull": "0.66",
-    "LatGpuMean": "24.4",
-    "LatVisionMean": "13.6",
+    "LoadCrossFull": "40",
     "MemoryBankSize": "13798",
-    "LoadCrossFull": "35",
+    "LatVisionMean": "16.9",
     "ShortK": "4",
-    "ShortN": "10"
+    "ShortN": "10",
+    "ShortMinLenFull": "8",
+    "ShortMinLenTimer": "15",
+    "NumCategories": "7",
+    "UnitsPerCell": "21",
+    "NumPolicies": "11",
+    "NumVariants": "8",
+    "NumExternal": "3",
+    "BootB": "2000",
+    "VisaNumCategories": "12",
+    "VisaUnits": "36"
   },
   "short_defect_recall": {
     "BASELINE": {
@@ -89,68 +1358,152 @@
       "15": 0.9976190476190476,
       "20": 0.9976190476190476,
       "30": 1.0
+    },
+    "DELAY_TIMER": {
+      "1": 0.002380952380952381,
+      "2": 0.009523809523809525,
+      "3": 0.0738095238095238,
+      "4": 0.7809523809523808,
+      "5": 0.8047619047619047,
+      "6": 0.8476190476190475,
+      "8": 0.9023809523809525,
+      "10": 0.9285714285714286,
+      "15": 0.9690476190476192,
+      "20": 0.9761904761904762,
+      "30": 0.9761904761904762
+    },
+    "EMA_HYSTERESIS": {
+      "1": 0.7999999999999998,
+      "2": 0.9166666666666666,
+      "3": 0.9547619047619046,
+      "4": 0.9714285714285715,
+      "5": 0.9880952380952381,
+      "6": 0.9952380952380951,
+      "8": 0.9976190476190476,
+      "10": 1.0,
+      "15": 1.0,
+      "20": 1.0,
+      "30": 1.0
+    },
+    "DECISION_FUSION": {
+      "1": 0.002380952380952381,
+      "2": 0.009523809523809525,
+      "3": 0.0738095238095238,
+      "4": 0.7809523809523808,
+      "5": 0.8047619047619047,
+      "6": 0.8476190476190475,
+      "8": 0.9023809523809525,
+      "10": 0.9285714285714286,
+      "15": 0.9690476190476192,
+      "20": 0.9761904761904762,
+      "30": 0.9761904761904762
     }
   },
   "registry_rows": {
     "alerts_per_defect@policy:B0_Raw": [
-      127.283,
+      125.147,
       137.643,
-      148.078
+      149.53
     ],
     "alerts_per_defect@policy:B1_EMA": [
-      140.56,
+      143.173,
       149.214,
-      158.114
+      154.851
     ],
     "alerts_per_defect@policy:B2_EMA_kofN": [
-      145.291,
+      149.393,
       153.952,
-      162.372
+      157.893
     ],
     "alerts_per_defect@policy:B3_Full_Policy": [
       1.0,
-      1.13095,
-      1.27381
+      1.0,
+      1.0
+    ],
+    "alerts_per_defect@policy:E1_Delay_Timer": [
+      1.01786,
+      1.22619,
+      1.47024
+    ],
+    "alerts_per_defect@policy:E2_EMA_Hysteresis": [
+      0.589286,
+      1.58333,
+      2.92872
+    ],
+    "alerts_per_defect@policy:E3_Decision_Fusion": [
+      0.946429,
+      0.982143,
+      1.0
     ],
     "detection_delay@policy:B0_Raw": [
-      0.0357143,
+      0.0178571,
       0.10119,
-      0.196429
+      0.220238
     ],
     "detection_delay@policy:B1_EMA": [
-      0.339286,
+      0.208333,
       0.583333,
-      0.839286
+      0.988095
     ],
     "detection_delay@policy:B2_EMA_kofN": [
-      3.36905,
+      3.22024,
       3.65476,
-      3.96429
+      4.18452
     ],
     "detection_delay@policy:B3_Full_Policy": [
-      3.36905,
+      3.22024,
       3.65476,
-      3.96429
+      4.18452
+    ],
+    "detection_delay@policy:E1_Delay_Timer": [
+      2.91667,
+      3.94405,
+      5.17143
+    ],
+    "detection_delay@policy:E2_EMA_Hysteresis": [
+      0.077381,
+      0.392857,
+      0.80372
+    ],
+    "detection_delay@policy:E3_Decision_Fusion": [
+      2.91667,
+      3.94405,
+      5.17143
     ],
     "glare_alerts_per_burst@policy:B0_Raw": [
-      2.63,
-      2.63,
-      2.63
+      2.24158,
+      2.63452,
+      3.1369
     ],
     "glare_alerts_per_burst@policy:B1_EMA": [
-      4.27,
-      4.27,
-      4.27
+      3.12247,
+      4.26786,
+      5.24173
     ],
     "glare_alerts_per_burst@policy:B2_EMA_kofN": [
-      5.66,
-      5.66,
-      5.66
+      3.63789,
+      5.6631,
+      7.33143
     ],
     "glare_alerts_per_burst@policy:B3_Full_Policy": [
-      0.66,
-      0.66,
-      0.66
+      0.438065,
+      0.664286,
+      0.832143
+    ],
+    "glare_alerts_per_burst@policy:E1_Delay_Timer": [
+      0.00833333,
+      0.0285714,
+      0.0488095
+    ],
+    "glare_alerts_per_burst@policy:E2_EMA_Hysteresis": [
+      0.353571,
+      0.590476,
+      0.863185
+    ],
+    "glare_alerts_per_burst@policy:E3_Decision_Fusion": [
+      0.00833333,
+      0.0285714,
+      0.0488095
     ],
     "glare_burst_rate@all": [
       10.0,
@@ -158,14 +1511,14 @@
       60.0
     ],
     "nominal_false_alarm_rate@policy:B0_Raw": [
-      2690.14,
+      1557.39,
       4616.0,
-      6764.17
+      8373.71
     ],
     "nominal_false_alarm_rate@policy:B1_EMA": [
-      5.14286,
+      0.0,
       40.5714,
-      85.1429
+      113.714
     ],
     "nominal_false_alarm_rate@policy:B2_EMA_kofN": [
       0.0,
@@ -177,15 +1530,593 @@
       0.0,
       0.0
     ],
-    "persistence_recall_loss@all": [
+    "nominal_false_alarm_rate@policy:E1_Delay_Timer": [
+      0.0,
+      5.14286,
+      15.4286
+    ],
+    "nominal_false_alarm_rate@policy:E2_EMA_Hysteresis": [
+      0.0,
+      3.42857,
+      6.85714
+    ],
+    "nominal_false_alarm_rate@policy:E3_Decision_Fusion": [
+      0.0,
+      5.14286,
+      15.4286
+    ],
+    "recall_loss@policy:B0_Raw": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "recall_loss@policy:B1_EMA": [
+      0.0,
+      0.0,
+      0.00238095
+    ],
+    "recall_loss@policy:B2_EMA_kofN": [
       0.0,
       0.0,
       0.0261905
+    ],
+    "recall_loss@policy:B3_Full_Policy": [
+      0.0,
+      0.0,
+      0.0261905
+    ],
+    "recall_loss@policy:E1_Delay_Timer": [
+      0.0,
+      0.0416667,
+      0.125
+    ],
+    "recall_loss@policy:E2_EMA_Hysteresis": [
+      0.0,
+      0.0,
+      0.00238095
+    ],
+    "recall_loss@policy:E3_Decision_Fusion": [
+      0.0,
+      0.0416667,
+      0.125
     ],
     "review_time@all": [
       30.0,
       60.0,
       90.0
     ]
+  },
+  "variant_rows": {
+    "correlated_scores": {
+      "alerts_per_defect@variant:correlated_scores:policy:B0_Raw": [
+        121.339,
+        136.262,
+        149.482
+      ],
+      "alerts_per_defect@variant:correlated_scores:policy:B1_EMA": [
+        126.494,
+        140.649,
+        152.101
+      ],
+      "alerts_per_defect@variant:correlated_scores:policy:B2_EMA_kofN": [
+        134.35,
+        146.19,
+        155.827
+      ],
+      "alerts_per_defect@variant:correlated_scores:policy:B3_Full_Policy": [
+        0.940476,
+        1.06548,
+        1.22619
+      ],
+      "alerts_per_defect@variant:correlated_scores:policy:E1_Delay_Timer": [
+        1.31533,
+        1.58333,
+        1.91071
+      ],
+      "alerts_per_defect@variant:correlated_scores:policy:E2_EMA_Hysteresis": [
+        1.18452,
+        1.79167,
+        2.47024
+      ],
+      "alerts_per_defect@variant:correlated_scores:policy:E3_Decision_Fusion": [
+        0.916667,
+        1.04167,
+        1.22024
+      ],
+      "detection_delay@variant:correlated_scores:policy:B0_Raw": [
+        0.0,
+        0.184524,
+        0.380952
+      ],
+      "detection_delay@variant:correlated_scores:policy:B1_EMA": [
+        0.136756,
+        0.766156,
+        1.52381
+      ],
+      "detection_delay@variant:correlated_scores:policy:B2_EMA_kofN": [
+        3.08329,
+        3.74915,
+        4.55867
+      ],
+      "detection_delay@variant:correlated_scores:policy:B3_Full_Policy": [
+        3.08329,
+        3.74915,
+        4.55867
+      ],
+      "detection_delay@variant:correlated_scores:policy:E1_Delay_Timer": [
+        2.73892,
+        3.37982,
+        4.28912
+      ],
+      "detection_delay@variant:correlated_scores:policy:E2_EMA_Hysteresis": [
+        0.10119,
+        0.677721,
+        1.42022
+      ],
+      "detection_delay@variant:correlated_scores:policy:E3_Decision_Fusion": [
+        2.73892,
+        3.37982,
+        4.28912
+      ],
+      "glare_alerts_per_burst@variant:correlated_scores:policy:B0_Raw": [
+        2.20952,
+        2.60119,
+        3.09295
+      ],
+      "glare_alerts_per_burst@variant:correlated_scores:policy:B1_EMA": [
+        3.49833,
+        4.61905,
+        5.60506
+      ],
+      "glare_alerts_per_burst@variant:correlated_scores:policy:B2_EMA_kofN": [
+        4.2297,
+        6.05,
+        7.61786
+      ],
+      "glare_alerts_per_burst@variant:correlated_scores:policy:B3_Full_Policy": [
+        0.458333,
+        0.625,
+        0.747619
+      ],
+      "glare_alerts_per_burst@variant:correlated_scores:policy:E1_Delay_Timer": [
+        0.025,
+        0.0619048,
+        0.102411
+      ],
+      "glare_alerts_per_burst@variant:correlated_scores:policy:E2_EMA_Hysteresis": [
+        0.446429,
+        0.663095,
+        0.92503
+      ],
+      "glare_alerts_per_burst@variant:correlated_scores:policy:E3_Decision_Fusion": [
+        0.025,
+        0.0619048,
+        0.102411
+      ],
+      "nominal_false_alarm_rate@variant:correlated_scores:policy:B0_Raw": [
+        1556.21,
+        4615.43,
+        8297.87
+      ],
+      "nominal_false_alarm_rate@variant:correlated_scores:policy:B1_EMA": [
+        435.429,
+        2096.57,
+        3808.4
+      ],
+      "nominal_false_alarm_rate@variant:correlated_scores:policy:B2_EMA_kofN": [
+        468.0,
+        2438.29,
+        4504.2
+      ],
+      "nominal_false_alarm_rate@variant:correlated_scores:policy:B3_Full_Policy": [
+        41.7143,
+        188.571,
+        342.329
+      ],
+      "nominal_false_alarm_rate@variant:correlated_scores:policy:E1_Delay_Timer": [
+        103.343,
+        300.0,
+        525.714
+      ],
+      "nominal_false_alarm_rate@variant:correlated_scores:policy:E2_EMA_Hysteresis": [
+        12.0,
+        105.143,
+        214.286
+      ],
+      "nominal_false_alarm_rate@variant:correlated_scores:policy:E3_Decision_Fusion": [
+        103.343,
+        300.0,
+        525.714
+      ],
+      "recall_loss@variant:correlated_scores:policy:B0_Raw": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "recall_loss@variant:correlated_scores:policy:B1_EMA": [
+        0.0,
+        0.0127551,
+        0.0272109
+      ],
+      "recall_loss@variant:correlated_scores:policy:B2_EMA_kofN": [
+        0.00595238,
+        0.0255102,
+        0.0527211
+      ],
+      "recall_loss@variant:correlated_scores:policy:B3_Full_Policy": [
+        0.00595238,
+        0.0255102,
+        0.0527211
+      ],
+      "recall_loss@variant:correlated_scores:policy:E1_Delay_Timer": [
+        0.00595238,
+        0.0255102,
+        0.0527211
+      ],
+      "recall_loss@variant:correlated_scores:policy:E2_EMA_Hysteresis": [
+        0.0,
+        0.0,
+        0.0204082
+      ],
+      "recall_loss@variant:correlated_scores:policy:E3_Decision_Fusion": [
+        0.00595238,
+        0.0255102,
+        0.0527211
+      ]
+    },
+    "visa_correlated_scores": {
+      "alerts_per_defect@variant:visa_correlated_scores:policy:B0_Raw": [
+        60.3985,
+        82.9375,
+        105.013
+      ],
+      "alerts_per_defect@variant:visa_correlated_scores:policy:B1_EMA": [
+        63.7673,
+        87.6528,
+        110.828
+      ],
+      "alerts_per_defect@variant:visa_correlated_scores:policy:B2_EMA_kofN": [
+        72.4192,
+        97.2465,
+        120.189
+      ],
+      "alerts_per_defect@variant:visa_correlated_scores:policy:B3_Full_Policy": [
+        1.33681,
+        1.59722,
+        1.82986
+      ],
+      "alerts_per_defect@variant:visa_correlated_scores:policy:E1_Delay_Timer": [
+        1.80208,
+        2.18403,
+        2.51389
+      ],
+      "alerts_per_defect@variant:visa_correlated_scores:policy:E2_EMA_Hysteresis": [
+        1.42352,
+        2.09028,
+        2.69444
+      ],
+      "alerts_per_defect@variant:visa_correlated_scores:policy:E3_Decision_Fusion": [
+        1.26033,
+        1.5,
+        1.71181
+      ],
+      "detection_delay@variant:visa_correlated_scores:policy:B0_Raw": [
+        1.22874,
+        2.49464,
+        3.86351
+      ],
+      "detection_delay@variant:visa_correlated_scores:policy:B1_EMA": [
+        2.31117,
+        3.56507,
+        4.91667
+      ],
+      "detection_delay@variant:visa_correlated_scores:policy:B2_EMA_kofN": [
+        4.59465,
+        5.31127,
+        6.06367
+      ],
+      "detection_delay@variant:visa_correlated_scores:policy:B3_Full_Policy": [
+        4.59465,
+        5.31127,
+        6.06367
+      ],
+      "detection_delay@variant:visa_correlated_scores:policy:E1_Delay_Timer": [
+        4.00616,
+        4.74968,
+        5.59495
+      ],
+      "detection_delay@variant:visa_correlated_scores:policy:E2_EMA_Hysteresis": [
+        1.38889,
+        2.59444,
+        3.863
+      ],
+      "detection_delay@variant:visa_correlated_scores:policy:E3_Decision_Fusion": [
+        4.00616,
+        4.74968,
+        5.59495
+      ],
+      "glare_alerts_per_burst@variant:visa_correlated_scores:policy:B0_Raw": [
+        2.10898,
+        2.29583,
+        2.51741
+      ],
+      "glare_alerts_per_burst@variant:visa_correlated_scores:policy:B1_EMA": [
+        3.15064,
+        3.84792,
+        4.48543
+      ],
+      "glare_alerts_per_burst@variant:visa_correlated_scores:policy:B2_EMA_kofN": [
+        3.73955,
+        4.85764,
+        5.87785
+      ],
+      "glare_alerts_per_burst@variant:visa_correlated_scores:policy:B3_Full_Policy": [
+        0.426389,
+        0.545139,
+        0.646545
+      ],
+      "glare_alerts_per_burst@variant:visa_correlated_scores:policy:E1_Delay_Timer": [
+        0.0173438,
+        0.0319444,
+        0.0472222
+      ],
+      "glare_alerts_per_burst@variant:visa_correlated_scores:policy:E2_EMA_Hysteresis": [
+        0.561771,
+        0.79375,
+        1.0167
+      ],
+      "glare_alerts_per_burst@variant:visa_correlated_scores:policy:E3_Decision_Fusion": [
+        0.0173438,
+        0.0319444,
+        0.0472222
+      ],
+      "nominal_false_alarm_rate@variant:visa_correlated_scores:policy:B0_Raw": [
+        974.158,
+        1854.0,
+        2787.57
+      ],
+      "nominal_false_alarm_rate@variant:visa_correlated_scores:policy:B1_EMA": [
+        456.625,
+        1155.33,
+        2046.74
+      ],
+      "nominal_false_alarm_rate@variant:visa_correlated_scores:policy:B2_EMA_kofN": [
+        506.9,
+        1335.67,
+        2396.67
+      ],
+      "nominal_false_alarm_rate@variant:visa_correlated_scores:policy:B3_Full_Policy": [
+        46.3333,
+        111.0,
+        189.333
+      ],
+      "nominal_false_alarm_rate@variant:visa_correlated_scores:policy:E1_Delay_Timer": [
+        65.0,
+        125.667,
+        192.333
+      ],
+      "nominal_false_alarm_rate@variant:visa_correlated_scores:policy:E2_EMA_Hysteresis": [
+        63.325,
+        122.333,
+        180.675
+      ],
+      "nominal_false_alarm_rate@variant:visa_correlated_scores:policy:E3_Decision_Fusion": [
+        65.0,
+        125.667,
+        192.333
+      ],
+      "recall_loss@variant:visa_correlated_scores:policy:B0_Raw": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "recall_loss@variant:visa_correlated_scores:policy:B1_EMA": [
+        0.0591452,
+        0.157209,
+        0.283084
+      ],
+      "recall_loss@variant:visa_correlated_scores:policy:B2_EMA_kofN": [
+        0.157295,
+        0.294213,
+        0.451145
+      ],
+      "recall_loss@variant:visa_correlated_scores:policy:B3_Full_Policy": [
+        0.157295,
+        0.294213,
+        0.451145
+      ],
+      "recall_loss@variant:visa_correlated_scores:policy:E1_Delay_Timer": [
+        0.157459,
+        0.293452,
+        0.450881
+      ],
+      "recall_loss@variant:visa_correlated_scores:policy:E2_EMA_Hysteresis": [
+        0.0,
+        0.0959656,
+        0.214625
+      ],
+      "recall_loss@variant:visa_correlated_scores:policy:E3_Decision_Fusion": [
+        0.157459,
+        0.293452,
+        0.450881
+      ]
+    },
+    "visa_scores": {
+      "alerts_per_defect@variant:visa_scores:policy:B0_Raw": [
+        59.0818,
+        82.1042,
+        104.873
+      ],
+      "alerts_per_defect@variant:visa_scores:policy:B1_EMA": [
+        69.1545,
+        100.83,
+        128.796
+      ],
+      "alerts_per_defect@variant:visa_scores:policy:B2_EMA_kofN": [
+        79.3158,
+        111.917,
+        141.009
+      ],
+      "alerts_per_defect@variant:visa_scores:policy:B3_Full_Policy": [
+        0.909635,
+        1.34375,
+        1.80208
+      ],
+      "alerts_per_defect@variant:visa_scores:policy:E1_Delay_Timer": [
+        0.628472,
+        0.923611,
+        1.21189
+      ],
+      "alerts_per_defect@variant:visa_scores:policy:E2_EMA_Hysteresis": [
+        0.63533,
+        1.73958,
+        3.11806
+      ],
+      "alerts_per_defect@variant:visa_scores:policy:E3_Decision_Fusion": [
+        0.586719,
+        0.784722,
+        0.951389
+      ],
+      "detection_delay@variant:visa_scores:policy:B0_Raw": [
+        0.548524,
+        1.30241,
+        2.27863
+      ],
+      "detection_delay@variant:visa_scores:policy:B1_EMA": [
+        1.58575,
+        2.73163,
+        4.09496
+      ],
+      "detection_delay@variant:visa_scores:policy:B2_EMA_kofN": [
+        4.57942,
+        5.74614,
+        7.07527
+      ],
+      "detection_delay@variant:visa_scores:policy:B3_Full_Policy": [
+        4.57942,
+        5.74614,
+        7.07527
+      ],
+      "detection_delay@variant:visa_scores:policy:E1_Delay_Timer": [
+        5.0804,
+        6.12934,
+        7.33682
+      ],
+      "detection_delay@variant:visa_scores:policy:E2_EMA_Hysteresis": [
+        0.920052,
+        1.98469,
+        3.30057
+      ],
+      "detection_delay@variant:visa_scores:policy:E3_Decision_Fusion": [
+        5.0804,
+        6.12934,
+        7.33682
+      ],
+      "glare_alerts_per_burst@variant:visa_scores:policy:B0_Raw": [
+        2.12014,
+        2.27569,
+        2.46115
+      ],
+      "glare_alerts_per_burst@variant:visa_scores:policy:B1_EMA": [
+        2.90125,
+        3.63264,
+        4.28271
+      ],
+      "glare_alerts_per_burst@variant:visa_scores:policy:B2_EMA_kofN": [
+        3.14927,
+        4.44514,
+        5.57311
+      ],
+      "glare_alerts_per_burst@variant:visa_scores:policy:B3_Full_Policy": [
+        0.392361,
+        0.546528,
+        0.679878
+      ],
+      "glare_alerts_per_burst@variant:visa_scores:policy:E1_Delay_Timer": [
+        0.00347222,
+        0.00763889,
+        0.0125
+      ],
+      "glare_alerts_per_burst@variant:visa_scores:policy:E2_EMA_Hysteresis": [
+        0.468056,
+        0.735417,
+        0.98474
+      ],
+      "glare_alerts_per_burst@variant:visa_scores:policy:E3_Decision_Fusion": [
+        0.00347222,
+        0.00763889,
+        0.0125
+      ],
+      "nominal_false_alarm_rate@variant:visa_scores:policy:B0_Raw": [
+        1078.14,
+        2029.0,
+        3093.4
+      ],
+      "nominal_false_alarm_rate@variant:visa_scores:policy:B1_EMA": [
+        0.0,
+        192.0,
+        551.0
+      ],
+      "nominal_false_alarm_rate@variant:visa_scores:policy:B2_EMA_kofN": [
+        0.0,
+        10.3333,
+        28.3333
+      ],
+      "nominal_false_alarm_rate@variant:visa_scores:policy:B3_Full_Policy": [
+        0.0,
+        1.66667,
+        4.66667
+      ],
+      "nominal_false_alarm_rate@variant:visa_scores:policy:E1_Delay_Timer": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "nominal_false_alarm_rate@variant:visa_scores:policy:E2_EMA_Hysteresis": [
+        0.0,
+        3.33333,
+        8.66667
+      ],
+      "nominal_false_alarm_rate@variant:visa_scores:policy:E3_Decision_Fusion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "recall_loss@variant:visa_scores:policy:B0_Raw": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "recall_loss@variant:visa_scores:policy:B1_EMA": [
+        0.0,
+        0.093254,
+        0.248512
+      ],
+      "recall_loss@variant:visa_scores:policy:B2_EMA_kofN": [
+        0.0555556,
+        0.229167,
+        0.430642
+      ],
+      "recall_loss@variant:visa_scores:policy:B3_Full_Policy": [
+        0.0555556,
+        0.229167,
+        0.430642
+      ],
+      "recall_loss@variant:visa_scores:policy:E1_Delay_Timer": [
+        0.253472,
+        0.475694,
+        0.715278
+      ],
+      "recall_loss@variant:visa_scores:policy:E2_EMA_Hysteresis": [
+        0.0,
+        0.0863095,
+        0.241567
+      ],
+      "recall_loss@variant:visa_scores:policy:E3_Decision_Fusion": [
+        0.253472,
+        0.475694,
+        0.715278
+      ]
+    }
   }
 }

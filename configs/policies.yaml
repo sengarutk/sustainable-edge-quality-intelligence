@@ -4,10 +4,12 @@
 # kind: none   -> no inspection; every defect escapes
 #       manual -> 100% manual end-of-line visual inspection (no edge AI)
 #       ai     -> continuous edge AI inspection with detect-and-divert
-# AI tiers are the alert policies measured in Paper A (BASELINE, EMA_ONLY, EMA_KOFN,
-# FULL_POLICY); their false-alert rates, alerts per defect, glare alerts and delays are
-# imported from Paper A. persistence: true -> the tier applies k-of-N persistence and is
-# charged the (assumed) persistence recall loss delta_r.
+# ai_tiers are the alert-policy ladder measured in Paper A (BASELINE, EMA_ONLY, EMA_KOFN,
+# FULL_POLICY); external_baselines are Paper A's textbook alarm baselines (DELAY_TIMER,
+# EMA_HYSTERESIS, DECISION_FUSION), evaluated as alternatives to the full policy. For every AI
+# regime the false-alert rate, alerts per defect, glare alerts, delay and recall loss are
+# imported from Paper A (registry rows scoped policy:<regime>). persistence marks the regimes
+# whose alarm needs several frames of evidence (descriptive; the recall loss is imported per regime).
 baselines:
   N0_NoInspection:
     kind: none
@@ -27,4 +29,14 @@ ai_tiers:
     persistence: true
   B3_Full_Policy:
     label: "B3 full policy (latch)"
+    persistence: true
+external_baselines:
+  E1_Delay_Timer:
+    label: "E1 delay-timer"
+    persistence: true
+  E2_EMA_Hysteresis:
+    label: "E2 EMA + hysteresis"
+    persistence: false
+  E3_Decision_Fusion:
+    label: "E3 decision fusion"
     persistence: true

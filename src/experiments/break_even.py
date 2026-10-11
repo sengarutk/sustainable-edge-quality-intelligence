@@ -2,8 +2,8 @@
 Break-even frontiers (Delta C = 0) for the central parameter set.
 
 Each frontier is solved with Brent's method on a physically bounded interval.
-Delta C is monotone in every swept parameter (affine in pi, P_host, r_L0, gamma
-and the persistence recall loss; exponential in d_L0), so the signs at the interval ends decide
+Delta C is monotone in every swept parameter (affine in pi, P_host, r_L0, gamma,
+C_hw and the recall loss of B3; exponential in d_L0), so the signs at the interval ends decide
 whether a root exists. When they agree the result is reported explicitly as
 'none' together with the sign that holds everywhere, instead of being dropped.
 """
@@ -50,7 +50,9 @@ SPECS = [
     ("manual_recall_star", "manual_inspection_recall", "L0_Manual", (0.0, 1.0), "fraction"),
     ("manual_delay_star", "manual_discovery_delay", "L0_Manual", (0.0, 3600.0), "s"),
     ("gamma_star_vs_L0", "grid_carbon_factor", "L0_Manual", (0.0, 1.5), "kgCO2e/kWh"),
-    ("recall_loss_star_B3_vs_B0", "persistence_recall_loss", "B0_Raw", (0.0, 0.99), "fraction"),
+    ("recall_loss_star_B3_vs_B0", "recall_loss@B3_Full_Policy", "B0_Raw", (0.0, 0.99), "fraction"),
+    ("hardware_carbon_star_vs_N0", "edge_embodied_carbon", "N0_NoInspection", (0.0, 1.0e9), "kgCO2e"),
+    ("hardware_carbon_star_vs_L0", "edge_embodied_carbon", "L0_Manual", (0.0, 1.0e9), "kgCO2e"),
 ]
 
 

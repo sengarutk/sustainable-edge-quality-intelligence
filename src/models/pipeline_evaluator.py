@@ -1,6 +1,7 @@
 """
 Unified evaluator: one code path for every inspection regime (no inspection,
-manual end-of-line inspection, and the four edge-AI alert policies of Paper A).
+manual end-of-line inspection, the four edge-AI alert policies of Paper A and Paper A's three
+external alarm baselines).
 
 All inputs come from the source registry (via src.params) and configs/policies.yaml.
 Parameter values may be scalars or equally-shaped numpy arrays (Monte Carlo).
@@ -25,8 +26,10 @@ from src.sustainability.workload_accounting import (
 )
 
 AI_TIERS = ("B0_Raw", "B1_EMA", "B2_EMA_kofN", "B3_Full_Policy")
+EXTERNAL_TIERS = ("E1_Delay_Timer", "E2_EMA_Hysteresis", "E3_Decision_Fusion")
 PRIMARY_TIER = "B3_Full_Policy"
 BASELINES = ("N0_NoInspection", "L0_Manual")
+CORE_REGIMES = BASELINES + AI_TIERS  # the regimes of the main comparison tables and figures
 
 
 @dataclass(frozen=True)
@@ -34,7 +37,8 @@ class Regime:
     id: str
     label: str
     kind: str                 # none | manual | ai
-    persistence: bool = False  # AI tiers with k-of-N persistence carry the recall loss delta_r
+    persistence: bool = False  # alarm needs several frames of evidence (descriptive)
+    group: str = "core"        # core (main comparison) | external (Paper A's external alarm baselines)
 
 
 def load_regimes(path=POLICY_CONFIG) -> Dict[str, Regime]:
@@ -42,12 +46,13 @@ def load_regimes(path=POLICY_CONFIG) -> Dict[str, Regime]:
     regimes: Dict[str, Regime] = {}
     for rid, spec in cfg["baselines"].items():
         regimes[rid] = Regime(id=rid, label=spec["label"], kind=spec["kind"])
-    for rid, spec in cfg["ai_tiers"].items():
-        if not isinstance(spec.get("persistence"), bool):
-            raise ValueError(f"{path}: {rid} needs a boolean 'persistence'")
-        regimes[rid] = Regime(id=rid, label=spec["label"], kind="ai", persistence=spec["persistence"])
-    if tuple(regimes) != BASELINES + AI_TIERS:
-        raise ValueError(f"{path}: expected regimes {BASELINES + AI_TIERS}, got {tuple(regimes)}")
+    for section, group in (("ai_tiers", "core"), ("external_baselines", "external")):
+        for rid, spec in cfg.get(section, {}).items():
+            if not isinstance(spec.get("persistence"), bool):
+                raise ValueError(f"{path}: {rid} needs a boolean 'persistence'")
+            regimes[rid] = Regime(id=rid, label=spec["label"], kind="ai", persistence=spec["persistence"], group=group)
+    if tuple(regimes) != BASELINES + AI_TIERS + EXTERNAL_TIERS:
+        raise ValueError(f"{path}: expected regimes {BASELINES + AI_TIERS + EXTERNAL_TIERS}, got {tuple(regimes)}")
     for r in regimes.values():
         if r.kind not in ("none", "manual", "ai"):
             raise ValueError(f"{path}: invalid kind for {r.id}")
@@ -75,9 +80,10 @@ class RegimeResult:
 
 def ai_operating_point(p: Mapping[str, float], regime: Regime):
     """Recall, interception delay [s], operator-facing false-alert rate [1/h] and alerts per
-    detected defect of an AI tier (rates and delays measured in Paper A)."""
+    detected defect of an AI regime (rates, delays and the policy's recall loss measured in Paper A)."""
     t = regime.id
-    recall = np.maximum(0.0, p["ai_recall"] - (p["persistence_recall_loss"] if regime.persistence else 0.0))
+    # the policy keeps a share (1 - delta_t) of the defects single-frame thresholding flags (Paper A)
+    recall = np.clip(p["ai_recall"] * (1.0 - p[f"recall_loss@{t}"]), 0.0, 1.0)
     delay_s = p[f"detection_delay@{t}"] / p["camera_fps"]
     fa = p[f"nominal_false_alarm_rate@{t}"] + p["glare_burst_rate"] * p[f"glare_alerts_per_burst@{t}"]
     return recall, delay_s, fa, p[f"alerts_per_defect@{t}"]
@@ -122,7 +128,7 @@ def evaluate_regime(p: Mapping[str, float], class_shares, regime: Regime) -> Reg
                           energy, p["grid_carbon_factor"], edge_active, p["edge_embodied_carbon"], t_fu,
                           p["edge_lifetime_hours"], routing.n_escape, routing.n_escape_class_c, p["part_mass"],
                           return_freight_carbon(p["part_mass"], p["return_distance"], p["freight_carbon_intensity"]),
-                          p["collateral_multiplier"])
+                          p["collateral_multiplier"], p["recycled_substitution_ratio"])
     return RegimeResult(regime=regime, t_fu_h=t_fu + zero, recall=np.asarray(recall) + zero,
                         delay_s=np.asarray(delay_s) + zero, false_alarm_rate=np.asarray(fa) + zero,
                         routing=routing, material=material, workload=work, energy=energy, carbon=carbon)
@@ -152,6 +158,10 @@ def compare(baseline: RegimeResult, policy: RegimeResult, profiles=None) -> Comp
 def evaluate_all(p: Mapping[str, float], class_shares, regimes: Optional[Dict[str, Regime]] = None) -> Dict[str, RegimeResult]:
     regimes = regimes or load_regimes()
     return {rid: evaluate_regime(p, class_shares, r) for rid, r in regimes.items()}
+
+
+def core_regimes() -> Dict[str, Regime]:
+    return {rid: r for rid, r in load_regimes().items() if rid in CORE_REGIMES}
 
 
 def delta_carbon(p: Mapping[str, float], class_shares, base: str, policy: str) -> float:

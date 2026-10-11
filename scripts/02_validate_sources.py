@@ -16,7 +16,7 @@ from src.validation.source_registry import load_registry, validate_registry_file
 
 def main():
     n = validate_registry_file()
-    recs = {r.key: r for r in load_registry()}
+    recs = {r.key: r for r in load_registry() if r.variant is None}
 
     by_scope = {f"{r.parameter}@{r.scope}": r for r in load_registry()}
     expected = snapshot_rows()

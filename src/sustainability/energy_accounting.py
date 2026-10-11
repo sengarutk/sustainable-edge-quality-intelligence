@@ -4,9 +4,10 @@ Operational electricity per functional unit [kWh/FU].
   E_edge   = (P_idle + P_active + P_host) * T_FU / 1000   (edge AI regimes only)
   E_review = H * P_station / 1000
   E_rework = N_rework * e_rw
-P_idle and P_active are measured GPU powers at the line capture rate
-(results/raw/energy_summary.json); P_host covers host/camera/lighting power
-that NVML cannot observe. T_FU [h] = N / Theta.
+P_idle and P_active are the measured idle and above-idle power of the edge computer at the line
+capture rate (primary platform: Jetson module, results/raw/energy_summary_jetson.json; alternative:
+workstation GPU, results/raw/energy_summary.json); P_host covers what the measurement cannot observe
+(carrier board, camera and lighting; plus the host computer for the workstation). T_FU [h] = N / Theta.
 """
 
 from __future__ import annotations

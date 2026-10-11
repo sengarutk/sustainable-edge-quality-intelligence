@@ -6,7 +6,7 @@
       "comparison": "B3_Full_Policy_vs_N0_NoInspection",
       "lower": 0.0,
       "upper": 0.5,
-      "value": 0.000341758613,
+      "value": 0.0003421563214,
       "status": "root",
       "unit": "fraction"
     },
@@ -26,7 +26,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1000000.0,
-      "value": 3632.57735,
+      "value": 3644.560659,
       "status": "root",
       "unit": "W"
     },
@@ -56,19 +56,39 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1.5,
-      "value": 0.7139118029,
+      "value": 0.7185494863,
       "status": "root",
       "unit": "kgCO2e/kWh"
     },
     "recall_loss_star_B3_vs_B0": {
       "name": "recall_loss_star_B3_vs_B0",
-      "parameter": "persistence_recall_loss",
+      "parameter": "recall_loss@B3_Full_Policy",
       "comparison": "B3_Full_Policy_vs_B0_Raw",
       "lower": 0.0,
       "upper": 0.99,
       "value": null,
       "status": "none_positive",
       "unit": "fraction"
+    },
+    "hardware_carbon_star_vs_N0": {
+      "name": "hardware_carbon_star_vs_N0",
+      "parameter": "edge_embodied_carbon",
+      "comparison": "B3_Full_Policy_vs_N0_NoInspection",
+      "lower": 0.0,
+      "upper": 1000000000.0,
+      "value": 51160.33969,
+      "status": "root",
+      "unit": "kgCO2e"
+    },
+    "hardware_carbon_star_vs_L0": {
+      "name": "hardware_carbon_star_vs_L0",
+      "parameter": "edge_embodied_carbon",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 1000000000.0,
+      "value": 17749.85359,
+      "status": "root",
+      "unit": "kgCO2e"
     }
   },
   "machined_metal": {
@@ -78,7 +98,7 @@
       "comparison": "B3_Full_Policy_vs_N0_NoInspection",
       "lower": 0.0,
       "upper": 0.5,
-      "value": 2.025651534e-05,
+      "value": 2.030326604e-05,
       "status": "root",
       "unit": "fraction"
     },
@@ -88,7 +108,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 0.5,
-      "value": 6.379655453e-05,
+      "value": 6.40255296e-05,
       "status": "root",
       "unit": "fraction"
     },
@@ -98,7 +118,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1000000.0,
-      "value": 23679.36229,
+      "value": 23679.70907,
       "status": "root",
       "unit": "W"
     },
@@ -108,7 +128,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1.0,
-      "value": 0.9409856574,
+      "value": 0.9409884557,
       "status": "root",
       "unit": "fraction"
     },
@@ -134,13 +154,33 @@
     },
     "recall_loss_star_B3_vs_B0": {
       "name": "recall_loss_star_B3_vs_B0",
-      "parameter": "persistence_recall_loss",
+      "parameter": "recall_loss@B3_Full_Policy",
       "comparison": "B3_Full_Policy_vs_B0_Raw",
       "lower": 0.0,
       "upper": 0.99,
-      "value": 0.04841992296,
+      "value": 0.0611406084,
       "status": "root",
       "unit": "fraction"
+    },
+    "hardware_carbon_star_vs_N0": {
+      "name": "hardware_carbon_star_vs_N0",
+      "parameter": "edge_embodied_carbon",
+      "comparison": "B3_Full_Policy_vs_N0_NoInspection",
+      "lower": 0.0,
+      "upper": 1000000000.0,
+      "value": 564420.4144,
+      "status": "root",
+      "unit": "kgCO2e"
+    },
+    "hardware_carbon_star_vs_L0": {
+      "name": "hardware_carbon_star_vs_L0",
+      "parameter": "edge_embodied_carbon",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 1000000000.0,
+      "value": 114719.9719,
+      "status": "root",
+      "unit": "kgCO2e"
     }
   },
   "high_value_component": {
@@ -150,7 +190,7 @@
       "comparison": "B3_Full_Policy_vs_N0_NoInspection",
       "lower": 0.0,
       "upper": 0.5,
-      "value": 4.975633479e-06,
+      "value": 4.987138136e-06,
       "status": "root",
       "unit": "fraction"
     },
@@ -160,7 +200,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 0.5,
-      "value": 1.661776436e-05,
+      "value": 1.667036803e-05,
       "status": "root",
       "unit": "fraction"
     },
@@ -170,7 +210,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1000000.0,
-      "value": 265442.6284,
+      "value": 265442.7843,
       "status": "root",
       "unit": "W"
     },
@@ -180,7 +220,7 @@
       "comparison": "B3_Full_Policy_vs_L0_Manual",
       "lower": 0.0,
       "upper": 1.0,
-      "value": 0.9598225606,
+      "value": 0.9598226839,
       "status": "root",
       "unit": "fraction"
     },
@@ -206,13 +246,33 @@
     },
     "recall_loss_star_B3_vs_B0": {
       "name": "recall_loss_star_B3_vs_B0",
-      "parameter": "persistence_recall_loss",
+      "parameter": "recall_loss@B3_Full_Policy",
       "comparison": "B3_Full_Policy_vs_B0_Raw",
       "lower": 0.0,
       "upper": 0.99,
-      "value": 0.003726985746,
+      "value": 0.004706075386,
       "status": "root",
       "unit": "fraction"
+    },
+    "hardware_carbon_star_vs_N0": {
+      "name": "hardware_carbon_star_vs_N0",
+      "parameter": "edge_embodied_carbon",
+      "comparison": "B3_Full_Policy_vs_N0_NoInspection",
+      "lower": 0.0,
+      "upper": 1000000000.0,
+      "value": 5876788.451,
+      "status": "root",
+      "unit": "kgCO2e"
+    },
+    "hardware_carbon_star_vs_L0": {
+      "name": "hardware_carbon_star_vs_L0",
+      "parameter": "edge_embodied_carbon",
+      "comparison": "B3_Full_Policy_vs_L0_Manual",
+      "lower": 0.0,
+      "upper": 1000000000.0,
+      "value": 1284853.256,
+      "status": "root",
+      "unit": "kgCO2e"
     }
   }
 }

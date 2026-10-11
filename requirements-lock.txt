@@ -6,3 +6,4 @@ matplotlib==3.10.8
 pydantic==2.12.2
 PyYAML==6.0.3
 pytest==9.1.1
+sympy==1.14.0

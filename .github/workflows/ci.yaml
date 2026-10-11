@@ -27,6 +27,9 @@ jobs:
       - name: Unit, invariant and reproducibility tests
         run: pytest -v
 
+      - name: Symbolic and numerical verification of every model equation
+        run: python scripts/verify_math_proofs.py
+
       - name: Regenerate every result from the committed registry and measurements
         run: |
           for s in 03c_import_jetson 02_validate_sources 04_run_scenarios 05_run_sensitivity 06_run_monte_carlo \

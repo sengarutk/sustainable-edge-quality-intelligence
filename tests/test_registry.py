@@ -36,7 +36,7 @@ def test_unknown_scope_rejected():
 
 
 def test_workstation_rows_match_energy_summary():
-    recs = {r.key: r for r in load_registry()}
+    recs = {r.key: r for r in load_registry() if r.variant is None}
     for key, expect in measured_registry_bounds(json.loads(ENERGY_SUMMARY.read_text(encoding="utf-8"))).items():
         r = recs[f"{key}@workstation"]
         assert (r.low, r.central, r.high) == expect
@@ -66,8 +66,21 @@ def test_paper_a_rows_match_snapshot():
 def test_paper_a_snapshot_is_pinned_and_complete():
     snap = load_snapshot()
     assert len(snap["source_commit"]) == 40
-    assert set(snap["tier_policy"]) == {"B0_Raw", "B1_EMA", "B2_EMA_kofN", "B3_Full_Policy"}
-    assert all(v == 1.0 for v in snap["sustained_defect_recall"].values())
+    assert set(snap["tier_policy"]) == {"B0_Raw", "B1_EMA", "B2_EMA_kofN", "B3_Full_Policy", "E1_Delay_Timer",
+                                        "E2_EMA_Hysteresis", "E3_Decision_Fusion"}
+    for pol in ("BASELINE", "EMA_ONLY", "EMA_KOFN", "FULL_POLICY"):  # the ladder caught every sustained defect
+        assert snap["policy_metrics"]["mvtec_independent"][pol]["sustained_recall"]["mean"] == 1.0
+
+
+def test_variant_records_replace_primary_records():
+    from src.validation.source_registry import variant_records
+    v = variant_records("correlated_scores")
+    s = load_scenario("machined_metal")
+    sv = load_scenario("machined_metal", variant="correlated_scores")
+    assert set(v) <= set(s.records)
+    for k, r in v.items():
+        assert sv.records[k] == r
+    assert sv.records["nominal_false_alarm_rate@B3_Full_Policy"].central > 0 == s.records["nominal_false_alarm_rate@B3_Full_Policy"].central
 
 
 def test_scenario_yaml_contains_no_numeric_parameters(tmp_path, monkeypatch):

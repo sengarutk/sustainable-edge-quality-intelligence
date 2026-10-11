@@ -127,31 +127,44 @@ def test_no_inspection_means_every_defect_escapes(scenario):
     assert float(r.workload.operator_hours) == 0.0
 
 
-@pytest.mark.parametrize("tier,persistent", [("B0_Raw", False), ("B1_EMA", False), ("B2_EMA_kofN", True),
-                                             ("B3_Full_Policy", True)])
-def test_ai_operating_point_uses_paper_a_measurements(scenario, tier, persistent):
-    p = {**scenario.central(), "persistence_recall_loss": 0.01}
+@pytest.mark.parametrize("tier", ["B0_Raw", "B1_EMA", "B2_EMA_kofN", "B3_Full_Policy", "E1_Delay_Timer",
+                                  "E2_EMA_Hysteresis", "E3_Decision_Fusion"])
+def test_ai_operating_point_uses_paper_a_measurements(scenario, tier):
+    p = {**scenario.central(), f"recall_loss@{tier}": 0.01}
     r = evaluate_all(p, scenario.class_shares)[tier]
     expected_fa = p[f"nominal_false_alarm_rate@{tier}"] + p["glare_burst_rate"] * p[f"glare_alerts_per_burst@{tier}"]
     assert float(r.false_alarm_rate) == pytest.approx(expected_fa)
     assert float(r.delay_s) == pytest.approx(p[f"detection_delay@{tier}"] / p["camera_fps"])
-    assert float(r.recall) == pytest.approx(p["ai_recall"] - (0.01 if persistent else 0.0))
+    assert float(r.recall) == pytest.approx(p["ai_recall"] * (1 - 0.01))
     alerts = expected_fa * float(r.t_fu_h) + p[f"alerts_per_defect@{tier}"] * float(r.routing.routed)
     assert float(r.workload.events) == pytest.approx(alerts)
 
 
-def test_paper_a_policy_rates_reproduce_its_table():
-    """The imported registry values must equal the means printed in the Paper A ablation table."""
-    from src.imports.import_paper_a import load_snapshot
+def test_paper_a_policy_rates_equal_the_recomputed_paper_a_values():
+    """Registry centrals equal the Paper A means recomputed (and checked against Paper A's printed tables) at import."""
+    from src.imports.import_paper_a import TIER_POLICY, load_snapshot
     from src.validation.source_registry import load_registry
-    c = {r.key: r.central for r in load_registry()}
-    q = load_snapshot()["quoted_macros"]  # values printed in Paper A at the pinned commit
-    assert round(c["nominal_false_alarm_rate@B0_Raw"]) == int(q["NominalFABaseline"])
-    assert round(c["nominal_false_alarm_rate@B3_Full_Policy"], 1) == float(q["NominalFAFull"])
-    assert round(c["alerts_per_defect@B0_Raw"], 2) == float(q["AlertsPerEpisodeBaseline"])
-    assert round(c["alerts_per_defect@B3_Full_Policy"], 2) == float(q["AlertsPerEpisodeFull"])
-    assert round(c["detection_delay@B3_Full_Policy"], 1) == float(q["SustainedDelayFull"])
-    assert c["review_time"] == 3600.0 / float(q["MuReviews"])
+    snap = load_snapshot()
+    c = {r.key: r.central for r in load_registry() if r.variant is None}
+    cv = {r.key: r.central for r in load_registry() if r.variant == "correlated_scores"}
+    cvis = {r.key: r.central for r in load_registry() if r.variant == "visa_scores"}
+    cvisc = {r.key: r.central for r in load_registry() if r.variant == "visa_correlated_scores"}
+    for run, central in (("mvtec_independent", c), ("mvtec_correlated", cv), ("visa_independent", cvis),
+                         ("visa_correlated", cvisc)):
+        for tier, pol in TIER_POLICY.items():
+            m = snap["policy_metrics"][run][pol]
+            for param in ("nominal_false_alarm_rate", "alerts_per_defect", "detection_delay", "glare_alerts_per_burst"):
+                assert central[f"{param}@{tier}"] == pytest.approx(m[param]["mean"], rel=1e-5, abs=1e-9), (run, tier, param)
+            assert central[f"recall_loss@{tier}"] == pytest.approx(max(0.0, m["relative_recall_loss"]["mean"]), rel=1e-5, abs=1e-9)
+    assert c["review_time"] == 3600.0 / float(snap["quoted_macros"]["MuReviews"])
+
+
+def test_substitution_ratio_moves_recovered_material_into_the_material_term(scenario):
+    p = scenario.central()
+    full = evaluate_all(p, scenario.class_shares)["B3_Full_Policy"]
+    none = evaluate_all({**p, "recycled_substitution_ratio": 0.0}, scenario.class_shares)["B3_Full_Policy"]
+    assert float(none.carbon.mat - full.carbon.mat) == pytest.approx(float(full.material.recovered_kg) * p["material_carbon_factor"])
+    assert float(none.carbon.recycle) == pytest.approx(float(full.carbon.recycle))
 
 
 def test_throughput_scales_edge_energy_linearly(scenario):

@@ -39,7 +39,9 @@ def test_carbon_optimal_threshold_dominates_reference_thresholds():
     import pandas as pd
     opt = pd.read_csv(PROCESSED_DIR / "carbon_optimal_thresholds.csv")
     assert (opt.carbon_opt <= opt.carbon_q99 + 1e-9).all()
-    assert (opt.carbon_opt <= opt.carbon_budget + 1e-9).all()
+    feas = opt[opt.budget_feasible.astype(bool)]
+    assert (feas.carbon_opt <= feas.carbon_budget + 1e-9).all()
+    assert opt[~opt.budget_feasible.astype(bool)].carbon_budget.isna().all()  # no silent fallback
 
 
 @pytest.mark.parametrize("base", ["N0_NoInspection", "L0_Manual"])

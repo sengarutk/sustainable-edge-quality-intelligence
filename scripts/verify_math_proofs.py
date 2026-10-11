@@ -28,7 +28,7 @@ from sympy.physics import units as u  # noqa: E402
 
 from src.experiments.break_even import SPECS  # noqa: E402
 from src.experiments.monte_carlo import sample_parameters  # noqa: E402
-from src.models.pipeline_evaluator import AI_TIERS, BASELINES, evaluate_all, load_regimes  # noqa: E402
+from src.models.pipeline_evaluator import AI_TIERS, BASELINES, EXTERNAL_TIERS, evaluate_all, load_regimes  # noqa: E402
 from src.params import load_scenario  # noqa: E402
 from src.paths import (ENERGY_SUMMARY, PAPER_DIR, PROCESSED_DIR, RESULTS_MACROS, SCENARIOS,  # noqa: E402
                        SQI_CONFIG)
@@ -57,6 +57,7 @@ P_idle, P_act, P_host, P_st, e_rw = sp.symbols("P_idle P_active P_host P_station
 gamma, EF_mat, EF_rec, C_hw, c_ret, kappa = sp.symbols("gamma EF_mat EF_rec C_hw c_ret kappa", **nn)
 L_hw, f_cam = sp.Symbol("L_hw", **pos), sp.Symbol("f_cam", **pos)
 a_ev, g_rate, b_gl, lam_nom, d_fr, r_AI, delta_r = sp.symbols("a g b lambda_nom d_frames r_AI delta_r", **nn)
+s_sub = sp.Symbol("s", **nn)  # recycled-content substitution ratio, in [0, 1]
 
 # Section III equations, transcribed from paper/main.tex.
 T_FU = N / Theta
@@ -81,7 +82,7 @@ def energy_and_carbon(H, edge_on, n_rw=N_rw, m_loss=M_loss, m_rec=M_rec, n_esc=N
     e_rev = H * P_st / 1000                                    # (5)
     e_rwk = n_rw * e_rw                                        # (5)
     comps = {                                                  # (6), seven components
-        "mat": m_loss * EF_mat,
+        "mat": (m_loss + (1 - s_sub) * m_rec) * EF_mat,
         "recycle": m_rec * EF_rec,
         "rework": gamma * e_rwk,
         "review": gamma * e_rev,
@@ -145,10 +146,11 @@ def part_a_proofs():
     # Non-negativity certificates: rewrite each component with the complements
     # eta_c = 1-eta, r_c = 1-r, qf = 1-f_A q_rw (all >= 0, qf by the certificate above), check the
     # rewrite is an identity, then require SymPy to *prove* the rewritten form non-negative.
-    eta_c, r_c, qf = sp.symbols("eta_c r_c qf", **nn)
-    back = {eta_c: 1 - eta, r_c: 1 - r, qf: 1 - fA * q_rw}
+    eta_c, r_c, qf, s_c = sp.symbols("eta_c r_c qf s_c", **nn)
+    back = {eta_c: 1 - eta, r_c: 1 - r, qf: 1 - fA * q_rw, s_c: 1 - s_sub}
     m_gr = r * D * qf * m
     _, cert = energy_and_carbon(H_ai, True, n_rw=N_rw, m_loss=eta_c * m_gr, m_rec=eta * m_gr, n_esc=r_c * D)
+    cert["mat"] = (eta_c * m_gr + s_c * eta * m_gr) * EF_mat  # (1 - s) written as its complement s_c >= 0
     ai_sub = {lam: lam_nom + g_rate * b_gl, d: d_fr / f_cam}   # same AI-tier rules as regime_exprs("AI")
     back = {k: v.subs(ai_sub, simultaneous=True) for k, v in back.items()}
     cert = {k: v.subs(ai_sub, simultaneous=True) for k, v in cert.items()}
@@ -175,12 +177,13 @@ def part_a_proofs():
     # Monotonicity of Delta C in every break-even parameter (justifies the endpoint test in _solve).
     regimes = {"N0_NoInspection": regime_exprs("N0"), "L0_Manual": regime_exprs("L0"), "AI": regime_exprs("AI")}
     tier = {t: {x: sp.Symbol(f"{x.name}_{t}", **nn) for x in (a_ev, b_gl, lam_nom, d_fr)} for t in ("B0", "B3")}
-    b0 = {k: v.subs({**tier["B0"], r: r_AI}, simultaneous=True) for k, v in regimes["AI"].items()}
-    b4 = {k: v.subs({**tier["B3"], r: r_AI - delta_r}, simultaneous=True) for k, v in regimes["AI"].items()}
+    delta_b0 = sp.Symbol("delta_B0", **nn)
+    b0 = {k: v.subs({**tier["B0"], r: r_AI * (1 - delta_b0)}, simultaneous=True) for k, v in regimes["AI"].items()}
+    b4 = {k: v.subs({**tier["B3"], r: r_AI * (1 - delta_r)}, simultaneous=True) for k, v in regimes["AI"].items()}
     ref = {"N0_NoInspection": regimes["N0_NoInspection"], "L0_Manual": regimes["L0_Manual"], "B0_Raw": b0}
     sym = {"defect_prevalence": pi_, "host_power": P_host, "manual_inspection_recall": sp.Symbol("r_L0", **nn),
            "manual_discovery_delay": sp.Symbol("d_L0", **nn), "grid_carbon_factor": gamma,
-           "persistence_recall_loss": delta_r}
+           "recall_loss@B3_Full_Policy": delta_r, "edge_embodied_carbon": C_hw}
     for name, key, base_id, _, _ in SPECS:
         x = sym[key]
         dc = sp.expand(ref[base_id]["C"] - b4["C"])
@@ -200,7 +203,7 @@ def part_b_dimensions():
     dim = {N: 1, Theta: 1 / T, pi_: 1, fA: 1, fB: 1, fC: 1, r: 1, d: T, q0: 1, tau: T, m: M, eta: 1,
            lam: 1 / T, t_rev: T, t_L0: T, P_idle: E / T, P_act: E / T, P_host: E / T, P_st: E / T, e_rw: E,
            gamma: Cc / E, EF_mat: Cc / M, EF_rec: Cc / M, C_hw: Cc, c_ret: Cc, kappa: 1, L_hw: T,
-           f_cam: 1 / T, a_ev: 1, g_rate: 1 / T, b_gl: 1, lam_nom: 1 / T, d_fr: 1, r_AI: 1, delta_r: 1}
+           f_cam: 1 / T, a_ev: 1, g_rate: 1 / T, b_gl: 1, lam_nom: 1 / T, d_fr: 1, r_AI: 1, delta_r: 1, s_sub: 1}
 
     def dims_of(expr):
         terms = sp.Add.make_args(sp.expand(expr))
@@ -259,11 +262,11 @@ def part_c_implementation():
                   P_st: p["review_station_power"], e_rw: p["rework_energy"], gamma: p["grid_carbon_factor"],
                   EF_mat: p["material_carbon_factor"], EF_rec: p["recycling_burden"], C_hw: p["edge_embodied_carbon"],
                   L_hw: p["edge_lifetime_hours"], c_ret: return_freight_carbon(p["part_mass"], p["return_distance"], p["freight_carbon_intensity"]), kappa: p["collateral_multiplier"],
-                  rL0: p["manual_inspection_recall"], dL0: p["manual_discovery_delay"]}
+                  rL0: p["manual_inspection_recall"], dL0: p["manual_discovery_delay"], s_sub: p["recycled_substitution_ratio"]}
         if rid in BASELINES:
             return exprs[rid], common
         reg = regimes[rid]
-        recall = p["ai_recall"] - (p["persistence_recall_loss"] if reg.persistence else 0.0)
+        recall = p["ai_recall"] * (1 - p[f"recall_loss@{rid}"])
         return ai, {**common, r: recall, f_cam: p["camera_fps"], d_fr: p[f"detection_delay@{rid}"],
                     lam_nom: p[f"nominal_false_alarm_rate@{rid}"], g_rate: p["glare_burst_rate"],
                     b_gl: p[f"glare_alerts_per_burst@{rid}"], a_ev: p[f"alerts_per_defect@{rid}"]}
@@ -275,7 +278,7 @@ def part_c_implementation():
         for label, pset in (("central", s.central()), ("500 MC draws", draws)):
             res = evaluate_all(pset, s.class_shares)
             worst = 0.0
-            for rid in BASELINES + AI_TIERS:
+            for rid in BASELINES + AI_TIERS + EXTERNAL_TIERS:
                 ex, binding = bind(pset, rid)
                 for k, getter in fields.items():
                     f = sp.lambdify(list(binding) + list(shares), ex[k].subs({}), "numpy")
@@ -283,7 +286,7 @@ def part_c_implementation():
                     got = np.asarray(getter(res[rid]), dtype=float)
                     err = np.max(np.abs(got - want) / np.maximum(1.0, np.abs(want)))
                     worst = max(worst, float(err))
-            check(S, f"{sc}: all {len(BASELINES + AI_TIERS)} regimes x {len(fields)} quantities match ({label})", worst < 1e-12,
+            check(S, f"{sc}: all {len(BASELINES + AI_TIERS + EXTERNAL_TIERS)} regimes x {len(fields)} quantities match ({label})", worst < 1e-12,
                   f"max relative deviation {worst:.2e}")
 
 
@@ -301,7 +304,8 @@ def part_d_break_even(b4, ref, sym):
                 C_hw: p["edge_embodied_carbon"], L_hw: p["edge_lifetime_hours"], c_ret: return_freight_carbon(p["part_mass"], p["return_distance"], p["freight_carbon_intensity"]),
                 kappa: p["collateral_multiplier"], sym["manual_inspection_recall"]: p["manual_inspection_recall"],
                 sym["manual_discovery_delay"]: p["manual_discovery_delay"], f_cam: p["camera_fps"],
-                r_AI: p["ai_recall"], delta_r: p["persistence_recall_loss"], g_rate: p["glare_burst_rate"],
+                r_AI: p["ai_recall"], delta_r: p["recall_loss@B3_Full_Policy"], sp.Symbol("delta_B0", **nn): p["recall_loss@B0_Raw"],
+                s_sub: p["recycled_substitution_ratio"], g_rate: p["glare_burst_rate"],
                 **{sp.Symbol(f"{x}_{t}", **nn): p[f"{key}@{rid}"] for t, rid in (("B0", "B0_Raw"), ("B3", "B3_Full_Policy"))
                    for x, key in (("a", "alerts_per_defect"), ("b", "glare_alerts_per_burst"),
                                   ("lambda_nom", "nominal_false_alarm_rate"), ("d_frames", "detection_delay"))},
@@ -322,6 +326,11 @@ def part_d_break_even(b4, ref, sym):
                       f"Delta C({lo:g}) = {f_lo:.4g}, Delta C({hi:g}) = {f_hi:.4g}")
 
 
+def load_profiles_equal():
+    w = yaml.safe_load(SQI_CONFIG.read_text(encoding="utf-8"))["profiles"]["balanced"]["weights"]
+    return len(set(w.values())) == 1
+
+
 def part_e_manuscript():
     S = "E manuscript"
     tex = (PAPER_DIR / "main.tex").read_text(encoding="utf-8")
@@ -330,7 +339,7 @@ def part_e_manuscript():
     def macro(name):
         return macros.get(name)
 
-    recs = {r.key: r for r in load_registry()}
+    recs = {r.key: r for r in load_registry() if r.variant is None}
     summary = json.loads(ENERGY_SUMMARY.read_text(encoding="utf-8"))
     import pandas as pd
     windows = pd.read_csv(Path(ENERGY_SUMMARY).parents[2] / summary["trace_dir"] / "windows.csv")
@@ -347,11 +356,10 @@ def part_e_manuscript():
         ("misses 20--30\\% of defects", (recs["manual_inspection_recall"].low, recs["manual_inspection_recall"].high) == (0.70, 0.80),
          "registry r_L0 bounds"),
         ("$28\\times28\\times384$", 224 // 8 == 28 and 128 + 256 == 384, "ResNet-18 layer2 (stride 8, 128 ch) + layer3 (256 ch)"),
-        ("coreset of $\\PaperABank$ real patch features", "MEMORY_BANK_SIZE = " + macro("PaperABank").replace("{,}", "") in
+        ("The bank holds $\\PaperABank$ real patch features", "MEMORY_BANK_SIZE = " + macro("PaperABank").replace("{,}", "") in
          (Path(__file__).parents[1] / "src/experiments/energy_benchmark.py").read_text()
-         and "torch.randn(memory_bank_size, 384)" in (Path(__file__).parents[1] / "src/experiments/energy_benchmark.py").read_text()
-         and summary["workload"].count(macro("PaperABank").replace("{,}", "")) == 1,
-         "PatchCoreProxy memory bank == Paper A coreset size, and the committed run used it"),
+         and summary["workload_detail"]["bank_size"] == int(macro("PaperABank").replace("{,}", "")),
+         "energy benchmark bank size == Paper A's bank size, and the committed run used it"),
         ("15~s idle window", summary["idle_window_s"] == 15, "run_meta idle_window_s"),
         ("Power was sampled at 20~Hz", "sample_hz: float = 20.0" in (Path(__file__).parents[1] / "src/experiments/energy_benchmark.py").read_text(),
          "NvmlMeter default"),
@@ -361,12 +369,12 @@ def part_e_manuscript():
         ("\\CounterIdleMinW--\\CounterIdleMaxW~W at idle",
          (macro("CounterIdleMinW"), macro("CounterIdleMaxW")) == (f"{idle.counter_diag_w.min():.0f}", f"{idle.counter_diag_w.max():.0f}"),
          f"windows.csv idle counter_diag_w = {idle.counter_diag_w.min():.0f}-{idle.counter_diag_w.max():.0f} W"),
-        ("Six regimes", len(load_regimes()) == 6, "configs/policies.yaml"),
-        ("four alert policies measured in", len(AI_TIERS) == 4, "pipeline_evaluator.AI_TIERS"),
-        ("$\\delta_r$ is centred on zero", recs["persistence_recall_loss"].central == 0.0, "registry persistence_recall_loss"),
+        ("Six regimes form the main comparison", len(BASELINES + AI_TIERS) == 6, "configs/policies.yaml"),
+        ("one of the four alert policies of", len(AI_TIERS) == 4, "pipeline_evaluator.AI_TIERS"),
+        ("so $\\delta_t$ is centred on zero", all(recs[f"recall_loss@{t}"].central == 0.0 for t in AI_TIERS), "registry recall_loss of B0-B3"),
+        ("three textbook alarm baselines", len(EXTERNAL_TIERS) == 3, "pipeline_evaluator.EXTERNAL_TIERS"),
         ("seven non-negative components", len(COMPONENTS) == 7, "carbon_accounting.COMPONENTS"),
-        ("balanced, material-, carbon- and human-centred", sqi_names == ["balanced", "material_priority", "carbon_priority",
-                                                                           "human_centered"], "configs/sqi_weights.yaml"),
+        ("an equal-weight sum", load_profiles_equal(), "configs/sqi_weights.yaml balanced profile"),
     ]
     for text, ok, detail in literals:
         present = text in tex
@@ -387,7 +395,7 @@ def part_e_manuscript():
     tables = importlib.util.module_from_spec(spec09)
     spec09.loader.exec_module(tables)
     ledger = {tables.symbol(r).strip("$") for r in load_registry()}
-    derived = {"T_{FU}", "N_{rw}", "N_{sc}", "N_{esc}", "q_{rw}", "M_{gr}", "M_{rec}", "M_{loss}", "n_{ev}", "E_{edge}",
+    derived = {r"\delta_t", "s", "T_{FU}", "N_{rw}", "N_{sc}", "N_{esc}", "q_{rw}", "M_{gr}", "M_{rec}", "M_{loss}", "n_{ev}", "E_{edge}",
                "E_{rev}", "E_{rw}", "S_X", "w_X", "X_b", "X_p", r"\lambda_{FA}", "f_A", "f_B", "f_C", r"\lambda_t", "a_t", "b_t", "d_t",
                "S_E", "S_H", "S_1", "S_T", "D_h", "c_{ret}", "P^\\star_{cell}", "q_0", r"\sum_X"}
     math = " ".join(re.findall(r"\$([^$]+)\$", tex) + re.findall(r"\\begin\{(?:align|equation)\}(.*?)\\end", tex, re.S))
@@ -398,7 +406,7 @@ def part_e_manuscript():
           "n_ev uses lambda_FA; the text must say what it is")
     check(S, "hardware term restricted to AI regimes in the text (code: edge_active only)",
           re.search(r"hardware term[^.]*zero for N0 and L0", tex) is not None)
-    check(S, "S_X bound stated for non-negative X (proof A needs it)", "non-negative" in tex.split("Sustainability Quality Index")[1][:300])
+    check(S, "S_X bound stated for non-negative X (proof A needs it)", "non-negative" in tex.split("subsection{Multiple Criteria}")[1][:600])
 
 
 def main():

@@ -1,0 +1,28 @@
+\begin{table*}[!t]
+\centering
+\footnotesize
+\caption{The full policy B3 with each of the companion study's alert-measurement sets: MVTec~AD (the primary values) and the held-out VisA categories, each with independent and with temporally correlated frame scores. $\delta_{B3}$: share of the defects flagged by single-frame thresholding that B3 does not flag within 15 frames; $\rho$: single-reviewer utilisation; PPV: alert precision; $\Delta C$: carbon saving against manual inspection at central values (kgCO$_2$e per 1{,}000 parts); $P$: share of Monte Carlo draws with $\Delta C>0$; $\omega^\star$: reviewer distrust at which the saving vanishes.}
+\label{tab:alertsets}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llrrrrrr@{}}
+\toprule
+Alert measurements & Scenario & $\delta_{B3}$ & $\rho$ & PPV & $\Delta C$ & $P$ & $\omega^\star$ \\
+\midrule
+MVTec AD, independent & A: Precision & 0.0\% & 1.43 & 77\% & 0.488 & 64.3\% & none \\
+ & B: Machined metal & 0.0\% & 0.38 & 13\% & 47.7 & 54.5\% & 0.23 \\
+ & C: High-value module & 0.0\% & 0.36 & 8.4\% & 2{,}141 & 53.7\% & 0.24 \\
+\midrule
+MVTec AD, correlated ($\rho=0.9$) & A: Precision & 2.6\% & 4.59 & 25\% & 0.415 & 58.9\% & 0.39 \\
+ & B: Machined metal & 2.6\% & 3.50 & 1.4\% & 41.2 & 51.8\% & 0.18 \\
+ & C: High-value module & 2.6\% & 3.49 & 0.9\% & 1{,}889 & 51.6\% & 0.20 \\
+\midrule
+VisA, independent & A: Precision & 22.9\% & 1.43 & 79\% & 0.157 & 32.6\% & 0.68 \\
+ & B: Machined metal & 22.9\% & 0.35 & 14\% & $-$6.22 & 17.9\% & $<0$ at 0 \\
+ & C: High-value module & 22.9\% & 0.33 & 9.5\% & $-$108 & 16.6\% & $<0$ at 0 \\
+\midrule
+VisA, correlated ($\rho=0.9$) & A: Precision & 29.4\% & 3.35 & 37\% & 0.0421 & 19.6\% & 0.07 \\
+ & B: Machined metal & 29.4\% & 2.18 & 2.5\% & $-$21.8 & 8.2\% & $<0$ at 0 \\
+ & C: High-value module & 29.4\% & 2.16 & 1.6\% & $-$745 & 7.7\% & $<0$ at 0 \\
+\bottomrule
+\end{tabular}
+\end{table*}

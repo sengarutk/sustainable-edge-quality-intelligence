@@ -76,7 +76,10 @@ def score_path(unit: Unit, seed: int) -> Path:
 
 
 def default_mvtec_root() -> Path:
-    return REPO_ROOT.parent / "industrial-defect-anomaly-benchmark" / "data" / "mvtec_ad"
+    """Official MVTec AD archive (MD5 eefca59f2cede9c3fc5b6befbfec275e), the same location as default_root('mvtec').
+    The committed energy runs used hazelnut images from an earlier local copy whose 571 hazelnut files are
+    byte-identical to this archive."""
+    return default_root("mvtec")
 
 
 def default_root(dataset: str) -> Path:

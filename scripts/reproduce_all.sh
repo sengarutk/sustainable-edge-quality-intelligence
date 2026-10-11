@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # End-to-end reproduction. Usage:
 #   bash scripts/reproduce_all.sh             # analysis from committed measurements (no GPU needed)
-#   bash scripts/reproduce_all.sh --measure   # also re-run the GPU energy measurement (NVIDIA GPU + NVML)
+#   bash scripts/reproduce_all.sh --measure   # also re-import Paper A (needs its checkout and .venv) and re-run the
+#                                             # GPU energy and detector measurements (NVIDIA GPU + NVML, MVTec AD, VisA)
 # Set PYTHON to choose the interpreter (default: python3 on PATH).
 set -euo pipefail
 
@@ -25,4 +26,5 @@ for s in "${steps[@]}"; do
 done
 "$PY" scripts/sync_paper_assets.py
 "$PY" -m pytest -q
+"$PY" scripts/verify_math_proofs.py
 echo "Reproduction complete."

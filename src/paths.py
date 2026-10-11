@@ -14,7 +14,6 @@ RAW_DATA_DIR = DATA_DIR / "raw"
 SOURCE_REGISTRY = RAW_DATA_DIR / "source_registry.csv"
 ENERGY_TRACE_DIR = RAW_DATA_DIR / "energy_measurements"
 JETSON_TRACE_DIR = RAW_DATA_DIR / "energy_measurements_jetson"
-FLAGSHIP1_EXPORT_DIR = RAW_DATA_DIR / "flagship1_exports"
 PAPER_A_EXPORT_DIR = RAW_DATA_DIR / "paper_a_exports"
 
 RESULTS_DIR = REPO_ROOT / "results"

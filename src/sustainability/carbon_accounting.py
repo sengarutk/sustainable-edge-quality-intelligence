@@ -1,7 +1,8 @@
 """
 Carbon accounting per functional unit [kgCO2e/FU], as additive components:
 
-  mat      = M_loss * EF_mat                         unrecovered scrap material
+  mat      = (M_loss + (1 - s) M_recovered) * EF_mat  unrecovered scrap material, and virgin material
+                                                     that recovered scrap does not displace (s: substitution ratio)
   recycle  = M_recovered * EF_rec                    processing burden of recovered scrap
   rework   = E_rework * gamma
   review   = E_review * gamma
@@ -53,13 +54,13 @@ def escape_unit_penalty(part_mass_kg, ef_mat, c_ret):
 
 
 def carbon_flows(net_loss_kg, recovered_kg, ef_mat, ef_rec, energy, gamma, edge_active: bool,
-                 c_hw, t_fu_h, l_hw, n_escape, n_escape_c, part_mass_kg, c_ret, kappa) -> CarbonOutcome:
+                 c_hw, t_fu_h, l_hw, n_escape, n_escape_c, part_mass_kg, c_ret, kappa, substitution=1.0) -> CarbonOutcome:
     hardware = np.asarray(c_hw, dtype=float) * t_fu_h / l_hw
     if not edge_active:
         hardware = np.zeros_like(hardware)
     escape = n_escape * escape_unit_penalty(part_mass_kg, ef_mat, c_ret) + n_escape_c * kappa * part_mass_kg * ef_mat
     return CarbonOutcome(
-        mat=net_loss_kg * ef_mat,
+        mat=(net_loss_kg + (1.0 - np.asarray(substitution)) * recovered_kg) * ef_mat,
         recycle=recovered_kg * ef_rec,
         rework=energy.rework_kwh * gamma,
         review=energy.review_kwh * gamma,

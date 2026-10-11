@@ -15,6 +15,11 @@ recall r, delay 0, one alert per diverted part, and false alerts f (1 - pi) Thet
 For every scenario x unit of the primary detector the threshold minimising total carbon is compared with the
 calibration 99th percentile and with an alarm budget of 5 false diversions per 1,000 parts,
 both unconstrained and under a staffing cap (no more reviewers than the q99 threshold needs).
+The carbon-optimal threshold is chosen on the same measured curve it is evaluated on (an in-sample,
+oracle optimum), so its saving is an upper bound on what a threshold tuned on a line's own data can
+reach. The alarm budget is a deployable rule; with the calibration-quantile thresholds available it
+is attainable only where some threshold keeps the measured false-positive rate within budget, and
+the budget columns are left empty (budget_feasible = False) elsewhere.
 """
 
 from __future__ import annotations
@@ -28,8 +33,9 @@ from src.experiments.detector_eval import PRIMARY_DETECTOR, SEEDS, Unit, score_p
 from src.models.pipeline_evaluator import PRIMARY_TIER, evaluate_regime, load_regimes
 from src.params import Scenario
 
-Q_GRID = 1.0 - np.logspace(-4, np.log10(0.5), 400)  # calibration quantiles 0.5 ... 0.9999
 REFERENCE_Q = 0.99
+# calibration quantiles 0.5 ... 0.9999, including q99 exactly so that the curve passes through the reference point
+Q_GRID = np.union1d(1.0 - np.logspace(-4, np.log10(0.5), 400), [REFERENCE_Q])
 ALARM_BUDGET_PER_1K = 5.0
 
 
@@ -91,7 +97,7 @@ def recall_ledger_values(ref: pd.DataFrame) -> tuple:
 def one_shot_params(p: Dict, recall, fpr) -> Dict:
     t = PRIMARY_TIER
     good_parts_per_h = (1.0 - np.asarray(p["defect_prevalence"])) * p["line_throughput"]
-    return {**p, "ai_recall": recall, "persistence_recall_loss": 0.0, f"detection_delay@{t}": 0.0 * recall,
+    return {**p, "ai_recall": recall, f"recall_loss@{t}": 0.0 * recall, f"detection_delay@{t}": 0.0 * recall,
             f"alerts_per_defect@{t}": 1.0, "glare_burst_rate": 0.0,
             f"nominal_false_alarm_rate@{t}": np.asarray(fpr) * good_parts_per_h}
 
@@ -112,20 +118,24 @@ def optimal_thresholds(scenarios) -> pd.DataFrame:
             cv = curve(u)
             c, rho = along_curve(sc, cv)
             i_opt = int(np.argmin(c))
-            i_ref = int(np.argmin(np.abs(cv.q.values - REFERENCE_Q)))
+            i_ref = int(np.flatnonzero(np.isclose(cv.q.values, REFERENCE_Q))[0])
             staff = np.ceil(rho - 1e-9)
             capped = np.where(staff <= staff[i_ref])[0]  # no more reviewers than at the q99 threshold
             i_cap = int(capped[np.argmin(c[capped])])
             alarms_per_1k = cv.fpr.values * (1 - pi) * 1000
-            feasible = np.where(alarms_per_1k <= ALARM_BUDGET_PER_1K)[0]
-            i_bud = int(feasible[np.argmax(cv.recall.values[feasible])]) if len(feasible) else int(np.argmin(alarms_per_1k))
+            feasible = np.where(alarms_per_1k <= ALARM_BUDGET_PER_1K + 1e-12)[0]
+            i_bud = int(feasible[np.argmax(cv.recall.values[feasible])]) if len(feasible) else None
+
+            def bud(values):
+                return float(values[i_bud]) if i_bud is not None else float("nan")
             rows.append({"scenario": sc.name, "dataset": u.dataset, "category": u.category,
                          "q_opt": cv.q[i_opt], "recall_opt": cv.recall[i_opt], "fpr_opt": cv.fpr[i_opt],
                          "carbon_opt": c[i_opt],
                          "recall_q99": cv.recall[i_ref], "fpr_q99": cv.fpr[i_ref], "carbon_q99": c[i_ref],
-                         "recall_budget": cv.recall[i_bud], "fpr_budget": cv.fpr[i_bud], "carbon_budget": c[i_bud],
-                         "saving_vs_q99": c[i_ref] - c[i_opt], "saving_vs_budget": c[i_bud] - c[i_opt],
-                         "rho_opt": rho[i_opt], "rho_q99": rho[i_ref], "rho_budget": rho[i_bud],
+                         "budget_feasible": i_bud is not None, "min_fpr": float(cv.fpr.min()),
+                         "recall_budget": bud(cv.recall.values), "fpr_budget": bud(cv.fpr.values), "carbon_budget": bud(c),
+                         "saving_vs_q99": c[i_ref] - c[i_opt], "saving_vs_budget": bud(c) - c[i_opt],
+                         "rho_opt": rho[i_opt], "rho_q99": rho[i_ref], "rho_budget": bud(rho),
                          "fpr_cap": cv.fpr[i_cap], "recall_cap": cv.recall[i_cap], "carbon_cap": c[i_cap],
                          "rho_cap": rho[i_cap], "saving_cap_vs_q99": c[i_ref] - c[i_cap]})
     return pd.DataFrame(rows)

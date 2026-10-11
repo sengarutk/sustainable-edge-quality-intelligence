@@ -23,7 +23,8 @@ from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import FancyBboxPatch  # noqa: E402
 
 from src.experiments.energy_benchmark import STAGES  # noqa: E402
-from src.models.pipeline_evaluator import AI_TIERS, PRIMARY_TIER, compare, evaluate_all, load_regimes  # noqa: E402
+from src.models.pipeline_evaluator import (AI_TIERS, EXTERNAL_TIERS, PRIMARY_TIER, compare, core_regimes, evaluate_all,  # noqa: E402
+                                           load_regimes)
 from src.params import load_scenario  # noqa: E402
 from src.paths import ENERGY_SUMMARY, JETSON_SUMMARY, PROCESSED_DIR, RESULTS_FIG_DIR, SCENARIOS  # noqa: E402
 from src.sustainability.carbon_accounting import COMPONENTS  # noqa: E402
@@ -56,7 +57,7 @@ PARAM_LABEL = {
     "collateral_multiplier": r"collateral $\kappa$", "grid_carbon_factor": r"grid $\gamma$", "host_power": r"$P_{host}$",
     "edge_idle_power": r"$P_{idle}$", "edge_active_power": r"$P_{active}$", "edge_embodied_carbon": r"$C_{hw}$",
     "edge_lifetime_hours": r"$L_{hw}$", "review_station_power": r"$P_{station}$", "review_time": r"$t_{review}$",
-    "line_throughput": r"throughput $\Theta$", "ai_recall": r"AI recall $r_{AI}$", "persistence_recall_loss": r"recall loss $\delta_r$",
+    "line_throughput": r"throughput $\Theta$", "ai_recall": r"AI recall $r_{AI}$", "recycled_substitution_ratio": r"substitution $s$",
     "glare_burst_rate": r"glare rate $g$",
 }
 
@@ -66,7 +67,7 @@ def plabel(key):
         name, pol = key.split("@")
         tier = pol.split("_")[0]
         sym = {"nominal_false_alarm_rate": r"\lambda", "alerts_per_defect": "a", "detection_delay": "d",
-               "glare_alerts_per_burst": "b"}[name]
+               "glare_alerts_per_burst": "b", "recall_loss": r"\delta"}[name]
         return rf"${sym}_{{{tier}}}$"
     return PARAM_LABEL.get(key, key)
 
@@ -98,7 +99,7 @@ def fig1_system_boundary():
             ax.text((a[0] + b[0]) / 2 + off[0], (a[1] + b[1]) / 2 + off[1], text, ha=ha, va="bottom", fontsize=5.8, color=INK2)
 
     box(0.000, 0.38, 0.115, 0.24, "Production\nline, $N$ parts\nper FU,\n$D=N\\pi$ defects")
-    box(0.165, 0.60, 0.200, 0.36, "Edge AI cell (B0-B3)\n30 FPS camera,\nGPU + host computer\n$E_{edge}=(P_{idle}+P_{active}$\n$+\\,P_{host})\\,T_{FU}$",
+    box(0.165, 0.60, 0.200, 0.36, "Edge AI cell (B0-B3)\n30 FPS camera, lighting,\nedge computer\n$E_{edge}=(P_{idle}+P_{active}$\n$+\\,P_{host})\\,T_{FU}$",
         fc="#e3eefb", ec="#2a78d6")
     box(0.165, 0.04, 0.200, 0.30, "Manual end-of-line (L0)\nrecall $r_{L0}$, delay $d_{L0}$\n$t_{L0}$ s per part", fc="#fbe9e1", ec="#eb6834")
     box(0.415, 0.60, 0.185, 0.36, "Divert + operator\nreview of every alert\n$\\lambda_{FA}T_{FU}+a\\,rD$\n$t_{review}$, $P_{station}$")
@@ -106,7 +107,7 @@ def fig1_system_boundary():
     box(0.655, 0.70, 0.140, 0.24, "Rework\n$e_{rw}$ kWh/part")
     box(0.655, 0.38, 0.140, 0.24, "Scrap: $\\eta$\nrecovered,\n$1-\\eta$ lost")
     box(0.655, 0.04, 0.140, 0.26, "Field escapes\n$(1-r)D$:\nreplace + return,\n$\\kappa$ for class C")
-    box(0.845, 0.22, 0.155, 0.56, "Carbon per FU\nmaterial, recycling,\nrework, review,\nedge electricity,\nedge hardware,\nescapes\n($\\gamma$, $EF_{mat}$, $EF_{rec}$)")
+    box(0.840, 0.22, 0.150, 0.56, "Carbon per FU\nmaterial, recycling,\nrework, review,\nedge electricity,\nedge hardware,\nescapes\n($\\gamma$, $EF_{mat}$, $EF_{rec}$)")
     arrow((0.115, 0.56), (0.165, 0.74), "AI", off=(-0.012, 0.0))
     arrow((0.115, 0.44), (0.165, 0.22), "manual", off=(-0.03, -0.02))
     arrow((0.365, 0.78), (0.415, 0.78), "$r$")
@@ -114,9 +115,9 @@ def fig1_system_boundary():
     arrow((0.5075, 0.60), (0.5075, 0.34), "routed", off=(0.008, 0.0), ha="left")
     arrow((0.600, 0.25), (0.655, 0.80), "$f_A q_{rw}$", off=(-0.005, 0.02), ha="right")
     arrow((0.600, 0.19), (0.655, 0.48), "else", off=(0.012, -0.03), ha="left")
-    arrow((0.600, 0.10), (0.655, 0.14), "missed", off=(0.0, 0.01))
+    arrow((0.600, 0.10), (0.655, 0.14), "missed", off=(-0.03, -0.065))
     for y0, y1 in ((0.82, 0.66), (0.50, 0.50), (0.17, 0.34)):
-        arrow((0.795, y0), (0.845, y1))
+        arrow((0.795, y0), (0.840, y1))
     save(fig, "fig1_system_boundary")
 
 
@@ -179,7 +180,7 @@ def fig2_energy():
 
 def fig3_regimes():
     df = pd.read_csv(PROCESSED_DIR / "regime_outcomes.csv")
-    regimes = load_regimes()
+    regimes = core_regimes()
     order = list(regimes)
     names = [regimes[r].label.split(" ", 1)[0] for r in order]
     fig, axes = plt.subplots(1, 2, figsize=(DOUBLE, 2.2))
@@ -228,12 +229,13 @@ def fig4_waterfall():
 
 def fig5_break_even_map():
     pis = np.logspace(-8, -0.7, 90)
-    powers = np.logspace(0, 6.5, 90)
     fig, ax = plt.subplots(figsize=(SINGLE, 2.6))
     measured_total = None
     for sc in SCENARIOS:
         s = load_scenario(sc)
         p = s.central()
+        module = p["edge_idle_power"] + p["edge_active_power"]
+        powers = np.logspace(np.log10(module), 6.5, 90)  # total cell power from the bare module (P_host = 0) upward
         P, PI = np.meshgrid(powers, pis)
         host = P - p["edge_idle_power"] - p["edge_active_power"]
         params = {**p, "defect_prevalence": PI.ravel(), "host_power": host.ravel()}
@@ -244,7 +246,8 @@ def fig5_break_even_map():
         measured_total = p["edge_idle_power"] + p["edge_active_power"] + p["host_power"]
         ax.plot(p["defect_prevalence"], measured_total, marker="o", ms=5, color=SC_COLOR[sc], mec=SURFACE, mew=1.0, ls="none")
     ax.axhline(measured_total, color=INK2, lw=0.6, ls=":")
-    ax.text(1.5e-8, measured_total * 0.45, "edge cell today (GPU measured + host)", fontsize=6.0, color=INK2)
+    ax.text(1.5e-8, measured_total * 0.45, "embedded cell today (module measured + $P_{host}$)", fontsize=6.0, color=INK2)
+    ax.set_ylim(module, 10 ** 6.5)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel(r"Defect prevalence $\pi$")
@@ -253,7 +256,7 @@ def fig5_break_even_map():
     handles += [Line2D([], [], color=INK2, lw=1.0, ls="-", label="vs N0 (no inspection)"),
                 Line2D([], [], color=INK2, lw=1.0, ls="--", label="vs L0 (manual)")]
     ax.legend(handles=handles, loc="upper left", fontsize=6.0)
-    ax.text(1.5e-2, 2.0, "right of / below a curve:\n" + r"$\Delta C>0$ (edge AI better)", fontsize=6.2, ha="center")
+    ax.text(3e-7, 1.5e2, "right of / below a curve:\n" + r"$\Delta C>0$ (edge AI better)", fontsize=6.2, ha="center")
     fig.tight_layout()
     save(fig, "fig5_break_even_map")
 
@@ -288,7 +291,10 @@ def fig7_uncertainty_tradeoff():
                     medianprops=dict(color=INK, lw=1.0), whiskerprops=dict(color=INK2), capprops=dict(color=INK2))
     for patch, sc in zip(bp["boxes"], SCENARIOS):
         patch.set(facecolor=SC_COLOR[sc], edgecolor=INK2, hatch=SC_HATCH[sc], alpha=0.9)
-    a1.set_xscale("log")
+    a1.set_xscale("symlog", linthresh=1.0)  # Delta C changes sign: negative draws must stay visible
+    a1.axvline(0, color=INK2, lw=0.8)
+    ticks = [-1e4, -1e2, -1, 0, 1, 1e2, 1e4]
+    a1.set_xticks(ticks, [r"$-10^4$", r"$-10^2$", r"$-1$", "0", "1", r"$10^2$", r"$10^4$"])
     a1.set_yticks([1, 2, 3], [SC_LABEL[sc] for sc in SCENARIOS])
     a1.set_xlabel(r"$\Delta C$, B3 vs L0 (kgCO$_2$e / 1000 parts), 5-95%")
     a1.grid(axis="y", visible=False)
@@ -296,7 +302,7 @@ def fig7_uncertainty_tradeoff():
     losses = np.logspace(-4, np.log10(0.5), 120)
     for sc in SCENARIOS:
         s_ = load_scenario(sc)
-        res = evaluate_all({**s_.central(), "persistence_recall_loss": losses}, s_.class_shares)
+        res = evaluate_all({**s_.central(), "recall_loss@B3_Full_Policy": losses}, s_.class_shares)
         dc = compare(res["B0_Raw"], res["B3_Full_Policy"]).delta["C"]
         a2.plot(100 * losses, dc, color=SC_COLOR[sc], lw=1.6, label=SC_LABEL[sc])
         star = be[sc]["recall_loss_star_B3_vs_B0"]["value"]
@@ -305,7 +311,7 @@ def fig7_uncertainty_tradeoff():
     a2.set_xscale("log")
     a2.set_yscale("symlog", linthresh=1.0)
     a2.axhline(0, color=INK2, lw=0.8)
-    a2.set_xlabel(r"Recall lost to persistence $\delta_r$ (percentage points)")
+    a2.set_xlabel(r"Share of B0's detections lost by B3, $\delta_{B3}$ (%)")
     a2.set_ylabel(r"$\Delta C$, B3 vs B0 (kgCO$_2$e)")
     a2.legend(loc="lower left")
     fig.tight_layout()
@@ -360,18 +366,19 @@ def fig9_operating_points():
     for i, sc in enumerate(SCENARIOS):
         sub = opt[opt.scenario == sc]
         x = np.full(len(sub), i) + np.linspace(-0.18, 0.18, len(sub))
+        a2.scatter(x, np.maximum(sub.fpr_q99, 1e-3), s=9, marker="x", color=INK2, lw=0.6, zorder=2)
         a2.scatter(x, np.maximum(sub.fpr_opt, 1e-3), s=14, color=SC_COLOR[sc], edgecolor=SURFACE, lw=0.6, zorder=3)
-        a2.scatter(x, np.maximum(sub.fpr_budget, 1e-3), s=10, marker="_", color=INK2, zorder=2)
-    a2.axhline(0.01, color=INK2, lw=0.8, ls="--")
-    a2.text(2.45, 0.0108, "q99", fontsize=6.2, color=INK2, ha="right", va="bottom")
+        ok = sub.budget_feasible.astype(bool).values
+        a2.scatter(x[ok], np.maximum(sub.fpr_budget.values[ok], 1e-3), s=14, marker="_", color=INK, lw=1.0, zorder=4)
     a2.set_yscale("log")
     a2.set_ylim(1e-3, 1)
     a2.set_xticks(range(len(SCENARIOS)), [SC_LABEL[sc].replace(": ", ":\n") for sc in SCENARIOS])
     a2.set_ylabel("False-positive rate")
     a2.grid(axis="x", visible=False)
-    a2.legend(handles=[Line2D([], [], marker="o", ls="none", color=INK2, label="carbon-optimal (per category)"),
-                       Line2D([], [], marker="_", ls="none", color=INK2, label="5 alarms / 1,000 parts")],
-              loc="lower left", fontsize=6)
+    a2.legend(handles=[Line2D([], [], marker="o", ls="none", color=INK2, label="carbon-optimal (in-sample)"),
+                       Line2D([], [], marker="x", ls="none", color=INK2, label="q99"),
+                       Line2D([], [], marker="_", ls="none", color=INK, label="5 alarms / 1,000 parts (where attainable)")],
+              loc="lower left", fontsize=5.8)
     fig.tight_layout()
     save(fig, "fig9_detector_operating_points")
 
@@ -411,28 +418,36 @@ def fig11_cry_wolf():
     summ = pd.read_csv(PROCESSED_DIR / "cry_wolf_summary.csv")
     cur = pd.read_csv(PROCESSED_DIR / "cry_wolf_curves.csv")
     regimes = load_regimes()
-    tiers = list(AI_TIERS)
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(DOUBLE, 2.3), gridspec_kw={"width_ratios": [1, 1.25]})
+    tiers = list(AI_TIERS + EXTERNAL_TIERS)
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(DOUBLE, 2.4), gridspec_kw={"width_ratios": [1.35, 1]})
     w = 0.26
     x = np.arange(len(tiers))
     for i, sc in enumerate(SCENARIOS):
-        sub = summ[summ.scenario == sc].set_index("tier").loc[tiers]
-        a1.bar(x + (i - 1) * w, 100 * sub.ppv, w, color=SC_COLOR[sc], hatch=SC_HATCH[sc], edgecolor=SURFACE, label=SC_LABEL[sc])
+        ind = summ[(summ.scenario == sc) & (summ.score_model == "independent")].set_index("tier").loc[tiers]
+        cor = summ[(summ.scenario == sc) & (summ.score_model == "correlated")].set_index("tier").loc[tiers]
+        a1.bar(x + (i - 1) * w, 100 * ind.ppv, w, color=SC_COLOR[sc], hatch=SC_HATCH[sc], edgecolor=SURFACE, label=SC_LABEL[sc])
+        a1.plot(x + (i - 1) * w, 100 * cor.ppv, ls="none", marker="o", ms=3.2, mfc=SURFACE, mec=INK, mew=0.7,
+                label="correlated scores" if i == 0 else None)
+    a1.set_yscale("log")
+    a1.set_ylim(0.3, 3000)
     a1.set_xticks(x, [regimes[t].label.split(" ", 1)[0] for t in tiers])
+    a1.axvline(3.5, color=INK2, lw=0.6, ls=":")
     a1.set_ylabel("Alert precision PPV (%)")
-    a1.set_ylim(0, 115)
-    a1.legend(loc="upper center", ncol=3, fontsize=6.3, handlelength=1.2, columnspacing=0.8)
+    a1.legend(loc="upper left", ncol=4, fontsize=5.6, handlelength=1.2, columnspacing=0.6, borderaxespad=0.2)
     a1.grid(axis="x", visible=False)
     for sc in SCENARIOS:
-        c = cur[(cur.scenario == sc) & (cur.tier == PRIMARY_TIER)]
-        a2.plot(c.omega, c.delta_C_vs_L0 / c.delta_C_vs_L0.iloc[0], color=SC_COLOR[sc], lw=1.6, label=SC_LABEL[sc])
-        st = summ[(summ.scenario == sc) & (summ.tier == PRIMARY_TIER)].iloc[0]
-        if st.status == "root":
-            a2.plot(st.omega_star, 0.0, marker="o", ms=5, color=SC_COLOR[sc], mec=SURFACE, mew=1.0)
+        for model, ls in (("independent", "-"), ("correlated", "--")):
+            c = cur[(cur.scenario == sc) & (cur.tier == PRIMARY_TIER) & (cur.score_model == model)]
+            a2.plot(c.omega, c.delta_C_vs_L0 / abs(c.delta_C_vs_L0.iloc[0]), color=SC_COLOR[sc], lw=1.4, ls=ls,
+                    label=SC_LABEL[sc] if model == "independent" else None)
+            st = summ[(summ.scenario == sc) & (summ.tier == PRIMARY_TIER) & (summ.score_model == model)].iloc[0]
+            if st.status == "root":
+                a2.plot(st.omega_star, 0.0, marker="o", ms=4.5, color=SC_COLOR[sc], mec=SURFACE, mew=1.0)
+    a2.plot([], [], color=INK2, ls="--", label="correlated scores")
     a2.axhline(0, color=INK2, lw=0.8)
-    a2.set_xlabel(r"Cry-wolf strength $\omega$ (0: full compliance; 1: probability matching)", fontsize=6.8)
-    a2.set_ylabel(r"$\Delta C$ (B3 vs L0) / value at $\omega=0$")
-    a2.legend(loc="lower left", fontsize=6.5)
+    a2.set_xlabel(r"Cry-wolf strength $\omega$ (0: full compliance)", fontsize=6.8)
+    a2.set_ylabel(r"$\Delta C$ (B3 vs L0) / $|\Delta C(\omega=0)|$")
+    a2.legend(loc="lower left", fontsize=6.0)
     fig.tight_layout()
     save(fig, "fig11_cry_wolf")
 

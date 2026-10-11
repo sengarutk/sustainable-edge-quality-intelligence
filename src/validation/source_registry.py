@@ -46,7 +46,7 @@ class ParameterRecord(BaseModel):
         if not (self.low <= self.central <= self.high):
             raise ValueError(f"{self.parameter}@{self.scope}: bounds violated ({self.low} <= {self.central} <= {self.high})")
         valid_scopes = {"all", *SCENARIOS}
-        if self.scope not in valid_scopes and not self.scope.startswith(("policy:", "platform:")):
+        if self.scope not in valid_scopes and not self.scope.startswith(("policy:", "platform:", "variant:")):
             raise ValueError(f"{self.parameter}: unknown scope '{self.scope}'")
         uncited = (SourceClassification.SCENARIO_ASSUMPTION, SourceClassification.SCENARIO_DEFINITION)
         if self.classification not in uncited and self.citation_key == "none":
@@ -54,10 +54,18 @@ class ParameterRecord(BaseModel):
         return self
 
     @property
+    def variant(self) -> str | None:
+        """Name of the analysis variant a 'variant:<name>[:<scope>]' record belongs to (None otherwise)."""
+        return self.scope.split(":")[1] if self.scope.startswith("variant:") else None
+
+    @property
     def key(self) -> str:
-        """Flat parameter key: policy- and platform-scoped parameters are suffixed with '@<name>'."""
-        if self.scope.startswith(("policy:", "platform:")):
-            return f"{self.parameter}@{self.scope.split(':', 1)[1]}"
+        """Flat parameter key: policy- and platform-scoped parameters are suffixed with '@<name>'. A variant
+        record ('variant:<name>:<scope>') carries the key of the record it replaces in that variant."""
+        scope = self.scope.split(":", 2)[2] if self.scope.startswith("variant:") and self.scope.count(":") >= 2 \
+            else ("all" if self.scope.startswith("variant:") else self.scope)
+        if scope.startswith(("policy:", "platform:")):
+            return f"{self.parameter}@{scope.split(':', 1)[1]}"
         return self.parameter
 
 
@@ -76,7 +84,7 @@ def load_registry(path: Path = SOURCE_REGISTRY) -> List[ParameterRecord]:
             raise ValueError(f"Source registry row {idx + 2} ({row.get('parameter')}): {exc}") from exc
     seen = set()
     for r in records:
-        ident = (r.key, r.scope)
+        ident = (r.key, r.scope if not r.variant else f"variant:{r.variant}")
         if ident in seen:
             raise ValueError(f"Duplicate registry entry: {r.key} @ {r.scope}")
         seen.add(ident)
@@ -110,6 +118,24 @@ def platform_records(platform: str, path: Path = SOURCE_REGISTRY) -> Dict[str, P
     return out
 
 
+def variant_records(variant: str, path: Path = SOURCE_REGISTRY) -> Dict[str, ParameterRecord]:
+    """Records of an analysis variant (e.g. 'correlated_scores'), keyed like scenario_records(); each
+    replaces the record of the same key in the primary analysis, which must exist."""
+    recs = load_registry(path)
+    out = {r.key: r for r in recs if r.variant == variant}
+    if not out:
+        raise KeyError(f"no registry records for variant '{variant}'")
+    primary = {r.key for r in recs if r.variant is None}
+    missing = set(out) - primary
+    if missing:
+        raise ValueError(f"variant '{variant}' overrides parameters without a primary entry: {sorted(missing)}")
+    return out
+
+
+def variants(path: Path = SOURCE_REGISTRY) -> List[str]:
+    return sorted({r.variant for r in load_registry(path) if r.variant})
+
+
 def platforms(path: Path = SOURCE_REGISTRY) -> List[str]:
     return sorted({r.scope.split(":", 1)[1] for r in load_registry(path) if r.scope.startswith("platform:")})
 
@@ -120,4 +146,6 @@ def validate_registry_file(path: Path = SOURCE_REGISTRY) -> int:
         scenario_records(sc, path)
     for pf in platforms(path):
         platform_records(pf, path)
+    for v in variants(path):
+        variant_records(v, path)
     return len(records)

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Step 01 (optional): refresh the Paper A snapshot from a local Paper A checkout.
 
-Usage: python scripts/01_import_upstream.py [--paper-a PATH] [--ref COMMIT] [--update-registry]
-Without the upstream repository the committed snapshot in data/raw/paper_a_exports is used.
+Usage: python scripts/01_import_upstream.py [--paper-a PATH] [--paper-a-python PY] [--ref COMMIT] [--update-registry]
+Without the upstream repository the committed snapshot in data/raw/paper_a_exports is used. The import
+runs Paper A's own statistics code with Paper A's interpreter (default: <paper-a>/.venv/bin/python).
 """
 
 import argparse
@@ -20,7 +21,7 @@ from src.paths import SOURCE_REGISTRY  # noqa: E402
 def update_registry():
     """Copy the snapshot's (low, central, high) values into the matching registry rows."""
     df = pd.read_csv(SOURCE_REGISTRY, dtype=str, keep_default_na=False)
-    for key, values in snapshot_rows().items():
+    for key, values in snapshot_rows(include_variants=True).items():
         param, scope = key.split("@", 1)
         mask = (df.parameter == param) & (df.scope == scope)
         if mask.sum() != 1:
@@ -35,12 +36,13 @@ def main():
     ap.add_argument("--paper-a", type=Path, default=Path(__file__).resolve().parents[2] / "edge-quality-intelligence")
     ap.add_argument("--out", type=Path, default=SNAPSHOT, help="snapshot path (default: the committed snapshot)")
     ap.add_argument("--ref", default="HEAD", help="Paper A commit to import from (default: HEAD)")
+    ap.add_argument("--paper-a-python", type=Path, default=None, help="Paper A's Python interpreter")
     ap.add_argument("--update-registry", action="store_true", help="also write the imported values into the registry")
     args = ap.parse_args()
     if not (args.paper_a / ".git").exists():
         print(f"Paper A repository not found at {args.paper_a}; keeping committed snapshot {SNAPSHOT}.")
         return
-    print(f"Wrote {import_paper_a(args.paper_a, args.out, args.ref)}")
+    print(f"Wrote {import_paper_a(args.paper_a, args.out, args.ref, args.paper_a_python)}")
     if args.update_registry and args.out.resolve() == SNAPSHOT.resolve():
         update_registry()
 

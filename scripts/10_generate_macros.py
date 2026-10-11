@@ -69,7 +69,7 @@ def main():
     be = json.loads((PROCESSED_DIR / "break_even.json").read_text(encoding="utf-8"))
     prcc = pd.read_csv(PROCESSED_DIR / "prcc_sensitivity.csv")
     records = load_registry()
-    central = {r.key: r.central for r in records}
+    central = {r.key: r.central for r in records if r.variant is None}
     gpu_w = central["edge_idle_power"] + central["edge_active_power"]
     cell_now_w = gpu_w + central["host_power"]
 
@@ -144,8 +144,9 @@ def main():
     jp = plat[plat.configuration == "jetson_patchcore_fp16"].set_index("scenario")
     wp = plat[plat.configuration == "workstation_patchcore_fp32"].set_index("scenario")
     ratio = (wp.edge_cell_carbon / jp.edge_cell_carbon)
-    m["PlatformCarbonRatioMin"] = f"{ratio.min():.1f}"
-    m["PlatformCarbonRatioMax"] = f"{ratio.max():.1f}"
+    claim(f"{ratio.min():.1f}" == f"{ratio.max():.1f}", "the platform carbon ratio is the same in every scenario (quoted as one value)")
+    m["PlatformCarbonRatio"] = f"{ratio.min():.1f}"
+    m["HostPowerCentral"] = f"{central['host_power']:.0f}"
     m["WsEdgeShareMax"] = sig(100 * wp.edge_share_of_benefit.max(), 2)
     m["JetsonCellPower"] = f"{jp.cell_power_w.iloc[0]:.0f}"
     m["JetsonComputeShare"] = f"{100 * jp.compute_power_w.iloc[0] / jp.cell_power_w.iloc[0]:.0f}"
@@ -163,34 +164,45 @@ def main():
     n_draws = {mc[sc]["n_draws"] for sc in SCENARIOS}
     claim(len(n_draws) == 1, "all scenarios use the same number of Monte Carlo draws")
     m["MonteCarloDraws"] = f"{n_draws.pop():,}".replace(",", "{,}")
-    m["UncertainParams"] = str(sum(r.high > r.low for r in records if r.scope in ("all", "precision_component") or r.scope.startswith("policy:")))
+    m["UncertainParams"] = str(sum(r.high > r.low for r in records if r.variant is None and
+                                   (r.scope in ("all", "precision_component") or r.scope.startswith("policy:"))))
 
     snap = load_snapshot()
     qa = snap["quoted_macros"]
+    pm = snap["policy_metrics"]
     m["PaperACommit"] = snap["source_commit"][:7]
+    m["PaperANumPolicies"] = qa["NumPolicies"]
     m["PaperAMu"] = qa["MuReviews"]
     m["PaperAGlareRate"] = qa["GlareRateAssumed"]
-    m["PaperADelay"] = qa["SustainedDelayFull"]
-    m["PaperAFaRaw"] = f"{int(qa['NominalFABaseline']):,}".replace(",", "{,}")
-    m["PaperAFaFull"] = qa["NominalFAFull"]
-    claim(float(qa["NominalFAFull"]) == 0.0 and snapshot_rows()["nominal_false_alarm_rate@policy:B3_Full_Policy"][2] == 0.0,
-          "Paper A: the full policy raised no false alert on good parts in any unit")
-    m["PaperAPerDefectRaw"] = qa["AlertsPerEpisodeBaseline"]
-    m["PaperAPerDefectFull"] = qa["AlertsPerEpisodeFull"]
-    m["PaperAGlareRaw"] = qa["GlarePerBurstBaseline"]
-    m["PaperAGlareKofn"] = qa["GlarePerBurstEmaKofn"]
-    m["PaperAGlareFull"] = qa["GlarePerBurstFull"]
-    m["PaperALatency"] = qa["LatGpuMean"]
+    m["PaperADelay"] = f"{pm['mvtec_independent']['FULL_POLICY']['detection_delay']['mean']:.1f}"
+    m["PaperAFaRaw"] = sig(pm["mvtec_independent"]["BASELINE"]["nominal_false_alarm_rate"]["mean"])
+    claim(central["nominal_false_alarm_rate@B3_Full_Policy"] == 0.0 and
+          snapshot_rows()["nominal_false_alarm_rate@policy:B3_Full_Policy"][2] == 0.0,
+          "Paper A (independent scores): the full policy raised no false alert on good parts")
+    m["PaperAPerDefectRaw"] = f"{pm['mvtec_independent']['BASELINE']['alerts_per_defect']['mean']:.2f}"
+    m["PaperAPerDefectFull"] = f"{pm['mvtec_independent']['FULL_POLICY']['alerts_per_defect']['mean']:.2f}"
+    m["PaperACorrFaFull"] = f"{pm['mvtec_correlated']['FULL_POLICY']['nominal_false_alarm_rate']['mean']:.1f}"
+    m["PaperAGlareFull"] = f"{pm['mvtec_independent']['FULL_POLICY']['glare_alerts_per_burst']['mean']:.2f}"
+    m["PaperAGlareTimer"] = f"{pm['mvtec_independent']['DELAY_TIMER']['glare_alerts_per_burst']['mean']:.2f}"
+    m["CorrRecallLossFull"] = f"{100 * pm['mvtec_correlated']['FULL_POLICY']['relative_recall_loss']['mean']:.1f}"
+    m["EOneRecallLoss"] = f"{100 * central['recall_loss@E1_Delay_Timer']:.1f}"
+    claim(abs(central["recall_loss@E1_Delay_Timer"] - central["recall_loss@E3_Decision_Fusion"]) < 1e-12,
+          "E1 and E3 carry the same recall loss (quoted once)")
     m["PaperAVisionLatency"] = qa["LatVisionMean"]
     m["PaperABank"] = f"{int(qa['MemoryBankSize']):,}".replace(",", "{,}")
+    claim(wd["bank_size"] == int(qa["MemoryBankSize"]), "the energy workload uses Paper A's bank size")
     m["PaperALoadCross"] = qa["LoadCrossFull"]
     m["PaperAShortK"], m["PaperAShortN"] = qa["ShortK"], qa["ShortN"]
     sdr = snap["short_defect_recall"]
-    loss = {int(f): sdr["BASELINE"][f] - sdr["FULL_POLICY"][f] for f in sdr["FULL_POLICY"]}
+    loss = {int(f): 1.0 - sdr["FULL_POLICY"][f] / sdr["BASELINE"][f] for f in sdr["FULL_POLICY"]}
     m["PaperAShortRecallEight"] = f"{100 * sdr['FULL_POLICY']['8']:.0f}"
     m["PaperAShortRecallOne"] = f"{100 * sdr['FULL_POLICY']['1']:.0f}"
     m["PersistLossMax"] = f"{100 * max(0.0, loss[8]):.1f}"
-    claim(all(v == 1.0 for v in snap["sustained_defect_recall"].values()), "Paper A: every tier has recall 1.00 on sustained defects")
+    claim(abs(central["recall_loss@B3_Full_Policy"]) < 1e-12 and
+          abs(next(r.high for r in records if r.key == "recall_loss@B3_Full_Policy" and r.variant is None) - max(0.0, loss[8])) < 1e-6,
+          "B3's recall loss is centred on zero with the 8-frame short-defect loss as upper bound")
+    claim(all(pm["mvtec_independent"][p]["sustained_recall"]["mean"] == 1.0 for p in ("BASELINE", "EMA_ONLY", "EMA_KOFN", "FULL_POLICY")),
+          "Paper A: B0-B3 flagged every sustained defect with independent scores")
     claim(abs(central["review_time"] - 3600.0 / float(qa["MuReviews"])) < 1e-9, "review time matches Paper A's reviewer rate")
 
     PRIMARY = "B3_Full_Policy"
@@ -263,7 +275,7 @@ def main():
         m[f"{P}RecallLossStar"] = sig(100 * rl["value"], 3) if rl["status"] == "root" else "none"
         if rl["status"] == "root":
             sdr = load_snapshot()["short_defect_recall"]
-            ok = sorted(int(f) for f in sdr["FULL_POLICY"] if sdr["BASELINE"][f] - sdr["FULL_POLICY"][f] < rl["value"])
+            ok = sorted(int(f) for f in sdr["FULL_POLICY"] if 1.0 - sdr["FULL_POLICY"][f] / sdr["BASELINE"][f] < rl["value"])
             frames_needed = next(f for f in ok if all(g in ok for g in sorted(map(int, sdr["FULL_POLICY"])) if g >= f))
             m[f"{P}VisibleFrames"] = str(frames_needed)
             m[f"{P}VisibleMs"] = f"{1000 * frames_needed / central['camera_fps']:.0f}"
@@ -319,12 +331,12 @@ def main():
     m["HiValReviewersBOne"] = str(int(np.ceil(hv.loc["B1_EMA"].rho)))
     reviewers_b0 = [int(m[f"{PREFIX[sc]}ReviewersBZero"]) for sc in SCENARIOS]
     claim(min(reviewers_b0) >= 10 and max(reviewers_b0) >= 100, "B0 needs tens to hundreds of reviewers")
-    pol = {r.key: r.central for r in records if r.scope.startswith("policy:")}
+    pol = {r.key: r.central for r in records if r.scope.startswith("policy:") and r.variant is None}
     apd = [pol[f"alerts_per_defect@{t}"] for t in ("B0_Raw", "B1_EMA", "B2_EMA_kofN")]
     m["AlertsPerDefectMin"] = f"{min(apd):.0f}"
     m["AlertsPerDefectMax"] = f"{max(apd):.0f}"
     claim(all(100 <= v <= 200 for v in apd), "B0-B2 raise well over a hundred alerts per defect")
-    claim(pol["alerts_per_defect@B3_Full_Policy"] < 1.5, "the latch collapses repeat alerts to about one per defect")
+    claim(abs(pol["alerts_per_defect@B3_Full_Policy"] - 1.0) < 0.005, "the latch collapses repeat alerts to one per defect")
     claim(pol["glare_alerts_per_burst@B1_EMA"] > pol["glare_alerts_per_burst@B0_Raw"]
           and pol["nominal_false_alarm_rate@B1_EMA"] < 0.05 * pol["nominal_false_alarm_rate@B0_Raw"],
           "B1 removes most good-part false alerts but raises glare alerts")
@@ -332,8 +344,8 @@ def main():
     claim(p_prec["defect_prevalence"] * p_prec["line_throughput"] > float(qa["LoadCrossFull"]),
           "scenario A's defect rate exceeds Paper A's single-reviewer crossover")
     stars = {sc: be[sc]["recall_loss_star_B3_vs_B0"]["value"] for sc in SCENARIOS}
-    claim(stars["precision_component"] is None and stars["high_value_component"] < 0.02 < 0.04 < stars["machined_metal"] < 0.05,
-          "recall margin: none needed for A, about 4 points for B, under 2 points for C")
+    claim(stars["precision_component"] is None and stars["high_value_component"] < 0.01 < 0.04 < stars["machined_metal"] < 0.08,
+          "relative recall margin: none needed for A, a few percent for B, under 1% for C")
     m["BOneBTwoHoursDiffMax"] = f"{100 * max(b12):.0f}"
 
     # measured detector operating points (two detectors x MVTec AD + VisA)
@@ -378,7 +390,11 @@ def main():
         m[f"{P}OptSavingCapShare"] = f"{100 * o.saving_cap_vs_q99.sum() / o.saving_vs_q99.sum():.0f}" if o.saving_vs_q99.sum() > 0 else "100"
     m["OptFprMedian"] = f"{100 * opt.fpr_opt.median():.1f}"
     m["OptFprMax"] = f"{100 * opt.fpr_opt.max():.0f}"
-    m["BudgetFprMedian"] = f"{100 * opt.fpr_budget.median():.1f}"
+    feas = opt[opt.budget_feasible.astype(bool)]
+    nfeas = {sc: int(opt[opt.scenario == sc].budget_feasible.sum()) for sc in SCENARIOS}
+    claim(len(set(nfeas.values())) == 1, "the alarm budget is attainable in the same categories in every scenario")
+    m["BudgetFeasible"] = str(nfeas[SCENARIOS[0]])
+    m["BudgetFprMedian"] = f"{100 * feas.fpr_budget.median():.2f}"
     m["OptMorePermissive"] = str(int((opt.fpr_opt > opt.fpr_q99 + 1e-12).sum()))
     m["OptPairs"] = str(len(opt))
     m["OptCapRecallMedian"] = f"{opt.recall_cap.median():.2f}"
@@ -398,7 +414,8 @@ def main():
     claim(abs(hv.saving_cap_vs_q99.max() - hv.saving_vs_q99.max()) < 1e-9,
           "C: the largest saving is reached without additional reviewers")
     claim((opt[opt.scenario == "precision_component"].rho_opt > 1).any(), "on the fast line (A) staffing binds")
-    claim(((opt.fpr_opt >= opt.fpr_budget - 1e-12)).all(), "carbon-optimal thresholds are never stricter than the alarm budget")
+    claim(((feas.fpr_opt >= feas.fpr_budget - 1e-12)).all(), "where attainable, carbon-optimal thresholds are never stricter than the alarm budget")
+    claim((opt.fpr_q99 > 0.01).mean() > 0.5, "the q99 false-positive rate exceeds 1% in most categories")
     claim((opt.carbon_opt <= opt.carbon_q99 + 1e-9).all() and (opt.carbon_cap <= opt.carbon_q99 + 1e-9).all(),
           "optimised thresholds never emit more than q99")
 
@@ -411,6 +428,11 @@ def main():
     m["PopEdgeShareMedian"] = sig(100 * share.median(), 2)
     m["PopEdgeShareNinetyFive"] = sig(100 * share.quantile(0.95), 2)
     m["PopEdgeShareAboveOne"] = f"{100 * (share > 0.01).mean():.0f}"
+    hi_share = pop[pop.edge_share_of_benefit_L0 > 0.01].dc_L0
+    lo_share = pop[pop.edge_share_of_benefit_L0 <= 0.01].dc_L0
+    m["PopHighShareBenefitMedian"] = sig(hi_share.median())
+    m["PopLowShareBenefitMedian"] = sig(lo_share.median())
+    claim(hi_share.median() < 0.1 * lo_share.median(), "products with an edge share above 1% have a much smaller benefit")
     claim((((pop.psi > 1) == (pop.dc_N0 > 0)) | (pop.beta <= 0)).all(), "decision rule psi > 1 <=> Delta C > 0 for every product")
     claim(max(b12) < 0.05, "B1 and B2 operator hours differ by < 5%")
     draws = pd.read_csv(PROCESSED_DIR / "monte_carlo_draws.csv")
@@ -465,7 +487,8 @@ def main():
     claim(all(0 <= v < 0.25 for v in inter.values()), "interactions explain less than a quarter of the variance")
 
     # cry-wolf (reviewer compliance)
-    cw = pd.read_csv(PROCESSED_DIR / "cry_wolf_summary.csv")
+    cw_all = pd.read_csv(PROCESSED_DIR / "cry_wolf_summary.csv")
+    cw = cw_all[cw_all.score_model == "independent"]
     b3 = cw[cw.tier == PRIMARY].set_index("scenario")
     for sc in SCENARIOS:
         m[f"{PREFIX[sc]}PpvBThree"] = f"{100 * b3.loc[sc, 'ppv']:.0f}"
@@ -474,6 +497,12 @@ def main():
     claim(all(b3.loc[sc, "status"] == "root" for sc in SCENARIOS[1:]), "B, C: a cry-wolf break-even exists for B3")
     claim(b3.loc["precision_component", "ppv"] > b3.loc[list(SCENARIOS[1:]), "ppv"].max(), "B3 alerts are most precise on the fast line")
     ppv = cw.pivot(index="scenario", columns="tier", values="ppv")
+    b3c = cw_all[(cw_all.score_model == "correlated") & (cw_all.tier == PRIMARY)].set_index("scenario")
+    for sc in SCENARIOS:
+        m[f"{PREFIX[sc]}CorrPpvBThree"] = sig(100 * b3c.loc[sc, "ppv"], 2)
+        m[f"{PREFIX[sc]}CorrOmegaStar"] = f"{b3c.loc[sc, 'omega_star']:.2f}" if b3c.loc[sc, "status"] == "root" else "none"
+    claim(all(b3c.loc[sc, "status"] == "root" for sc in SCENARIOS), "correlated scores: a cry-wolf break-even exists for B3 in every scenario")
+    claim(all(b3c.loc[sc, "omega_star"] < b3.loc[sc, "omega_star"] for sc in SCENARIOS[1:]), "correlated scores lower omega* in B and C")
     claim(all(ppv.loc[sc, "B1_EMA"] > ppv.loc[sc, PRIMARY] > ppv.loc[sc, "B0_Raw"] and ppv.loc[sc, "B2_EMA_kofN"] > ppv.loc[sc, PRIMARY]
               for sc in SCENARIOS), "PPV ordering: B1, B2 > B3 > B0 in every scenario")
 
@@ -533,6 +562,145 @@ def main():
     claim(wr[wr.dataset == "visa"].recall_q99.median() < pc[pc.dataset == "visa"].recall_q99.median() + 0.05
           and wr[wr.dataset == "mvtec"].recall_q99.median() > pc[pc.dataset == "mvtec"].recall_q99.median(),
           "the larger backbone helps on MVTec AD but not on VisA")
+
+    # correlated scores (Paper A, rho = 0.9) and textbook alarm baselines
+    mcc = json.loads((PROCESSED_DIR / "monte_carlo_summary_correlated_scores.json").read_text(encoding="utf-8"))
+    ad = pd.read_csv(PROCESSED_DIR / "alarm_designs.csv")
+
+    def adr(model, sc, t):
+        return ad[(ad.score_model == model) & (ad.scenario == sc) & (ad.regime == t)].iloc[0]
+
+    pc = [mcc[sc]["comparisons"]["B3_vs_L0"]["p_delta_c_positive"] for sc in SCENARIOS]
+    m["CorrMcProbLMin"] = f"{100 * min(pc):.0f}"
+    m["CorrMcProbLMax"] = f"{100 * max(pc):.0f}"
+    claim(all(c < i for c, i in zip(pc, pl)), "correlated scores lower the probability that B3 beats manual inspection in every scenario")
+    claim(all(mcc[sc]["comparisons"]["B3_vs_N0"]["p_delta_c_positive"] == 1.0 for sc in SCENARIOS),
+          "correlated scores: B3 still beats no inspection in every draw")
+    rho_c = [adr("correlated", sc, PRIMARY).rho for sc in SCENARIOS]
+    rev_c = [adr("correlated", sc, PRIMARY).reviewers for sc in SCENARIOS]
+    m["CorrRhoBThreeMin"], m["CorrRhoBThreeMax"] = f"{min(rho_c):.1f}", f"{max(rho_c):.1f}"
+    m["CorrReviewersBThreeMin"], m["CorrReviewersBThreeMax"] = str(min(rev_c)), str(max(rev_c))
+    claim(min(rev_c) > 1, "correlated scores: B3 needs more than one reviewer in every scenario")
+    for sc in SCENARIOS:
+        P = PREFIX[sc]
+        m[f"{P}CorrDeltaCvsLZero"] = sig(adr("correlated", sc, PRIMARY).delta_C_vs_L0)
+        m[f"{P}CorrMcProb"] = f"{100 * mcc[sc]['comparisons']['B3_vs_L0']['p_delta_c_positive']:.1f}"
+        claim(0 < adr("correlated", sc, PRIMARY).delta_C_vs_L0 < adr("independent", sc, PRIMARY).delta_C_vs_L0,
+              f"{sc}: correlated scores shrink but do not reverse B3's central saving over L0")
+    m["MetalPpvEOne"] = f"{100 * adr('independent', 'machined_metal', 'E1_Delay_Timer').ppv:.0f}"
+    m["HiValPpvEOne"] = f"{100 * adr('independent', 'high_value_component', 'E1_Delay_Timer').ppv:.0f}"
+    claim(all(adr("independent", sc, "E1_Delay_Timer").ppv > adr("independent", sc, PRIMARY).ppv for sc in SCENARIOS[1:]),
+          "E1 alerts are more precise than B3's on the slow lines (independent scores)")
+    m["MetalDeltaCEOne"] = sig(adr("independent", "machined_metal", "E1_Delay_Timer").delta_C_vs_L0)
+    m["HiValDeltaCEOne"] = sig(adr("independent", "high_value_component", "E1_Delay_Timer").delta_C_vs_L0)
+    gap = [abs(adr("independent", sc, t).delta_C_vs_L0_late_flags_divert / adr("independent", sc, PRIMARY).delta_C_vs_L0 - 1)
+           for sc in SCENARIOS for t in ("E1_Delay_Timer", "E3_Decision_Fusion")]
+    m["EOneLateGapMax"] = f"{max(1, int(np.ceil(100 * max(gap))))}"
+    claim(all(abs(adr("independent", sc, "E2_EMA_Hysteresis").delta_C_vs_L0 / adr("independent", sc, PRIMARY).delta_C_vs_L0 - 1) < 0.02
+              for sc in SCENARIOS), "E2 matches B3's saving within 2% with independent scores")
+    best = [ad[(ad.score_model == "correlated") & (ad.scenario == sc)].sort_values("delta_C_vs_L0").regime.iloc[-1] for sc in SCENARIOS]
+    claim(all(b == "E2_EMA_Hysteresis" for b in best), "with correlated scores E2 keeps the largest saving over L0 in every scenario")
+    m["MetalCorrDeltaCETwo"] = sig(adr("correlated", "machined_metal", "E2_EMA_Hysteresis").delta_C_vs_L0)
+    m["HiValCorrDeltaCETwo"] = sig(adr("correlated", "high_value_component", "E2_EMA_Hysteresis").delta_C_vs_L0)
+    rev2 = [adr("correlated", sc, "E2_EMA_Hysteresis").reviewers for sc in SCENARIOS]
+    m["CorrReviewersETwoMin"], m["CorrReviewersETwoMax"] = str(min(rev2)), str(max(rev2))
+
+    # held-out VisA alert measurements (Paper A, policy frozen), independent and correlated scores
+    mcv = {v: json.loads((PROCESSED_DIR / f"monte_carlo_summary_{v}.json").read_text(encoding="utf-8"))
+           for v in ("visa_scores", "visa_correlated_scores")}
+    for v, tag in (("visa_scores", "Visa"), ("visa_correlated_scores", "VisaCorr")):
+        pv = [mcv[v][sc]["comparisons"]["B3_vs_L0"]["p_delta_c_positive"] for sc in SCENARIOS]
+        m[f"{tag}McProbLMin"], m[f"{tag}McProbLMax"] = f"{100 * min(pv):.0f}", f"{100 * max(pv):.0f}"
+        claim(all(mcv[v][sc]["comparisons"]["B3_vs_N0"]["p_delta_c_positive"] == 1.0 for sc in SCENARIOS),
+              f"{v}: B3 still beats no inspection in every draw")
+        claim(max(pv) < 0.5, f"{v}: B3 beats manual inspection in fewer than half of the draws in every scenario")
+        p2 = [mcv[v][sc]["comparisons"]["E2_vs_L0"]["p_delta_c_positive"] for sc in SCENARIOS]
+        m[f"{tag}ETwoMcProbMin"], m[f"{tag}ETwoMcProbMax"] = f"{100 * min(p2):.0f}", f"{100 * max(p2):.0f}"
+        claim(all(a > b for a, b in zip(p2, pv)), f"{v}: E2 beats manual inspection more often than B3")
+    vm = pm["visa_independent"]
+    m["PaperAVisaFaFull"] = f"{vm['FULL_POLICY']['nominal_false_alarm_rate']['mean']:.1f}"
+    m["PaperAVisaPerDefectFull"] = f"{vm['FULL_POLICY']['alerts_per_defect']['mean']:.2f}"
+    m["PaperAVisaRecallFull"] = f"{vm['FULL_POLICY']['sustained_recall']['mean']:.2f}"
+    m["PaperAVisaRecallRaw"] = f"{vm['BASELINE']['sustained_recall']['mean']:.2f}"
+    m["PaperAVisaCategories"] = qa["VisaNumCategories"]
+    m["VisaRecallLossFull"] = f"{100 * vm['FULL_POLICY']['relative_recall_loss']['mean']:.0f}"
+    m["VisaRecallLossTimer"] = f"{100 * vm['DELAY_TIMER']['relative_recall_loss']['mean']:.0f}"
+    m["VisaRecallLossHyst"] = f"{100 * vm['EMA_HYSTERESIS']['relative_recall_loss']['mean']:.0f}"
+    m["VisaCorrRecallLossFull"] = f"{100 * pm['visa_correlated']['FULL_POLICY']['relative_recall_loss']['mean']:.0f}"
+    for sc in SCENARIOS:
+        P = PREFIX[sc]
+        m[f"{P}VisaDeltaCvsLZero"] = sig(adr("visa_independent", sc, PRIMARY).delta_C_vs_L0)
+        m[f"{P}VisaETwoDeltaC"] = sig(adr("visa_independent", sc, "E2_EMA_Hysteresis").delta_C_vs_L0)
+        claim(adr("visa_independent", sc, "E2_EMA_Hysteresis").delta_C_vs_L0 > 0, f"{sc}: on VisA, E2 keeps a saving over L0 at central values")
+    claim(all(adr("visa_independent", sc, PRIMARY).delta_C_vs_L0 < 0 for sc in SCENARIOS[1:])
+          and adr("visa_independent", SCENARIOS[0], PRIMARY).delta_C_vs_L0 > 0,
+          "VisA alert measurements: B3 emits more than manual inspection in B and C, less in A")
+    rv = [adr("visa_independent", sc, "B0_Raw").reviewers for sc in SCENARIOS]
+    m["VisaReviewersBZeroMin"], m["VisaReviewersBZeroMax"] = str(min(rv)), str(max(rv))
+    claim(all(adr("visa_independent", sc, PRIMARY).reviewers <= adr("independent", sc, PRIMARY).reviewers for sc in SCENARIOS),
+          "VisA: B3 needs no more reviewers than with MVTec alert measurements")
+    claim(adr("visa_independent", "high_value_component", "B0_Raw").delta_C_vs_L0 > adr("visa_independent", "high_value_component", PRIMARY).delta_C_vs_L0,
+          "VisA: in C, single-frame thresholding saves more carbon than B3 (but needs many reviewers)")
+
+    # correlation stress test
+    stv = pd.read_csv(PROCESSED_DIR / "correlation_stress.csv")
+    pairs = stv[stv.a.fillna("") != ""]
+    m["StressPairs"] = str(len(pairs[["a", "b"]].drop_duplicates()))
+    m["StressParams"] = str(len(set(pairs.a) | set(pairs.b)))
+    m["StressShiftMax"] = f"{100 * pairs.shift_B3_vs_L0.abs().max():.1f}"
+    rr = pairs[(pairs.a == "ai_recall") & (pairs.b == "manual_inspection_recall") & (pairs.rank_corr > 0)]
+    m["StressRecallShiftMax"] = f"{100 * rr.shift_B3_vs_L0.max():.1f}"
+    claim(pairs.shift_B3_vs_N0.abs().max() == 0.0, "the stress test leaves P(B3 beats N0) unchanged")
+    claim(pairs.shift_B3_vs_L0.abs().max() < 0.05, "pairwise correlations move P(B3 beats L0) by less than 5 points")
+    claim((rr.shift_B3_vs_L0 > 0).all(), "positive detector-manual recall correlation raises P(B3 beats L0)")
+
+    # structural sensitivity: recycled-content substitution
+    sb = pd.read_csv(PROCESSED_DIR / "substitution_sensitivity.csv")
+    for sval, tag in ((0.5, "Half"), (0.0, "Zero")):
+        q = sb[sb.substitution == sval]
+        m[f"Sub{tag}ProbMin"] = f"{100 * q.p_B3_vs_L0.min():.0f}"
+        m[f"Sub{tag}ProbMax"] = f"{100 * q.p_B3_vs_L0.max():.0f}"
+    m["SubZeroProbNZeroMin"] = f"{np.floor(1000 * sb[sb.substitution == 0.0].p_B3_vs_N0.min()) / 10:.1f}"
+    for sc in SCENARIOS:
+        q = sb[sb.scenario == sc].set_index("substitution")
+        claim(q.loc[0.0, "p_B3_vs_L0"] > q.loc[0.5, "p_B3_vs_L0"] > q.loc[1.0, "p_B3_vs_L0"], f"{sc}: lower substitution raises P(B3 beats L0)")
+        claim(q.loc[0.0, "delta_C_B3_vs_N0"] < q.loc[1.0, "delta_C_B3_vs_N0"], f"{sc}: lower substitution shrinks the saving over N0")
+
+    # embodied hardware: break-even multiple of the central estimate, and a doubled estimate (bottom-up truncation)
+    chw = central["edge_embodied_carbon"]
+    for base, tag in (("L0", "LZero"), ("N0", "NZero")):
+        mult = [be[sc][f"hardware_carbon_star_vs_{base}"]["value"] / chw for sc in SCENARIOS
+                if be[sc][f"hardware_carbon_star_vs_{base}"]["status"] == "root"]
+        claim(len(mult) == len(SCENARIOS), f"a hardware-carbon break-even vs {base} exists in every scenario")
+        m[f"HwStarMult{tag}Min"] = f"{min(mult):,.0f}".replace(",", "{,}")
+    doubled = []
+    for sc in SCENARIOS:
+        b3 = reg[(reg.scenario == sc) & (reg.regime == PRIMARY)].iloc[0]
+        dl0 = comp[(comp.scenario == sc) & (comp.baseline == "L0_Manual") & (comp.policy == PRIMARY)].iloc[0].delta_C
+        doubled.append((b3.carbon_edge + 2 * b3.carbon_hardware) / (dl0 - b3.carbon_hardware))
+    m["HwDoubledEdgeOfBenefitMax"] = sig(100 * max(doubled), 2)
+    claim(max(doubled) < 0.05, "doubling the embodied hardware carbon keeps the edge cell a small share (<5%) of the benefit")
+    claim(next(r.high for r in records if r.key == "edge_embodied_carbon" and r.variant is None) >= 2 * 230.32 - 1e-9,
+          "the ledger's hardware upper bound includes the twofold truncation allowance")
+
+    # reproducibility checklist (seeds, versions)
+    import importlib.util
+
+    def script_constants(name):
+        spec = importlib.util.spec_from_file_location(name, REPO_ROOT / "scripts" / f"{name}.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    s06, s07b = script_constants("06_run_monte_carlo"), script_constants("07b_run_operating_points")
+    m["SeedMonteCarlo"] = str(s06.SEED)
+    m["SeedPopulation"] = str(s07b.POPULATION_SEED)
+    m["SeedEnergy"] = str(energy["seed"])
+    claim(all(jr[c]["seed"] == energy["seed"] for c in jr), "the Jetson runs use the same stage-order seed as the workstation run")
+    m["DetSeedList"] = ", ".join(str(x) for x in det_meta["seeds"])
+    m["JetsonPython"] = jhw["python"]
+    m["WsPython"] = hw["python"]
+    m["JetsonKernel"] = jhw["kernel"]
 
     if FAILED_CLAIMS:
         raise ClaimError("Manuscript claims no longer hold:\n  - " + "\n  - ".join(FAILED_CLAIMS))

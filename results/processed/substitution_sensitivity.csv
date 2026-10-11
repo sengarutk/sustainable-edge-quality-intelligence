@@ -1,0 +1,10 @@
+scenario,substitution,delta_C_B3_vs_L0,p_B3_vs_L0,delta_C_B3_vs_N0,p_B3_vs_N0
+precision_component,1,0.4883775998,0.6427,1.416446658,1
+precision_component,0.5,0.6912555226,0.831,1.26334484,1
+precision_component,0,0.8941334454,0.9652,1.110243023,0.9999
+machined_metal,1,47.72987996,0.5454,235.1050643,1
+machined_metal,0.5,90.76378599,0.8586,181.0023665,1
+machined_metal,0,133.797692,0.9977,126.8996687,1
+high_value_component,1,2141.14166,0.5373,9794.366985,1
+high_value_component,0.5,2944.752213,0.7204,7219.821913,1
+high_value_component,0,3748.362766,0.9021,4645.27684,1
