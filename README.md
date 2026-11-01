@@ -37,7 +37,8 @@ data/raw/paper_a_exports/      provenance-tracked snapshot of the Paper A measur
 src/                     model (quality, sustainability, pipeline), experiments, registry validation
 scripts/01-10            pipeline steps (see below)
 results/                 generated outputs: processed data, figures, tables, LaTeX macros
-paper/                   manuscript; figures/, tables/ and the macro file are copies of results/
+paper/                   manuscript: main.tex (arXiv) and access.tex (IEEE Access) around the shared body.tex and back.tex;
+                         figures/, tables/ and the macro file are copies of results/
 tests/                   unit, invariant, provenance and reproducibility tests
 ```
 
@@ -68,6 +69,7 @@ bash scripts/reproduce_all.sh --measure  # also re-import Paper A and re-measure
 | — | `sync_paper_assets.py [--check]` | copy generated assets into `paper/` (never edits `main.tex`) |
 | — | `verify_math_proofs.py` (needs `.[dev]`) | SymPy proofs of the Section III model, dimensional analysis, paper-vs-code equivalence, closed-form break-even checks, manuscript literals vs registry |
 | — | `package_release.py` | clean LaTeX build + reproducible release zips in `dist/` |
+| — | `build_submissions.py` | the two submission versions, built and checked against each venue's limits: arXiv (`paper/main.tex`) and IEEE Access (`paper/access.tex`, official template in `paper/ieee_access_template/`); writes source zips, PDFs and the arXiv abstract/metadata to `dist/submissions/` |
 | — | `check_drift.py` | after regeneration: LaTeX outputs byte-identical, numeric tables equal to 1e-6 (used by CI) |
 
 All paths are repository-relative. CI regenerates every result from the committed inputs, fails on any drift (LaTeX outputs byte-identical, numeric tables to 1e-6, which absorbs last-digit floating-point differences between CPUs), and compiles the manuscript.

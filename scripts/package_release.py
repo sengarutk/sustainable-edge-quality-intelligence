@@ -88,7 +88,8 @@ def main():
 
     src_zip = dest / f"{name}-source.zip"
     write_zip(src_zip, [(f"{name}/{f.relative_to(ROOT).as_posix()}", f) for f in files_for(SOURCE_DIRS + SOURCE_FILES, ROOT)])
-    ol = [("main.tex", PAPER / "main.tex"), ("references.bib", PAPER / "references.bib"),
+    ol = [("main.tex", PAPER / "main.tex"), ("body.tex", PAPER / "body.tex"), ("back.tex", PAPER / "back.tex"),
+          ("references.bib", PAPER / "references.bib"),
           ("paper_b_generated_metrics.tex", PAPER / "paper_b_generated_metrics.tex")]
     ol += [(f"figures/{p.name}", p) for p in sorted((PAPER / "figures").glob("*.pdf"))]
     ol += [(f"tables/{p.name}", p) for p in sorted((PAPER / "tables").glob("*.tex"))]

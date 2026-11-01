@@ -333,7 +333,8 @@ def load_profiles_equal():
 
 def part_e_manuscript():
     S = "E manuscript"
-    tex = (PAPER_DIR / "main.tex").read_text(encoding="utf-8")
+    # the manuscript is main.tex (arXiv) / access.tex (IEEE Access) around the shared body and back matter
+    tex = "\n".join((PAPER_DIR / f).read_text(encoding="utf-8") for f in ("main.tex", "body.tex", "back.tex"))
     macros = dict(re.findall(r"\\newcommand\{\\(\w+)\}\{(.*)\}", RESULTS_MACROS.read_text(encoding="utf-8")))
 
     def macro(name):
