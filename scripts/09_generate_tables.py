@@ -187,7 +187,7 @@ def table_alert_sets():
         r"\begin{table*}[!t]", r"\centering", r"\footnotesize",
         r"\caption{The full policy B3 with each of the companion study's alert-measurement sets: MVTec~AD (the primary values) and the "
         r"held-out VisA categories, each with independent and with temporally correlated frame scores. $\delta_{B3}$: share of the "
-        r"defects flagged by single-frame thresholding that B3 does not flag within 15 frames; $\rho$: single-reviewer utilisation; "
+        r"defects flagged by single-frame thresholding that B3 does not flag within 15 frames; $\rho$: single-reviewer utilization; "
         r"PPV: alert precision; $\Delta C$: carbon saving against manual inspection at central values (kgCO$_2$e per 1{,}000 parts); "
         r"$P$: share of Monte Carlo draws with $\Delta C>0$; $\omega^\star$: reviewer distrust at which the saving vanishes.}",
         r"\label{tab:alertsets}", r"\setlength{\tabcolsep}{4pt}",
@@ -218,7 +218,7 @@ def table_alarm_designs():
     lines = [
         r"\begin{table*}[!t]", r"\centering", r"\footnotesize",
         r"\caption{Alarm designs at central parameter values, with Paper A's alert measurements under independent and under temporally "
-        r"correlated ($\rho=0.9$) frame scores: single-reviewer utilisation $\rho$, alert precision (PPV), carbon saving against manual "
+        r"correlated ($\rho=0.9$) frame scores: single-reviewer utilization $\rho$, alert precision (PPV), carbon saving against manual "
         r"inspection $\Delta C$ (kgCO$_2$e per 1{,}000 parts, full reviewer compliance) and the reviewer distrust $\omega^\star$ at which "
         r"that saving vanishes (``none'': the regime stays ahead even at $\omega=1$).}",
         r"\label{tab:alarms}", r"\setlength{\tabcolsep}{4pt}",
@@ -308,8 +308,8 @@ def table2_regimes():
     lines = [
         r"\begin{table*}[!t]", r"\centering", r"\scriptsize",
         r"\caption{Outcomes per functional unit (1{,}000 parts) at central parameter values. $\rho$ is single-operator "
-        r"utilisation (values $\geq 1$ require additional operators). Carbon includes material, recycling, rework, "
-        r"review, edge electricity, amortised edge hardware and field-escape terms.}",
+        r"utilization (values $\geq 1$ require additional operators). Carbon includes material, recycling, rework, "
+        r"review, edge electricity, amortized edge hardware and field-escape terms.}",
         r"\label{tab:regimes}", r"\setlength{\tabcolsep}{4pt}",
         r"\begin{tabular}{@{}llrrrrrrrrr@{}}", r"\toprule",
         r"Scenario & Regime & $r$ & $d$ (s) & $N_{rw}$ & $N_{esc}$ & $M_{loss}$ (kg) & $E$ (kWh) & $E_{edge}$ (kWh) & $H$ (h) / $\rho$ & $C$ (kgCO$_2$e) \\",

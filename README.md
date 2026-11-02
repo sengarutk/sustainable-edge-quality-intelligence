@@ -98,4 +98,4 @@ MVTec AD (official archive, MD5 `eefca59f2cede9c3fc5b6befbfec275e`) and VisA (of
 
 ## License and citation
 
-MIT (see `LICENSE`). Citation metadata is in `CITATION.cff`.
+Code: MIT (see `LICENSE`). Data derived from the public benchmarks keep the licenses of their sources: the detector scores in `data/raw/detector_scores/*/mvtec/` derive from MVTec AD and are shared under CC BY-NC-SA 4.0 (non-commercial), those in `*/visa/` derive from VisA and are shared under CC BY 4.0; cite the datasets (Bergmann et al. 2021; Zou et al. 2022) when reusing them. Citation metadata is in `CITATION.cff`.

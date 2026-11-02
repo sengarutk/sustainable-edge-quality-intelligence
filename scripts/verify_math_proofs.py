@@ -372,7 +372,7 @@ def part_e_manuscript():
          f"windows.csv idle counter_diag_w = {idle.counter_diag_w.min():.0f}-{idle.counter_diag_w.max():.0f} W"),
         ("Six regimes form the main comparison", len(BASELINES + AI_TIERS) == 6, "configs/policies.yaml"),
         ("one of the four alert policies of", len(AI_TIERS) == 4, "pipeline_evaluator.AI_TIERS"),
-        ("so $\\delta_t$ is centred on zero", all(recs[f"recall_loss@{t}"].central == 0.0 for t in AI_TIERS), "registry recall_loss of B0-B3"),
+        ("so $\\delta_t$ is centered on zero", all(recs[f"recall_loss@{t}"].central == 0.0 for t in AI_TIERS), "registry recall_loss of B0-B3"),
         ("three textbook alarm baselines", len(EXTERNAL_TIERS) == 3, "pipeline_evaluator.EXTERNAL_TIERS"),
         ("seven non-negative components", len(COMPONENTS) == 7, "carbon_accounting.COMPONENTS"),
         ("an equal-weight sum", load_profiles_equal(), "configs/sqi_weights.yaml balanced profile"),
